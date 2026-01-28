@@ -43,6 +43,8 @@ async fn main() {
         .route("/api/sources", post(routes::sources::create_source))
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
+        .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
+        .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
         .layer(CorsLayer::new().allow_origin(Any))
         .with_state(state);
 

@@ -33,7 +33,7 @@ pub struct ResourceRow {
     pub source_id: i32,
     pub file_path: String,
     pub title: String,
-    pub vote_count: i32,
+    pub like_count: i32,
 }
 
 pub async fn create_source(
@@ -190,7 +190,7 @@ pub async fn sync_source(
 
     let resources = sqlx::query_as!(
         ResourceRow,
-        r#"SELECT id, source_id, file_path, title, vote_count FROM resources WHERE source_id = $1"#,
+        r#"SELECT id, source_id, file_path, title, like_count FROM resources WHERE source_id = $1"#,
         source_id
     )
     .fetch_all(&state.db)
@@ -206,7 +206,7 @@ pub async fn sync_source(
                 "source_id": r.source_id,
                 "file_path": r.file_path,
                 "title": r.title,
-                "vote_count": r.vote_count,
+                "like_count": r.like_count,
                 "owner": source.owner,
                 "repo": source.repo
             })
