@@ -144,3 +144,25 @@ pub struct ResourceRow {
     pub file_path: String,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubTreeQuery {
+    pub owner: String,
+    pub repo: String,
+    pub branch: Option<String>,
+}
+
+pub async fn github_tree(Query(query): Query<GitHubTreeQuery>) -> impl IntoResponse {
+    let client = crate::github::GitHubClient::new();
+
+    match client.get_repo_tree(&query.owner, &query.repo, query.branch.as_deref()).await {
+        Ok((branch, tree)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "branch": branch, "count": tree.len(), "files": tree })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
+}

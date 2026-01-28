@@ -1,5 +1,6 @@
 mod config;
 mod db;
+mod github;
 mod routes;
 mod search;
 
@@ -38,6 +39,10 @@ async fn main() {
         .route("/api/test/resource", post(routes::test::create_resource))
         .route("/api/test/resources", get(routes::test::list_resources))
         .route("/api/test/sync", post(routes::test::sync_resource))
+        .route("/api/test/github-tree", get(routes::test::github_tree))
+        .route("/api/sources", post(routes::sources::create_source))
+        .route("/api/sources", get(routes::sources::list_sources))
+        .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
         .layer(CorsLayer::new().allow_origin(Any))
         .with_state(state);
 
