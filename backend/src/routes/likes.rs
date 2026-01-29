@@ -4,23 +4,48 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use serde::Deserialize;
+use tower_cookies::Cookies;
+use uuid::Uuid;
 
 use crate::AppState;
 
-#[derive(Debug, Deserialize)]
-pub struct LikeRequest {
-    pub user_id: i32,
+const SESSION_COOKIE: &str = "cwdb_session";
+
+async fn get_user_id_from_session(state: &AppState, cookies: &Cookies) -> Option<i32> {
+    let session_id = cookies
+        .get(SESSION_COOKIE)
+        .and_then(|c| Uuid::parse_str(c.value()).ok())?;
+
+    sqlx::query_scalar!(
+        r#"SELECT u.id FROM users u
+           JOIN sessions s ON s.user_id = u.id
+           WHERE s.id = $1 AND s.expires_at > NOW()"#,
+        session_id
+    )
+    .fetch_optional(&state.db)
+    .await
+    .ok()
+    .flatten()
 }
 
 pub async fn toggle_like(
     State(state): State<AppState>,
+    cookies: Cookies,
     Path(resource_id): Path<i32>,
-    Json(payload): Json<LikeRequest>,
 ) -> impl IntoResponse {
+    let user_id = match get_user_id_from_session(&state, &cookies).await {
+        Some(id) => id,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({ "error": "Authentication required" })),
+            )
+        }
+    };
+
     let existing = sqlx::query!(
         r#"SELECT 1 as exists FROM likes WHERE user_id = $1 AND resource_id = $2"#,
-        payload.user_id,
+        user_id,
         resource_id
     )
     .fetch_optional(&state.db)
@@ -32,7 +57,7 @@ pub async fn toggle_like(
         Ok(Some(_)) => {
             let _ = sqlx::query!(
                 r#"DELETE FROM likes WHERE user_id = $1 AND resource_id = $2"#,
-                payload.user_id,
+                user_id,
                 resource_id
             )
             .execute(&state.db)
@@ -50,7 +75,7 @@ pub async fn toggle_like(
         Ok(None) => {
             let insert = sqlx::query!(
                 r#"INSERT INTO likes (user_id, resource_id) VALUES ($1, $2)"#,
-                payload.user_id,
+                user_id,
                 resource_id
             )
             .execute(&state.db)
@@ -111,3 +136,4 @@ pub async fn get_likes(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "error": e.to_string() }))),
     }
 }
+

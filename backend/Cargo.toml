@@ -19,3 +19,9 @@ chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 thiserror = "2.0"
 sha2 = "0.10"
+jsonwebtoken = "9"
+base64 = "0.22"
+urlencoding = "2"
+tower-cookies = "0.11"
+uuid = { version = "1", features = ["v4", "serde"] }
+time = "0.3"

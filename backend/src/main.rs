@@ -1,3 +1,4 @@
+mod auth;
 mod config;
 mod db;
 mod github;
@@ -10,13 +11,15 @@ use axum::{
 };
 use meilisearch_sdk::client::Client;
 use sqlx::PgPool;
-use tower_http::cors::{Any, CorsLayer};
+use tower_cookies::CookieManagerLayer;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub meili: Client,
+    pub config: config::Config,
 }
 
 #[tokio::main]
@@ -29,11 +32,22 @@ async fn main() {
     let config = config::Config::from_env();
     let db = db::init_pool(&config).await;
     let meili = search::init_client(&config);
+    
+    // Initialize Meilisearch indexes
+    search::init_indexes(&meili).await;
 
-    let state = AppState { db, meili };
+    let state = AppState {
+        db,
+        meili,
+        config: config.clone(),
+    };
 
     let app = Router::new()
         .route("/health", get(routes::health::health))
+        .route("/api/auth/login", get(routes::auth::login))
+        .route("/api/auth/callback", get(routes::auth::callback))
+        .route("/api/auth/me", get(routes::auth::me))
+        .route("/api/auth/logout", post(routes::auth::logout))
         .route("/api/test/index", post(routes::test::index_document))
         .route("/api/test/search", get(routes::test::search_documents))
         .route("/api/test/resource", post(routes::test::create_resource))
@@ -43,9 +57,20 @@ async fn main() {
         .route("/api/sources", post(routes::sources::create_source))
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
+        .route("/api/search", get(routes::search::search))
         .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
-        .layer(CorsLayer::new().allow_origin(Any))
+        .layer(CookieManagerLayer::new())
+        .layer(
+            CorsLayer::new()
+                .allow_origin([
+                    "http://localhost:5173".parse::<axum::http::HeaderValue>().unwrap(),
+                    "http://127.0.0.1:5173".parse::<axum::http::HeaderValue>().unwrap(),
+                ])
+                .allow_credentials(true)
+                .allow_methods([axum::http::Method::GET, axum::http::Method::POST])
+                .allow_headers([axum::http::header::CONTENT_TYPE]),
+        )
         .with_state(state);
 
     let addr = format!("0.0.0.0:{}", config.server_port);
@@ -54,3 +79,4 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
+

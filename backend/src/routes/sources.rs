@@ -1,13 +1,14 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tower_cookies::Cookies;
 
-use crate::{github::GitHubClient, AppState};
+use crate::{github::GitHubClient, routes::auth::get_authenticated_user, AppState};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSource {
@@ -25,6 +26,12 @@ pub struct SourceRow {
     pub source_status: String,
     pub last_synced_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_by: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ListSourcesQuery {
+    pub filter: Option<String>,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -38,8 +45,14 @@ pub struct ResourceRow {
 
 pub async fn create_source(
     State(state): State<AppState>,
+    cookies: Cookies,
     Json(payload): Json<CreateSource>,
 ) -> impl IntoResponse {
+    let user = match get_authenticated_user(&state, &cookies).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
+    };
+
     let github = GitHubClient::new();
 
     let branch = match &payload.branch {
@@ -51,56 +64,96 @@ pub async fn create_source(
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({ "error": e.to_string() })),
                 )
+                    .into_response()
             }
         },
     };
 
     let result = sqlx::query_as!(
         SourceRow,
-        r#"INSERT INTO sources (owner, repo, branch)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (owner, repo, branch) DO UPDATE SET owner = EXCLUDED.owner
-           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at"#,
+        r#"INSERT INTO sources (owner, repo, branch, created_by)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (owner, repo, branch) DO UPDATE 
+           SET owner = EXCLUDED.owner, created_by = EXCLUDED.created_by
+           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by"#,
         payload.owner,
         payload.repo,
-        branch
+        branch,
+        user.id
     )
     .fetch_one(&state.db)
     .await;
 
     match result {
-        Ok(row) => (StatusCode::CREATED, Json(serde_json::json!(row))),
+        Ok(row) => (StatusCode::CREATED, Json(serde_json::json!(row))).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
-        ),
+        )
+            .into_response(),
     }
 }
 
-pub async fn list_sources(State(state): State<AppState>) -> impl IntoResponse {
-    let result = sqlx::query_as!(
-        SourceRow,
-        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at FROM sources"#
-    )
-    .fetch_all(&state.db)
-    .await;
+pub async fn list_sources(
+    State(state): State<AppState>,
+    cookies: Cookies,
+    Query(query): Query<ListSourcesQuery>,
+) -> impl IntoResponse {
+    let user_id = if let Some(filter) = &query.filter {
+        if filter == "mine" {
+            match get_authenticated_user(&state, &cookies).await {
+                Ok(u) => Some(u.id),
+                Err(e) => return e.into_response(),
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let result = if let Some(uid) = user_id {
+        sqlx::query_as!(
+            SourceRow,
+            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by 
+               FROM sources WHERE created_by = $1"#,
+            uid
+        )
+        .fetch_all(&state.db)
+        .await
+    } else {
+        sqlx::query_as!(
+            SourceRow,
+            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by 
+               FROM sources"#
+        )
+        .fetch_all(&state.db)
+        .await
+    };
 
     match result {
-        Ok(rows) => (StatusCode::OK, Json(serde_json::json!({ "sources": rows }))),
+        Ok(rows) => (StatusCode::OK, Json(serde_json::json!({ "sources": rows }))).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
-        ),
+        )
+            .into_response(),
     }
 }
 
 pub async fn sync_source(
     State(state): State<AppState>,
+    cookies: Cookies,
     Path(source_id): Path<i32>,
 ) -> impl IntoResponse {
+    let user = match get_authenticated_user(&state, &cookies).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
+    };
+
     let source = sqlx::query_as!(
         SourceRow,
-        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at FROM sources WHERE id = $1"#,
+        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by FROM sources WHERE id = $1"#,
         source_id
     )
     .fetch_optional(&state.db)
@@ -113,14 +166,26 @@ pub async fn sync_source(
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({ "error": "Source not found" })),
             )
+                .into_response()
         }
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
+                .into_response()
         }
     };
+
+    // Only admin or source owner can sync
+    if user.role != "admin" && source.created_by != user.id {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "You do not have permission to sync this source" })),
+        )
+            .into_response();
+    }
+
 
     let github = GitHubClient::new();
     let tree = match github.get_repo_tree(&source.owner, &source.repo, Some(&source.branch)).await {
@@ -137,7 +202,8 @@ pub async fn sync_source(
             return (
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({ "error": e.to_string() })),
-            );
+            )
+                .into_response();
         }
     };
 
@@ -208,7 +274,8 @@ pub async fn sync_source(
                 "title": r.title,
                 "like_count": r.like_count,
                 "owner": source.owner,
-                "repo": source.repo
+                "repo": source.repo,
+                "branch": source.branch
             })
         })
         .collect();
@@ -223,6 +290,7 @@ pub async fn sync_source(
             "total": resources.len()
         })),
     )
+        .into_response()
 }
 
 fn compute_path_hash(path: &str) -> String {

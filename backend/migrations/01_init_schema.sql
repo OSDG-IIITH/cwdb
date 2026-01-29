@@ -8,6 +8,7 @@ CREATE TABLE sources (
     poll_frequency INT NOT NULL DEFAULT 7,
     source_status VARCHAR(50) NOT NULL DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by INT NOT NULL,
     UNIQUE(owner, repo, branch)
 );
 

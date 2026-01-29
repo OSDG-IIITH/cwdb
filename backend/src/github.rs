@@ -1,7 +1,15 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-const ALLOWED_EXTENSIONS: &[&str] = &["pdf", "py", "cpp", "pptx", "ppt", "c", "h", "java", "js", "ts", "md", "tex"];
+// Files to ignore
+const IGNORED_EXTENSIONS: &[&str] = &[
+    // binaries (just in case lol)
+    "exe", "dll", "so", "dylib", "bin", "o", "a", "obj",
+    // fonts
+    "ttf", "otf", "woff", "woff2", "eot",
+    // other
+    "lock", "min.js", "min.css", "map",
+];
 const IGNORED_PATHS: &[&str] = &[".git", "node_modules", "__pycache__", ".venv", "target", "dist", "build"];
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -93,7 +101,7 @@ fn filter_tree_entries(entries: Vec<GitHubTreeEntry>) -> Vec<GitHubTreeEntry> {
         .into_iter()
         .filter(|e| e.entry_type == "blob")
         .filter(|e| !is_ignored_path(&e.path))
-        .filter(|e| has_allowed_extension(&e.path))
+        .filter(|e| !has_ignored_extension(&e.path))
         .collect()
 }
 
@@ -101,9 +109,9 @@ fn is_ignored_path(path: &str) -> bool {
     IGNORED_PATHS.iter().any(|ignored| path.contains(ignored))
 }
 
-fn has_allowed_extension(path: &str) -> bool {
+fn has_ignored_extension(path: &str) -> bool {
     path.rsplit('.')
         .next()
-        .map(|ext| ALLOWED_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
+        .map(|ext| IGNORED_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
         .unwrap_or(false)
 }
