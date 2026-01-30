@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { createSource } from '$lib/api';
+    import { createSource, refreshSource } from '$lib/api';
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
     import { Label } from '$lib/components/ui/label';
@@ -108,9 +108,13 @@
         if (!verified || !parsedData.owner || !parsedData.repo) return;
         
         loading = true;
-        // If no specific branch was parsed from URL, use the detected default branch
         const branchToUse = parsedData.branch || repoDetails?.default_branch;
         const res = await createSource(parsedData.owner, parsedData.repo, branchToUse);
+
+        if (res) {
+            await refreshSource(res.id);
+        }
+        
         loading = false;
 
         if (res) {
