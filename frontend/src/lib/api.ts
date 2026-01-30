@@ -1,24 +1,26 @@
 const API_BASE = 'http://localhost:3000';
 
-export interface SearchHit {
-    id: number;
-    filename: string;
-    path: string;
-    owner: string;
-    repo: string;
-    branch: string;
-    tags: {
-        course?: string;
-        shortCourse?: string;
-        type?: string;
-    };
-}
+import { z } from 'zod';
 
-export interface SearchResponse {
-    hits: SearchHit[];
-}
+export const ResourceSchema = z.object({
+    id: z.number(),
+    source_id: z.number(),
+    owner: z.string(),
+    repo: z.string(),
+    branch: z.string(),
+    file_path: z.string(),
+    title: z.string(),
+    type: z.string().nullable().optional(),
+    like_count: z.number(),
+});
 
-export async function searchResources(query: string): Promise<SearchHit[]> {
+export type Resource = z.infer<typeof ResourceSchema>;
+
+export const SearchResponseSchema = z.object({
+    resources: z.array(ResourceSchema),
+});
+
+export async function searchResources(query: string): Promise<Resource[]> {
     try {
         const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
             credentials: 'include',
@@ -26,8 +28,9 @@ export async function searchResources(query: string): Promise<SearchHit[]> {
         if (!res.ok) {
             return [];
         }
-        const data: SearchResponse = await res.json();
-        return data.hits;
+        const json = await res.json();
+        const data = SearchResponseSchema.parse(json);
+        return data.resources;
     } catch (e) {
         console.error("Search failed:", e);
         return [];
@@ -115,16 +118,7 @@ export async function toggleSourceLike(sourceId: number): Promise<{ liked: boole
     }
 }
 
-export interface Resource {
-    id: number;
-    source_id: number;
-    owner: string;
-    repo: string;
-    branch: string;
-    file_path: string;
-    title: string;
-    like_count: number;
-}
+
 
 export async function listAllResources(): Promise<Resource[]> {
     try {

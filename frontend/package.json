@@ -44,6 +44,7 @@
 	},
 	"dependencies": {
 		"meilisearch": "^0.55.0",
-		"mode-watcher": "^1.1.0"
+		"mode-watcher": "^1.1.0",
+		"zod": "^4.3.6"
 	}
 }

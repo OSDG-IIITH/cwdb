@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { searchResources, type SearchHit } from '$lib/api';
+	import { searchResources, type Resource } from '$lib/api';
 	import { Input } from '$lib/components/ui/input';
 
 	let query = $state('');
-	let results = $state<SearchHit[]>([]);
+	let results = $state<Resource[]>([]);
 
 	async function search() {
 		results = await searchResources(query);
@@ -12,16 +12,16 @@
 
 	onMount(search);
 
-	function rawUrl(r: SearchHit) {
+	function rawUrl(r: Resource) {
 		const b = r.branch || 'main';
-		return `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${b}/${encodeURI(r.path)}`;
+		return `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${b}/${encodeURI(r.file_path)}`;
 	}
 
-	function repoUrl(r: SearchHit) {
+	function repoUrl(r: Resource) {
 		return `https://github.com/${r.owner}/${r.repo}`;
 	}
 
-	function openRaw(r: SearchHit) {
+	function openRaw(r: Resource) {
 		window.open(rawUrl(r), '_blank');
 	}
 
@@ -90,15 +90,15 @@
 		<div class="flex-1 mt-32 sm:mt-20">
 			<ul class="mt-4 mb-10 space-y-4">
 				{#if results.length > 0}
-					{#each results as r}
+					{#each results as r (r.id)}
 						<li>
 							<button
 								type="button"
 								class="w-full text-left cursor-pointer p-4 border border-border rounded-md bg-background hover:bg-muted/30 transition-colors"
 								onclick={() => openRaw(r)}
 							>
-								<div class="text-base font-medium text-foreground">{r.filename}</div>
-								<div class="text-xs text-muted-foreground mt-1">{r.path}</div>
+								<div class="text-base font-medium text-foreground">{r.title}</div>
+								<div class="text-xs text-muted-foreground mt-1">{r.file_path}</div>
 
 								<div class="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
 									<a
@@ -111,15 +111,9 @@
 										{r.owner}/{r.repo}
 									</a>
 
-									{#if r.tags.shortCourse || r.tags.course}
+									{#if r.type}
 										<span class="px-2 py-0.5 bg-muted rounded">
-											{r.tags.shortCourse || r.tags.course}
-										</span>
-									{/if}
-
-									{#if r.tags.type}
-										<span class="px-2 py-0.5 bg-muted rounded">
-											{r.tags.type}
+											{r.type}
 										</span>
 									{/if}
 								</div>

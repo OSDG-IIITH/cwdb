@@ -22,6 +22,7 @@ CREATE TABLE resources (
     tags TEXT[] DEFAULT '{}',
     like_count INT NOT NULL DEFAULT 0,
     download_url TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT '',
     sha VARCHAR(40) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

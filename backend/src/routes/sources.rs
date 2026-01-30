@@ -41,6 +41,7 @@ pub struct ResourceRow {
     pub source_id: i32,
     pub file_path: String,
     pub title: String,
+    pub r#type: String,
     pub like_count: i32,
 }
 
@@ -214,18 +215,20 @@ pub async fn sync_source(
     for entry in &tree {
         let path_hash = compute_path_hash(&entry.path);
         let title = extract_title(&entry.path);
+        let resource_type = determine_resource_type(&entry.path);
         let download_url = format!(
             "https://raw.githubusercontent.com/{}/{}/{}/{}",
             source.owner, source.repo, source.branch, entry.path
         );
 
         let result = sqlx::query!(
-            r#"INSERT INTO resources (source_id, file_path, path_hash, title, download_url, sha)
-               VALUES ($1, $2, $3, $4, $5, $6)
+            r#"INSERT INTO resources (source_id, file_path, path_hash, title, download_url, type, sha)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
                ON CONFLICT (source_id, path_hash) DO UPDATE
                SET file_path = EXCLUDED.file_path,
                    title = EXCLUDED.title,
                    download_url = EXCLUDED.download_url,
+                   type = EXCLUDED.type,
                    sha = EXCLUDED.sha,
                    updated_at = NOW()
                RETURNING (xmax = 0) as is_insert"#,
@@ -234,6 +237,7 @@ pub async fn sync_source(
             path_hash,
             title,
             download_url,
+            resource_type,
             entry.sha
         )
         .fetch_one(&state.db)
@@ -257,7 +261,7 @@ pub async fn sync_source(
 
     let resources = sqlx::query_as!(
         ResourceRow,
-        r#"SELECT id, source_id, file_path, title, like_count FROM resources WHERE source_id = $1"#,
+        r#"SELECT id, source_id, file_path, title, type, like_count FROM resources WHERE source_id = $1"#,
         source_id
     )
     .fetch_all(&state.db)
@@ -276,7 +280,8 @@ pub async fn sync_source(
                 "like_count": r.like_count,
                 "owner": source.owner,
                 "repo": source.repo,
-                "branch": source.branch
+                "branch": source.branch,
+                "type": r.r#type
             })
         })
         .collect();
@@ -308,4 +313,15 @@ fn extract_title(path: &str) -> String {
         .last()
         .unwrap_or(path)
         .replace(['_', '-'], " ")
+}
+
+fn determine_resource_type(path: &str) -> String {
+    let filename = path.split('/').last().unwrap_or(path).to_lowercase();
+    if filename.contains("end") || filename.contains("mid") || filename.contains("quiz") {
+        return "exam".to_string();
+    }
+    if filename.contains("lecture") {
+        return "slides".to_string();
+    }
+    "".to_string()
 }

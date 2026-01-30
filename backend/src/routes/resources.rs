@@ -17,6 +17,7 @@ pub struct ResourceRow {
     pub branch: String,
     pub file_path: String,
     pub title: String,
+    pub r#type: String,
     pub like_count: i32,
 }
 
@@ -26,7 +27,7 @@ pub async fn list_resources(
     let result = sqlx::query_as!(
         ResourceRow,
         r#"
-        SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.like_count 
+        SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.type, r.like_count 
         FROM resources r 
         JOIN sources s ON r.source_id = s.id 
         WHERE s.source_status NOT IN ('archived', 'error')
