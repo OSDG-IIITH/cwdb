@@ -58,6 +58,8 @@ async fn main() {
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
         .route("/api/search", get(routes::search::search))
+        .route("/api/sources/{id}/like", post(routes::likes::toggle_source_like))
+        .route("/api/resources", get(routes::resources::list_resources))
         .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
         .layer(CookieManagerLayer::new())

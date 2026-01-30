@@ -1,15 +1,20 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { Search, Folder } from '@lucide/svelte';
+	import { Search, Archive, FolderOpen } from '@lucide/svelte';
 	
 	const links = [
 		{ href: '/', icon: Search, label: 'Search' },
-		{ href: '/sources', icon: Folder, label: 'Sources' }
+		{ href: '/resources', icon: FolderOpen, label: 'Resources' },
+		{ href: '/sources', icon: Archive, label: 'Sources' }
 	];
 
 	const activeIndex = $derived(
-		links.findIndex(link => page.url.pathname === link.href)
+		links.findIndex(link => 
+            link.href === '/' 
+                ? page.url.pathname === '/' 
+                : page.url.pathname.startsWith(link.href)
+        )
 	);
 	const currentIdx = $derived(activeIndex === -1 ? 0 : activeIndex);
 	$effect(() => {
@@ -20,7 +25,9 @@
 			if (e.key === '1') {
 				e.preventDefault();
 				goto('/');
-			} else if (e.key === '2' || e.key === 'S') {
+			} else if (e.key === '2') {
+                goto('/resources');
+            } else if (e.key === '3') {
 				goto('/sources');
 			}
 		};
@@ -42,10 +49,10 @@
 			<a
 				href={link.href}
 				class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				class:text-foreground={page.url.pathname === link.href}
+				class:text-foreground={link.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(link.href)}
 				title={link.label}
 			>
-				<link.icon class="h-5 w-5" />
+				<link.icon class="h-4.5 w-4.5" />
 				<span class="sr-only">{link.label}</span>
 			</a>
 		{/each}

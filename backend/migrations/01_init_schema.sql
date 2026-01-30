@@ -7,6 +7,7 @@ CREATE TABLE sources (
     last_etag VARCHAR(255),
     poll_frequency INT NOT NULL DEFAULT 7,
     source_status VARCHAR(50) NOT NULL DEFAULT 'active',
+    like_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     created_by INT NOT NULL,
     UNIQUE(owner, repo, branch)
@@ -37,3 +38,12 @@ CREATE TABLE likes (
 CREATE INDEX idx_resources_source_id ON resources(source_id);
 CREATE INDEX idx_resources_path_hash ON resources(path_hash);
 CREATE INDEX idx_likes_resource_id ON likes(resource_id);
+
+CREATE TABLE source_likes (
+    user_id INT NOT NULL,
+    source_id INT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, source_id)
+);
+
+CREATE INDEX idx_source_likes_source_id ON source_likes(source_id);

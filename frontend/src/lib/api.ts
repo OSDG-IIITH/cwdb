@@ -43,6 +43,7 @@ export interface Source {
     last_synced_at: string | null;
     created_at: string | null;
     created_by: number;
+    like_count: number;
 }
 
 export async function listSources(filter?: string): Promise<Source[]> {
@@ -94,5 +95,50 @@ export async function refreshSource(sourceId: number): Promise<boolean> {
     } catch (e) {
         console.error("Sync source failed:", e);
         return false;
+    }
+}
+
+export async function toggleSourceLike(sourceId: number): Promise<{ liked: boolean; like_count: number } | null> {
+    try {
+        const res = await fetch(`${API_BASE}/api/sources/${sourceId}/like`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        if (!res.ok) {
+            console.error("Toggle source like failed:", res.status);
+            return null;
+        }
+        return await res.json();
+    } catch (e) {
+        console.error("Toggle source like failed:", e);
+        return null;
+    }
+}
+
+export interface Resource {
+    id: number;
+    source_id: number;
+    owner: string;
+    repo: string;
+    branch: string;
+    file_path: string;
+    title: string;
+    like_count: number;
+}
+
+export async function listAllResources(): Promise<Resource[]> {
+    try {
+        const res = await fetch(`${API_BASE}/api/resources`, {
+            credentials: 'include',
+        });
+        if (!res.ok) {
+            console.error("Fetch resources failed:", res.status);
+            return [];
+        }
+        const data = await res.json();
+        return data.resources || [];
+    } catch (e) {
+        console.error("Fetch resources failed:", e);
+        return [];
     }
 }

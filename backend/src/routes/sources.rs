@@ -27,6 +27,7 @@ pub struct SourceRow {
     pub last_synced_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_by: i32,
+    pub like_count: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -75,7 +76,7 @@ pub async fn create_source(
            VALUES ($1, $2, $3, $4)
            ON CONFLICT (owner, repo, branch) DO UPDATE 
            SET owner = EXCLUDED.owner, created_by = EXCLUDED.created_by
-           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by"#,
+           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count"#,
         payload.owner,
         payload.repo,
         branch,
@@ -115,7 +116,7 @@ pub async fn list_sources(
     let result = if let Some(uid) = user_id {
         sqlx::query_as!(
             SourceRow,
-            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by 
+            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count 
                FROM sources WHERE created_by = $1"#,
             uid
         )
@@ -124,7 +125,7 @@ pub async fn list_sources(
     } else {
         sqlx::query_as!(
             SourceRow,
-            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by 
+            r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count 
                FROM sources"#
         )
         .fetch_all(&state.db)
@@ -153,7 +154,7 @@ pub async fn sync_source(
 
     let source = sqlx::query_as!(
         SourceRow,
-        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by FROM sources WHERE id = $1"#,
+        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count FROM sources WHERE id = $1"#,
         source_id
     )
     .fetch_optional(&state.db)

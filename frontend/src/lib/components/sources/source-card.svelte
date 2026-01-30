@@ -1,21 +1,28 @@
 <script lang="ts">
-    import { refreshSource, type Source } from '$lib/api';
+    import { refreshSource, toggleSourceLike, type Source } from '$lib/api';
     import { Button } from '$lib/components/ui/button';
     import * as Card from '$lib/components/ui/card';
-    import { RefreshCw, Github, GitBranch, Archive, AlertCircle, Clock } from '@lucide/svelte';
-    import { createEventDispatcher } from 'svelte';
+    import { RefreshCw, Github, GitBranch, Archive, AlertCircle, Clock, Heart } from '@lucide/svelte';
 
-    const { source } = $props<{ source: Source }>();
+    const { source, onrefresh } = $props<{ source: Source; onrefresh?: () => void }>();
     let refreshing = $state(false);
-
-    const dispatch = createEventDispatcher();
+    let liked = $state(false);
+    let likeOffset = $state(0);
 
     async function handleRefresh() {
         refreshing = true;
         const success = await refreshSource(source.id);
         refreshing = false;
         if (success) {
-            dispatch('refresh');
+            onrefresh?.();
+        }
+    }
+
+    async function handleLike() {
+        const result = await toggleSourceLike(source.id);
+        if (result) {
+            liked = result.liked;
+            likeOffset = result.like_count - source.like_count;
         }
     }
 
@@ -38,19 +45,6 @@
         
         return 'Just now';
     }
-    
-    const statusColor = $derived.by(() => {
-        switch (source.source_status) {
-            case 'active': return 'text-success';
-            case 'error': return 'text-destructive';
-            case 'archived': return 'text-warning';
-            case 'pending': return 'text-info';
-            default: return 'text-muted-foreground';
-        }
-    });
-
-    const hasError = $derived(source.source_status === 'error');
-    const isArchived = $derived(source.source_status === 'archived');
 </script>
 
 <Card.Root class="group relative flex w-full flex-col justify-between gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3 md:px-5 md:py-4 transition-colors hover:border-border">
@@ -69,24 +63,20 @@
             </div>
         </div>
 
-        <div class="flex flex-col items-end gap-2 text-right">
-            <div class={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${statusColor} border-border/60 bg-background/60`}>
-                <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                {#if hasError}
-                    <AlertCircle class="h-3 w-3" />
-                {:else if isArchived}
-                    <Archive class="h-3 w-3" />
-                {/if}
-                <span class="truncate">{source.source_status}</span>
-            </div>
-            <div class="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Clock class="h-3 w-3" />
-                <span>{timeAgo(source.last_synced_at)}</span>
-            </div>
+        <div class="flex items-center gap-1">
+             <span class="text-xs text-muted-foreground tabular-nums">{source.like_count + likeOffset}</span>
+             <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" onclick={handleLike}>
+                 <Heart class={`h-4 w-4 transition-colors ${liked ? 'fill-destructive text-destructive' : ''}`} />
+                 <span class="sr-only">Like</span>
+            </Button>
         </div>
     </div>
 
-    <div class="flex items-center justify-end gap-2 pt-1">
+    <div class="flex items-center justify-between gap-2 pt-1">
+        <div class="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Clock class="h-3 w-3" />
+            <span>{timeAgo(source.last_synced_at)}</span>
+        </div>
         <Button
             variant="outline"
             size="sm"

@@ -72,25 +72,25 @@
 	{#if $loading}
 		<DropdownMenu.Trigger
 			disabled
-			class="h-8 w-8 rounded-full bg-muted flex items-center justify-center opacity-60"
+			class="h-10 w-10 rounded-full bg-muted flex items-center justify-center opacity-60"
 		>
 			<User class="h-4 w-4 text-muted-foreground" />
 		</DropdownMenu.Trigger>
 	{:else if $user}
 		<DropdownMenu.Trigger
-			class="h-8 w-8 rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			class="h-10 w-10 rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 		>
-			<Avatar.Root class="h-8 w-8 cursor-pointer">
+			<Avatar.Root class="h-10 w-10 cursor-pointer">
 				<Avatar.Fallback class="text-xs font-medium">{getInitials($user.email)}</Avatar.Fallback>
 			</Avatar.Root>
 		</DropdownMenu.Trigger>
 	{:else}
-		<DropdownMenu.Trigger class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-8 w-8')}>
+		<DropdownMenu.Trigger class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-10 w-10')}>
 			<User class="h-4 w-4" />
 		</DropdownMenu.Trigger>
 	{/if}
 
-	<DropdownMenu.Content {align} {side} class="w-69" sideOffset={8}>
+	<DropdownMenu.Content {align} {side} class="w-69 bg-card/30" sideOffset={12}>
 		{#if $user}
 			<div class="px-3 py-2.5 border-b">
 				<p class="text-sm font-medium leading-none">{getNameFromEmail($user.email)}</p>
@@ -101,7 +101,7 @@
 		<div class="p-1.5">
 			<div class="flex items-center justify-between px-2 py-1 gap-2">
 				<span class="text-xs font-medium text-muted-foreground mr-4">Theme</span>
-                <div class="grid grid-cols-4 gap-2 w-full bg-muted rounded-md p-1.5">
+                <div class="grid grid-cols-4 gap-2 w-full bg-muted/40 rounded-md p-1.5">
 					<button
 						type="button"
 						class={cn(

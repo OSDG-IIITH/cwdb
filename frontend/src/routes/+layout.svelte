@@ -20,7 +20,7 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <ModeWatcher />
 <Sidebar />
-<div class="fixed top-5 right-5 z-50 md:top-auto md:bottom-5 md:left-5 md:right-auto">
+<div class="fixed top-5 right-5 z-50 md:top-auto md:bottom-2 md:left-4 md:right-auto md:rounded-md md:p-2">
 	<UserMenu />
 </div>
 
