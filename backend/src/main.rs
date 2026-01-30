@@ -34,7 +34,7 @@ async fn main() {
     let meili = search::init_client(&config);
     
     // Initialize Meilisearch indexes
-    search::init_indexes(&meili).await;
+    search::init_indexes(&meili, &db).await;
 
     let state = AppState {
         db,
