@@ -47,6 +47,7 @@ export interface Source {
     created_at: string | null;
     created_by: number;
     like_count: number;
+    liked: boolean;
 }
 
 export async function listSources(filter?: string): Promise<Source[]> {

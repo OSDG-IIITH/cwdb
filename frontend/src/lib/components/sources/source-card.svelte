@@ -6,8 +6,9 @@
 
     const { source, onrefresh } = $props<{ source: Source; onrefresh?: () => void }>();
     let refreshing = $state(false);
-    let liked = $state(false);
-    let likeOffset = $state(0);
+    let localLikeState = $state<{ liked: boolean; like_count: number } | null>(null);
+    let liked = $derived(localLikeState?.liked ?? source.liked);
+    let likeCount = $derived(localLikeState?.like_count ?? source.like_count);
 
     async function handleRefresh() {
         refreshing = true;
@@ -21,8 +22,7 @@
     async function handleLike() {
         const result = await toggleSourceLike(source.id);
         if (result) {
-            liked = result.liked;
-            likeOffset = result.like_count - source.like_count;
+            localLikeState = result;
         }
     }
 
@@ -64,7 +64,7 @@
         </div>
 
         <div class="flex items-center gap-1">
-             <span class="text-xs text-muted-foreground tabular-nums">{source.like_count + likeOffset}</span>
+             <span class="text-xs text-muted-foreground tabular-nums">{likeCount}</span>
              <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-foreground" onclick={handleLike}>
                  <Heart class={`h-4 w-4 transition-colors ${liked ? 'fill-destructive text-destructive' : ''}`} />
                  <span class="sr-only">Like</span>
