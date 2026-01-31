@@ -6,6 +6,7 @@
 	import Sidebar from '$lib/components/nav/sidebar.svelte';
 	import { onMount } from 'svelte';
 	import { fetchUser } from '$lib/auth';
+	import { Toaster } from '$lib/components/ui/sonner';
 
 	let { children } = $props();
 
@@ -19,6 +20,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <ModeWatcher />
+<Toaster />
 <Sidebar />
 <div class="fixed top-5 right-5 z-50 md:top-auto md:bottom-2 md:left-4 md:right-auto md:rounded-md md:p-2">
 	<UserMenu />

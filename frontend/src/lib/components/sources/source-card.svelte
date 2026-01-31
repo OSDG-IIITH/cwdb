@@ -3,6 +3,8 @@
     import { Button } from '$lib/components/ui/button';
     import * as Card from '$lib/components/ui/card';
     import { RefreshCw, Github, GitBranch, Archive, AlertCircle, Clock, Heart } from '@lucide/svelte';
+    import { user } from '$lib/auth';
+    import { toast } from 'svelte-sonner';
 
     const { source, onrefresh } = $props<{ source: Source; onrefresh?: () => void }>();
     let refreshing = $state(false);
@@ -11,10 +13,19 @@
     let likeCount = $derived(localLikeState?.like_count ?? source.like_count);
 
     async function handleRefresh() {
+        if (!$user) {
+            toast.error("Unable to sync source.", {
+                description: "You must be logged in to sync a source."
+            });
+            return;
+        }
         refreshing = true;
         const success = await refreshSource(source.id);
         refreshing = false;
         if (success) {
+            toast.success("Source Synced", {
+                description: `${source.owner}/${source.repo} has been successfully updated.`,
+            });
             onrefresh?.();
         }
     }

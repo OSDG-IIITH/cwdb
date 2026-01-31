@@ -7,6 +7,8 @@
     import { createEventDispatcher } from 'svelte';
     import { Plus, Github, Loader2, Check, AlertCircle, GitBranch, Star } from '@lucide/svelte';
     import { cn } from '$lib/utils';
+    import { user } from '$lib/auth';
+    import { toast } from 'svelte-sonner';
 
     let open = $state(false);
     let loading = $state(false);
@@ -131,15 +133,20 @@
     }
 </script>
 
+<Button onclick={() => {
+    if (!$user) {
+        toast.error("Authentication Required", {
+            description: "You must be logged in to add a source."
+        });
+        return;
+    }
+    open = true;
+}}>
+    <Plus class="w-4 h-4 mr-2" />
+    Add Source
+</Button>
+
 <Dialog.Root bind:open>
-    <Dialog.Trigger>
-        {#snippet child({ props })}
-            <Button {...props}>
-                <Plus class="w-4 h-4 mr-2" />
-                Add Source
-            </Button>
-        {/snippet}
-    </Dialog.Trigger>
     <Dialog.Content class="sm:max-w-[500px] border-border/60 bg-background/95 backdrop-blur-xl">
         <Dialog.Header>
             <Dialog.Title class="text-xl">Add New Source</Dialog.Title>
