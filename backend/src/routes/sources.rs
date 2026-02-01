@@ -347,13 +347,7 @@ fn compute_path_hash(path: &str) -> String {
 }
 
 fn extract_title(path: &str) -> String {
-    path.rsplit('/')
-        .next()
-        .unwrap_or(path)
-        .rsplit('.')
-        .last()
-        .unwrap_or(path)
-        .replace(['_', '-'], " ")
+    path.rsplit('/').next().unwrap_or(path).to_string()
 }
 
 fn determine_resource_type(path: &str) -> String {
