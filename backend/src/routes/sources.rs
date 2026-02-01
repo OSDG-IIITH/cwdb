@@ -211,7 +211,6 @@ pub async fn sync_source(
         }
     };
 
-    // Only admin or source owner can sync
     if user.role != "admin" && source.created_by != user.id {
         return (
             StatusCode::FORBIDDEN,
@@ -220,9 +219,19 @@ pub async fn sync_source(
             .into_response();
     }
 
+    let settings = sqlx::query!(
+        "SELECT value FROM settings WHERE key = 'global_ignore_patterns'"
+    )
+    .fetch_optional(&state.db)
+    .await;
+
+    let ignore_patterns: Vec<String> = match settings {
+        Ok(Some(row)) => serde_json::from_value(row.value).unwrap_or_default(),
+        _ => vec![],
+    };
 
     let github = GitHubClient::new();
-    let tree = match github.get_repo_tree(&source.owner, &source.repo, Some(&source.branch)).await {
+    let tree = match github.get_repo_tree(&source.owner, &source.repo, Some(&source.branch), &ignore_patterns).await {
         Ok((_, t)) => t,
         Err(e) => {
             if matches!(e, crate::github::GitHubError::NotFound) {

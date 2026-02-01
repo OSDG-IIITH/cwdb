@@ -155,7 +155,7 @@ pub struct GitHubTreeQuery {
 pub async fn github_tree(Query(query): Query<GitHubTreeQuery>) -> impl IntoResponse {
     let client = crate::github::GitHubClient::new();
 
-    match client.get_repo_tree(&query.owner, &query.repo, query.branch.as_deref()).await {
+    match client.get_repo_tree(&query.owner, &query.repo, query.branch.as_deref(), &[]).await {
         Ok((branch, tree)) => (
             StatusCode::OK,
             Json(serde_json::json!({ "branch": branch, "count": tree.len(), "files": tree })),

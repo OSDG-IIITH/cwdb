@@ -12,7 +12,6 @@ pub fn init_client(config: &Config) -> Client {
 }
 
 pub async fn init_indexes(client: &Client, db: &PgPool) {
-    // Create the resources index if it doesn't exist
     let index_name = "resources";
     
     match client.get_index(index_name).await {
@@ -22,7 +21,10 @@ pub async fn init_indexes(client: &Client, db: &PgPool) {
         Err(_) => {
             tracing::info!("Creating index '{}'...", index_name);
             match client.create_index(index_name, Some("id")).await {
-                Ok(_) => tracing::info!("Index '{}' created successfully", index_name),
+                Ok(task) => {
+                    tracing::info!("Index '{}' creation task submitted (uid: {})", index_name, task.task_uid);
+                    let _ = client.wait_for_task(task, None, None).await;
+                }
                 Err(e) => tracing::error!("Failed to create index '{}': {}", index_name, e),
             }
         }
@@ -34,13 +36,11 @@ pub async fn init_indexes(client: &Client, db: &PgPool) {
 async fn apply_settings(client: &Client, db: &PgPool) {
     let index = client.index("resources");
 
-    // Hardcoded settings
     let searchable_attributes = ["title", "file_path", "type", "owner", "repo"];
     let filterable_attributes = ["type", "owner", "repo", "branch", "source_id"];
     let sortable_attributes = ["like_count", "created_at"];
     
-    // Fetch synonyms from DB
-    let synonyms: HashMap<String, Vec<String>> = match sqlx::query!("SELECT value FROM meilisearch_settings WHERE key = 'synonyms'")
+    let synonyms: HashMap<String, Vec<String>> = match sqlx::query!("SELECT value FROM settings WHERE key = 'synonyms'")
         .fetch_optional(db)
         .await
     {

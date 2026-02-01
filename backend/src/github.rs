@@ -1,16 +1,6 @@
+use ignore::gitignore::GitignoreBuilder;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-
-// Files to ignore
-const IGNORED_EXTENSIONS: &[&str] = &[
-    // binaries (just in case lol)
-    "exe", "dll", "so", "dylib", "bin", "o", "a", "obj",
-    // fonts
-    "ttf", "otf", "woff", "woff2", "eot",
-    // other
-    "lock", "min.js", "min.css", "map",
-];
-const IGNORED_PATHS: &[&str] = &[".git", "node_modules", "__pycache__", ".venv", "target", "dist", "build"];
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct GitHubTreeEntry {
@@ -38,6 +28,8 @@ pub enum GitHubError {
     NotFound,
     #[error("Rate limited")]
     RateLimited,
+    #[error("Invalid ignore pattern: {0}")]
+    IgnorePattern(String),
 }
 
 pub struct GitHubClient {
@@ -78,6 +70,7 @@ impl GitHubClient {
         owner: &str,
         repo: &str,
         branch: Option<&str>,
+        ignore_patterns: &[String],
     ) -> Result<(String, Vec<GitHubTreeEntry>), GitHubError> {
         let branch = match branch {
             Some(b) => b.to_string(),
@@ -90,28 +83,19 @@ impl GitHubClient {
         );
 
         let response: GitHubTreeResponse = self.request(&url).await?.json().await?;
-        let filtered = filter_tree_entries(response.tree);
+        
+        let mut builder = GitignoreBuilder::new("/");
+        for pattern in ignore_patterns {
+            builder.add_line(None, pattern).map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
+        }
+        let ignore = builder.build().map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
+
+        let filtered = response.tree
+            .into_iter()
+            .filter(|e| e.entry_type == "blob")
+            .filter(|e| !ignore.matched(&e.path, false).is_ignore())
+            .collect();
 
         Ok((branch, filtered))
     }
-}
-
-fn filter_tree_entries(entries: Vec<GitHubTreeEntry>) -> Vec<GitHubTreeEntry> {
-    entries
-        .into_iter()
-        .filter(|e| e.entry_type == "blob")
-        .filter(|e| !is_ignored_path(&e.path))
-        .filter(|e| !has_ignored_extension(&e.path))
-        .collect()
-}
-
-fn is_ignored_path(path: &str) -> bool {
-    IGNORED_PATHS.iter().any(|ignored| path.contains(ignored))
-}
-
-fn has_ignored_extension(path: &str) -> bool {
-    path.rsplit('.')
-        .next()
-        .map(|ext| IGNORED_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
-        .unwrap_or(false)
 }

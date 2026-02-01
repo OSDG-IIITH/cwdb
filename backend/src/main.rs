@@ -6,7 +6,7 @@ mod routes;
 mod search;
 
 use axum::{
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use meilisearch_sdk::client::Client;
@@ -33,7 +33,6 @@ async fn main() {
     let db = db::init_pool(&config).await;
     let meili = search::init_client(&config);
     
-    // Initialize Meilisearch indexes
     search::init_indexes(&meili, &db).await;
 
     let state = AppState {
@@ -61,6 +60,7 @@ async fn main() {
         .route("/api/sources/{id}/like", post(routes::likes::toggle_source_like))
         .route("/api/resources", get(routes::resources::list_resources))
         .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
+        .route("/api/resources/{id}", delete(routes::resources::delete_resource))
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
         .layer(CookieManagerLayer::new())
         .layer(
