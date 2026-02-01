@@ -9,6 +9,7 @@ pub struct Config {
     pub ms_client_id: String,
     pub ms_client_secret: String,
     pub ms_redirect_uri: String,
+    pub admin_emails: Vec<String>,
 }
 
 impl Config {
@@ -27,6 +28,9 @@ impl Config {
             ms_client_secret: env::var("MS_CLIENT_SECRET").expect("MS_CLIENT_SECRET must be set"),
             ms_redirect_uri: env::var("MS_REDIRECT_URI")
                 .unwrap_or_else(|_| "http://localhost:3000/api/auth/callback".into()),
+            admin_emails: env::var("ADMIN_EMAILS")
+                .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
+                .unwrap_or_default(),
         }
     }
 }

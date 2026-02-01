@@ -81,7 +81,7 @@ pub async fn callback(
     .fetch_one(&state.db)
     .await;
 
-    let user = match user {
+    let mut user = match user {
         Ok(u) => u,
         Err(e) => {
             return (
@@ -91,6 +91,19 @@ pub async fn callback(
                 .into_response()
         }
     };
+
+    if state.config.admin_emails.iter().any(|e| e.eq_ignore_ascii_case(&user.email)) && user.role != "admin" {
+        let update_result = sqlx::query!(
+            "UPDATE users SET role = 'admin' WHERE id = $1 RETURNING role",
+            user.id
+        )
+        .fetch_one(&state.db)
+        .await;
+
+        if let Ok(row) = update_result {
+            user.role = row.role;
+        }
+    }
 
     let session_id = Uuid::new_v4();
     let expires_at = chrono::Utc::now() + chrono::Duration::days(SESSION_DURATION_DAYS);
