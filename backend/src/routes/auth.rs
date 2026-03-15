@@ -1,14 +1,14 @@
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
-    Json,
 };
 use serde::Deserialize;
 use tower_cookies::{Cookie, Cookies};
 use uuid::Uuid;
 
-use crate::{auth, AppState};
+use crate::{AppState, auth};
 
 const SESSION_COOKIE: &str = "cwdb_session";
 const SESSION_DURATION_DAYS: i64 = 7;
@@ -18,7 +18,6 @@ const FRONTEND_URL: &str = "http://localhost:5173";
 pub struct CallbackQuery {
     code: String,
 }
-
 
 pub async fn login(State(state): State<AppState>) -> Redirect {
     let url = auth::build_login_url(&state.config);
@@ -37,7 +36,7 @@ pub async fn callback(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -48,7 +47,7 @@ pub async fn callback(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -59,7 +58,7 @@ pub async fn callback(
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -88,11 +87,17 @@ pub async fn callback(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
-                .into_response()
+                .into_response();
         }
     };
 
-    if state.config.admin_emails.iter().any(|e| e.eq_ignore_ascii_case(&user.email)) && user.role != "admin" {
+    if state
+        .config
+        .admin_emails
+        .iter()
+        .any(|e| e.eq_ignore_ascii_case(&user.email))
+        && user.role != "admin"
+    {
         let update_result = sqlx::query!(
             "UPDATE users SET role = 'admin' WHERE id = $1 RETURNING role",
             user.id
@@ -177,7 +182,7 @@ pub async fn get_authenticated_user(
             return Err((
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({ "error": "Not authenticated" })),
-            ))
+            ));
         }
     };
 
@@ -217,4 +222,3 @@ pub struct UserRow {
     pub email: String,
     pub role: String,
 }
-

@@ -147,17 +147,13 @@
 </Button>
 
 <Dialog.Root bind:open>
-    <Dialog.Content class="sm:max-w-[500px] border-border/60 bg-background/95 backdrop-blur-xl">
+    <Dialog.Content class="sm:max-w-[500px] border-border/60 bg-background backdrop-blur-xl">
         <Dialog.Header>
             <Dialog.Title class="text-xl">Add New Source</Dialog.Title>
-            <Dialog.Description>
-                Enter a GitHub repository URL to index.
-            </Dialog.Description>
         </Dialog.Header>
 
         <div class="grid gap-6 py-4">
             <div class="space-y-2">
-                <Label for="url">Repository URL</Label>
                 <div class="relative">
                     <Input 
                         id="url" 

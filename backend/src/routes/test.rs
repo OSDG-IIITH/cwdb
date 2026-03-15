@@ -1,11 +1,10 @@
 use axum::{
+    Json,
     extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use serde::{Deserialize, Serialize};
-
 
 use crate::AppState;
 
@@ -35,7 +34,10 @@ pub async fn index_document(
     let index = state.meili.index("resources");
 
     match index.add_documents(&[doc], Some("id")).await {
-        Ok(task) => (StatusCode::ACCEPTED, Json(serde_json::json!({ "taskUid": task.task_uid }))),
+        Ok(task) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({ "taskUid": task.task_uid })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -49,7 +51,12 @@ pub async fn search_documents(
 ) -> impl IntoResponse {
     let index = state.meili.index("resources");
 
-    match index.search().with_query(&query.q).execute::<TestDocument>().await {
+    match index
+        .search()
+        .with_query(&query.q)
+        .execute::<TestDocument>()
+        .await
+    {
         Ok(results) => {
             let hits: Vec<_> = results.hits.into_iter().map(|h| h.result).collect();
             (StatusCode::OK, Json(serde_json::json!({ "hits": hits })))
@@ -84,12 +91,18 @@ pub async fn create_resource(
 }
 
 pub async fn list_resources(State(state): State<AppState>) -> impl IntoResponse {
-    let result = sqlx::query_as!(ResourceRow, r#"SELECT id, title, file_path, created_at FROM resources"#)
-        .fetch_all(&state.db)
-        .await;
+    let result = sqlx::query_as!(
+        ResourceRow,
+        r#"SELECT id, title, file_path, created_at FROM resources"#
+    )
+    .fetch_all(&state.db)
+    .await;
 
     match result {
-        Ok(rows) => (StatusCode::OK, Json(serde_json::json!({ "resources": rows }))),
+        Ok(rows) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "resources": rows })),
+        ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -116,7 +129,7 @@ pub async fn sync_resource(
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": format!("DB: {}", e) })),
-            )
+            );
         }
     };
 
@@ -155,7 +168,10 @@ pub struct GitHubTreeQuery {
 pub async fn github_tree(Query(query): Query<GitHubTreeQuery>) -> impl IntoResponse {
     let client = crate::github::GitHubClient::new();
 
-    match client.get_repo_tree(&query.owner, &query.repo, query.branch.as_deref(), &[]).await {
+    match client
+        .get_repo_tree(&query.owner, &query.repo, query.branch.as_deref(), &[])
+        .await
+    {
         Ok((branch, tree)) => (
             StatusCode::OK,
             Json(serde_json::json!({ "branch": branch, "count": tree.len(), "files": tree })),

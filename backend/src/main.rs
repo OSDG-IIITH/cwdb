@@ -6,8 +6,8 @@ mod routes;
 mod search;
 
 use axum::{
-    routing::{delete, get, post},
     Router,
+    routing::{delete, get, post},
 };
 use meilisearch_sdk::client::Client;
 use sqlx::PgPool;
@@ -32,7 +32,7 @@ async fn main() {
     let config = config::Config::from_env();
     let db = db::init_pool(&config).await;
     let meili = search::init_client(&config);
-    
+
     search::init_indexes(&meili, &db).await;
 
     let state = AppState {
@@ -57,17 +57,28 @@ async fn main() {
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
         .route("/api/search", get(routes::search::search))
-        .route("/api/sources/{id}/like", post(routes::likes::toggle_source_like))
+        .route(
+            "/api/sources/{id}/like",
+            post(routes::likes::toggle_source_like),
+        )
         .route("/api/resources", get(routes::resources::list_resources))
         .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
-        .route("/api/resources/{id}", delete(routes::resources::delete_resource))
+        .route(
+            "/api/resources/{id}",
+            delete(routes::resources::delete_resource),
+        )
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
+        .layer(tower_http::compression::CompressionLayer::new())
         .layer(CookieManagerLayer::new())
         .layer(
             CorsLayer::new()
                 .allow_origin([
-                    "http://localhost:5173".parse::<axum::http::HeaderValue>().unwrap(),
-                    "http://127.0.0.1:5173".parse::<axum::http::HeaderValue>().unwrap(),
+                    "http://localhost:5173"
+                        .parse::<axum::http::HeaderValue>()
+                        .unwrap(),
+                    "http://127.0.0.1:5173"
+                        .parse::<axum::http::HeaderValue>()
+                        .unwrap(),
                 ])
                 .allow_credentials(true)
                 .allow_methods([axum::http::Method::GET, axum::http::Method::POST])
@@ -81,4 +92,3 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
-

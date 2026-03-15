@@ -1,14 +1,14 @@
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tower_cookies::Cookies;
 
-use crate::{github::GitHubClient, routes::auth::get_authenticated_user, AppState};
+use crate::{AppState, github::GitHubClient, routes::auth::get_authenticated_user};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSource {
@@ -60,14 +60,17 @@ pub async fn create_source(
 
     let branch = match &payload.branch {
         Some(b) => b.clone(),
-        None => match github.get_default_branch(&payload.owner, &payload.repo).await {
+        None => match github
+            .get_default_branch(&payload.owner, &payload.repo)
+            .await
+        {
             Ok(b) => b,
             Err(e) => {
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({ "error": e.to_string() })),
                 )
-                    .into_response()
+                    .into_response();
             }
         },
     };
@@ -112,7 +115,11 @@ pub async fn list_sources(
             if let Some(uid) = current_user_id {
                 Some(uid)
             } else {
-                 return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({ "error": "Authentication required for filter=mine" }))).into_response();
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({ "error": "Authentication required for filter=mine" })),
+                )
+                    .into_response();
             }
         } else {
             None
@@ -200,14 +207,14 @@ pub async fn sync_source(
                 StatusCode::NOT_FOUND,
                 Json(serde_json::json!({ "error": "Source not found" })),
             )
-                .into_response()
+                .into_response();
         }
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({ "error": e.to_string() })),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -219,11 +226,9 @@ pub async fn sync_source(
             .into_response();
     }
 
-    let settings = sqlx::query!(
-        "SELECT value FROM settings WHERE key = 'global_ignore_patterns'"
-    )
-    .fetch_optional(&state.db)
-    .await;
+    let settings = sqlx::query!("SELECT value FROM settings WHERE key = 'global_ignore_patterns'")
+        .fetch_optional(&state.db)
+        .await;
 
     let ignore_patterns: Vec<String> = match settings {
         Ok(Some(row)) => serde_json::from_value(row.value).unwrap_or_default(),
@@ -231,7 +236,15 @@ pub async fn sync_source(
     };
 
     let github = GitHubClient::new();
-    let tree = match github.get_repo_tree(&source.owner, &source.repo, Some(&source.branch), &ignore_patterns).await {
+    let tree = match github
+        .get_repo_tree(
+            &source.owner,
+            &source.repo,
+            Some(&source.branch),
+            &ignore_patterns,
+        )
+        .await
+    {
         Ok((_, t)) => t,
         Err(e) => {
             if matches!(e, crate::github::GitHubError::NotFound) {

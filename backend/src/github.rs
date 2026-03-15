@@ -83,14 +83,19 @@ impl GitHubClient {
         );
 
         let response: GitHubTreeResponse = self.request(&url).await?.json().await?;
-        
+
         let mut builder = GitignoreBuilder::new("/");
         for pattern in ignore_patterns {
-            builder.add_line(None, pattern).map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
+            builder
+                .add_line(None, pattern)
+                .map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
         }
-        let ignore = builder.build().map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
+        let ignore = builder
+            .build()
+            .map_err(|e| GitHubError::IgnorePattern(e.to_string()))?;
 
-        let filtered = response.tree
+        let filtered = response
+            .tree
             .into_iter()
             .filter(|e| e.entry_type == "blob")
             .filter(|e| !ignore.matched(&e.path, false).is_ignore())

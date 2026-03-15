@@ -1,8 +1,8 @@
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    Json,
 };
 use tower_cookies::Cookies;
 use uuid::Uuid;
@@ -39,7 +39,7 @@ pub async fn toggle_like(
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({ "error": "Authentication required" })),
-            )
+            );
         }
     };
 
@@ -131,12 +131,20 @@ pub async fn get_likes(
     .await;
 
     match like_count {
-        Ok(Some(count)) => (StatusCode::OK, Json(serde_json::json!({ "like_count": count }))),
-        Ok(None) => (StatusCode::NOT_FOUND, Json(serde_json::json!({ "error": "Resource not found" }))),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "error": e.to_string() }))),
+        Ok(Some(count)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "like_count": count })),
+        ),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({ "error": "Resource not found" })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        ),
     }
 }
-
 
 pub async fn toggle_source_like(
     State(state): State<AppState>,
@@ -149,7 +157,7 @@ pub async fn toggle_source_like(
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(serde_json::json!({ "error": "Authentication required" })),
-            )
+            );
         }
     };
 
@@ -215,13 +223,11 @@ pub async fn toggle_source_like(
         }
     }
 
-    let like_count = sqlx::query_scalar!(
-        r#"SELECT like_count FROM sources WHERE id = $1"#,
-        source_id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(0);
+    let like_count =
+        sqlx::query_scalar!(r#"SELECT like_count FROM sources WHERE id = $1"#, source_id)
+            .fetch_one(&state.db)
+            .await
+            .unwrap_or(0);
 
     (
         StatusCode::OK,

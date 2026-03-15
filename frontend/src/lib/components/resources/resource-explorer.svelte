@@ -2,11 +2,11 @@
     import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '$lib/components/ui/table';
     import * as Breadcrumb from '$lib/components/ui/breadcrumb';
     import { Folder, FileText, Home } from '@lucide/svelte';
-    import type { Resource } from '$lib/api';
+    import type { Resource, Source } from '$lib/api';
 
     import { goto } from '$app/navigation';
 
-    let { resources, path = [] } = $props<{ resources: Resource[], path?: string[] }>();
+    let { resources, sources = [], path = [] } = $props<{ resources: Resource[], sources?: Source[], path?: string[] }>();
 
     let currentPath = $derived.by(() => {
         if (path.length < 2) return [];
@@ -25,11 +25,21 @@
     let root = $derived.by(() => {
         const rootNode: FSNode = { name: 'root', path: [], type: 'folder', children: new Map() };
         
+        if (path.length < 2) {
+            for (const s of sources) {
+                const repoName = `${s.owner}/${s.repo}`;
+                if (!rootNode.children.has(repoName)) {
+                    rootNode.children.set(repoName, { name: repoName, path: [s.owner, s.repo], type: 'repo', children: new Map() });
+                }
+            }
+            return rootNode;
+        }
+
         for (const res of resources) {
             const repoName = `${res.owner}/${res.repo}`;
             let repoNode = rootNode.children.get(repoName);
             if (!repoNode) {
-                repoNode = { name: repoName, path: [repoName], type: 'repo', children: new Map() };
+                repoNode = { name: repoName, path: [res.owner, res.repo], type: 'repo', children: new Map() };
                 rootNode.children.set(repoName, repoNode);
             }
 

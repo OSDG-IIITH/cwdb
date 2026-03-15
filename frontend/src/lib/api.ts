@@ -121,9 +121,13 @@ export async function toggleSourceLike(sourceId: number): Promise<{ liked: boole
 
 
 
-export async function listAllResources(): Promise<Resource[]> {
+export async function listAllResources(owner?: string, repo?: string): Promise<Resource[]> {
     try {
-        const res = await fetch(`${API_BASE}/api/resources`, {
+        let url = `${API_BASE}/api/resources`;
+        if (owner && repo) {
+            url += `?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`;
+        }
+        const res = await fetch(url, {
             credentials: 'include',
         });
         if (!res.ok) {
