@@ -11,16 +11,37 @@ use uuid::Uuid;
 use crate::{AppState, auth};
 
 const SESSION_COOKIE: &str = "cwdb_session";
+const OAUTH_STATE_COOKIE: &str = "cwdb_oauth_state";
+const OAUTH_NONCE_COOKIE: &str = "cwdb_oauth_nonce";
 const SESSION_DURATION_DAYS: i64 = 7;
 const FRONTEND_URL: &str = "http://localhost:5173";
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
     code: String,
+    state: String,
 }
 
-pub async fn login(State(state): State<AppState>) -> Redirect {
-    let url = auth::build_login_url(&state.config);
+pub async fn login(State(state): State<AppState>, cookies: Cookies) -> Redirect {
+    let secure = should_use_secure_cookies(&state);
+
+    let oauth_state = Uuid::new_v4().to_string();
+    let oauth_nonce = Uuid::new_v4().to_string();
+
+    cookies.add(build_cookie(
+        OAUTH_STATE_COOKIE,
+        oauth_state.clone(),
+        secure,
+        time::Duration::minutes(10),
+    ));
+    cookies.add(build_cookie(
+        OAUTH_NONCE_COOKIE,
+        oauth_nonce.clone(),
+        secure,
+        time::Duration::minutes(10),
+    ));
+
+    let url = auth::build_login_url(&state.config, &oauth_state, &oauth_nonce);
     Redirect::temporary(&url)
 }
 
@@ -29,6 +50,37 @@ pub async fn callback(
     cookies: Cookies,
     Query(query): Query<CallbackQuery>,
 ) -> Response {
+    let secure = should_use_secure_cookies(&state);
+
+    let expected_state = cookies
+        .get(OAUTH_STATE_COOKIE)
+        .map(|cookie| cookie.value().to_string());
+    let expected_nonce = cookies
+        .get(OAUTH_NONCE_COOKIE)
+        .map(|cookie| cookie.value().to_string());
+
+    clear_cookie(&cookies, OAUTH_STATE_COOKIE, secure);
+    clear_cookie(&cookies, OAUTH_NONCE_COOKIE, secure);
+
+    if expected_state.as_deref() != Some(query.state.as_str()) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "Invalid OAuth state" })),
+        )
+            .into_response();
+    }
+
+    let expected_nonce = match expected_nonce {
+        Some(value) => value,
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": "Missing OAuth nonce" })),
+            )
+                .into_response();
+        }
+    };
+
     let token_response = match auth::exchange_code(&state.config, &query.code).await {
         Ok(t) => t,
         Err(e) => {
@@ -40,7 +92,7 @@ pub async fn callback(
         }
     };
 
-    let claims = match auth::decode_id_token(&token_response.id_token) {
+    let claims = match auth::decode_id_token(&state.config, &token_response.id_token, Some(&expected_nonce)).await {
         Ok(c) => c,
         Err(e) => {
             return (
@@ -135,6 +187,7 @@ pub async fn callback(
     cookie.set_http_only(true);
     cookie.set_max_age(time::Duration::days(SESSION_DURATION_DAYS));
     cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    cookie.set_secure(secure);
 
     cookies.add(cookie);
 
@@ -167,6 +220,7 @@ pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> Redirect
 
     let mut removal = Cookie::from(SESSION_COOKIE);
     removal.set_path("/");
+    removal.set_secure(should_use_secure_cookies(&state));
     cookies.remove(removal);
 
     Redirect::temporary(FRONTEND_URL)
@@ -214,6 +268,27 @@ pub fn get_session_id(cookies: &Cookies) -> Option<Uuid> {
     cookies
         .get(SESSION_COOKIE)
         .and_then(|c| Uuid::parse_str(c.value()).ok())
+}
+
+fn should_use_secure_cookies(state: &AppState) -> bool {
+    state.config.ms_redirect_uri.starts_with("https://")
+}
+
+fn build_cookie(name: &'static str, value: String, secure: bool, max_age: time::Duration) -> Cookie<'static> {
+    let mut cookie = Cookie::new(name, value);
+    cookie.set_path("/");
+    cookie.set_http_only(true);
+    cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    cookie.set_secure(secure);
+    cookie.set_max_age(max_age);
+    cookie
+}
+
+fn clear_cookie(cookies: &Cookies, name: &'static str, secure: bool) {
+    let mut removal = Cookie::from(name);
+    removal.set_path("/");
+    removal.set_secure(secure);
+    cookies.remove(removal);
 }
 
 #[derive(Debug)]
