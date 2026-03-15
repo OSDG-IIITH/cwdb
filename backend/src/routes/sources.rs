@@ -6,6 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use tower_cookies::Cookies;
 
 use crate::{AppState, github::GitHubClient, routes::auth::get_authenticated_user};
@@ -306,6 +307,29 @@ pub async fn sync_source(
         }
     }
 
+    let current_hashes: HashSet<String> = tree
+        .iter()
+        .map(|entry| compute_path_hash(&entry.path))
+        .collect();
+
+    let existing_resources = sqlx::query!(
+        r#"SELECT id, path_hash FROM resources WHERE source_id = $1"#,
+        source_id
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let mut stale_resource_ids = Vec::new();
+    for row in existing_resources {
+        if !current_hashes.contains(&row.path_hash) {
+            stale_resource_ids.push(row.id);
+            let _ = sqlx::query!("DELETE FROM resources WHERE id = $1", row.id)
+                .execute(&state.db)
+                .await;
+        }
+    }
+
     let _ = sqlx::query!(
         r#"UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1"#,
         source_id
@@ -323,6 +347,11 @@ pub async fn sync_source(
     .unwrap_or_default();
 
     let index = state.meili.index("resources");
+
+    for stale_id in stale_resource_ids {
+        let _ = index.delete_document(stale_id).await;
+    }
+
     let docs: Vec<_> = resources
         .iter()
         .map(|r| {

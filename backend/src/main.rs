@@ -81,7 +81,11 @@ async fn main() {
                         .unwrap(),
                 ])
                 .allow_credentials(true)
-                .allow_methods([axum::http::Method::GET, axum::http::Method::POST])
+                .allow_methods([
+                    axum::http::Method::GET,
+                    axum::http::Method::POST,
+                    axum::http::Method::DELETE,
+                ])
                 .allow_headers([axum::http::header::CONTENT_TYPE]),
         )
         .with_state(state);

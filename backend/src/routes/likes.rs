@@ -43,12 +43,22 @@ pub async fn toggle_like(
         }
     };
 
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+
     let existing = sqlx::query!(
         r#"SELECT 1 as exists FROM likes WHERE user_id = $1 AND resource_id = $2"#,
         user_id,
         resource_id
     )
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await;
 
     let liked: bool;
@@ -60,14 +70,7 @@ pub async fn toggle_like(
                 user_id,
                 resource_id
             )
-            .execute(&state.db)
-            .await;
-
-            let _ = sqlx::query!(
-                r#"UPDATE resources SET like_count = like_count - 1 WHERE id = $1"#,
-                resource_id
-            )
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await;
 
             liked = false;
@@ -78,7 +81,7 @@ pub async fn toggle_like(
                 user_id,
                 resource_id
             )
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await;
 
             if insert.is_err() {
@@ -88,13 +91,6 @@ pub async fn toggle_like(
                 );
             }
 
-            let _ = sqlx::query!(
-                r#"UPDATE resources SET like_count = like_count + 1 WHERE id = $1"#,
-                resource_id
-            )
-            .execute(&state.db)
-            .await;
-
             liked = true;
         }
         Err(e) => {
@@ -103,6 +99,28 @@ pub async fn toggle_like(
                 Json(serde_json::json!({ "error": e.to_string() })),
             );
         }
+    }
+
+    if let Err(e) = sqlx::query!(
+        r#"UPDATE resources
+           SET like_count = (SELECT COUNT(*)::int FROM likes WHERE resource_id = $1)
+           WHERE id = $1"#,
+        resource_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        );
+    }
+
+    if let Err(e) = tx.commit().await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        );
     }
 
     let like_count = sqlx::query_scalar!(
@@ -161,12 +179,22 @@ pub async fn toggle_source_like(
         }
     };
 
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            );
+        }
+    };
+
     let existing = sqlx::query!(
         r#"SELECT 1 as exists FROM source_likes WHERE user_id = $1 AND source_id = $2"#,
         user_id,
         source_id
     )
-    .fetch_optional(&state.db)
+    .fetch_optional(&mut *tx)
     .await;
 
     let liked: bool;
@@ -178,14 +206,7 @@ pub async fn toggle_source_like(
                 user_id,
                 source_id
             )
-            .execute(&state.db)
-            .await;
-
-            let _ = sqlx::query!(
-                r#"UPDATE sources SET like_count = like_count - 1 WHERE id = $1"#,
-                source_id
-            )
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await;
 
             liked = false;
@@ -196,7 +217,7 @@ pub async fn toggle_source_like(
                 user_id,
                 source_id
             )
-            .execute(&state.db)
+            .execute(&mut *tx)
             .await;
 
             if insert.is_err() {
@@ -206,13 +227,6 @@ pub async fn toggle_source_like(
                 );
             }
 
-            let _ = sqlx::query!(
-                r#"UPDATE sources SET like_count = like_count + 1 WHERE id = $1"#,
-                source_id
-            )
-            .execute(&state.db)
-            .await;
-
             liked = true;
         }
         Err(e) => {
@@ -221,6 +235,28 @@ pub async fn toggle_source_like(
                 Json(serde_json::json!({ "error": e.to_string() })),
             );
         }
+    }
+
+    if let Err(e) = sqlx::query!(
+        r#"UPDATE sources
+           SET like_count = (SELECT COUNT(*)::int FROM source_likes WHERE source_id = $1)
+           WHERE id = $1"#,
+        source_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        );
+    }
+
+    if let Err(e) = tx.commit().await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        );
     }
 
     let like_count =

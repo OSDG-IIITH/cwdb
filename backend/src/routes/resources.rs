@@ -88,8 +88,8 @@ pub async fn delete_resource(
     .fetch_optional(&state.db)
     .await;
 
-    let (file_path, _source_id) = match resource {
-        Ok(Some(row)) => (row.file_path, row.source_id),
+    let _source_id = match resource {
+        Ok(Some(row)) => row.source_id,
         Ok(None) => {
             return (
                 StatusCode::NOT_FOUND,
@@ -106,58 +106,10 @@ pub async fn delete_resource(
         }
     };
 
-    let mut tx = match state.db.begin().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    };
-
     if let Err(e) = sqlx::query!("DELETE FROM resources WHERE id = $1", resource_id)
-        .execute(&mut *tx)
+        .execute(&state.db)
         .await
     {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response();
-    }
-
-    let settings = sqlx::query!("SELECT value FROM settings WHERE key = 'global_ignore_patterns'")
-        .fetch_optional(&mut *tx)
-        .await;
-
-    let mut patterns: Vec<String> = match settings {
-        Ok(Some(row)) => serde_json::from_value(row.value).unwrap_or_default(),
-        _ => vec![],
-    };
-
-    if !patterns.contains(&file_path) {
-        patterns.push(file_path);
-        let new_value = serde_json::to_value(patterns).unwrap();
-
-        if let Err(e) = sqlx::query!(
-            "INSERT INTO settings (key, value) VALUES ('global_ignore_patterns', $1) 
-             ON CONFLICT (key) DO UPDATE SET value = $1",
-            new_value
-        )
-        .execute(&mut *tx)
-        .await
-        {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    }
-
-    if let Err(e) = tx.commit().await {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
@@ -170,7 +122,7 @@ pub async fn delete_resource(
 
     (
         StatusCode::OK,
-        Json(serde_json::json!({ "message": "Resource deleted and ignored" })),
+        Json(serde_json::json!({ "message": "Resource deleted" })),
     )
         .into_response()
 }
