@@ -214,7 +214,7 @@ pub async fn me(
     }
 }
 
-pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> Redirect {
+pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> impl IntoResponse {
     if let Some(session_id) = get_session_id(&cookies) {
         let _ = sqlx::query!(r#"DELETE FROM sessions WHERE id = $1"#, session_id)
             .execute(&state.db)
@@ -226,7 +226,7 @@ pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> Redirect
     removal.set_secure(should_use_secure_cookies(&state));
     cookies.remove(removal);
 
-    Redirect::temporary(&state.config.frontend_url)
+    (StatusCode::OK, Json(serde_json::json!({ "message": "Logged out" })))
 }
 
 pub async fn get_authenticated_user(

@@ -35,11 +35,20 @@ export function login() {
 }
 
 export async function logout() {
-    await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-    });
-    user.set(null);
-    window.location.reload();
+    loading.set(true);
+    try {
+        await fetch(`${API_BASE}/api/auth/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+    } catch (e) {
+        // The fetch might throw a CORS error when it follows the backend's 302 redirect
+        // to the SvelteKit frontend (which lacks cross-origin headers).
+        // Since the backend already cleared the session cookie, we can safely ignore it.
+    } finally {
+        user.set(null);
+        loading.set(false);
+        window.location.href = '/';
+    }
 }
