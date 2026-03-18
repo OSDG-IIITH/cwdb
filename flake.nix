@@ -65,6 +65,7 @@
               bun
 
               sqlx-cli
+              flyctl
             ];
 
             env = {

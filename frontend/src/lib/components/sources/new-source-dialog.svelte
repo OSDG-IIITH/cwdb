@@ -133,18 +133,14 @@
     }
 </script>
 
+{#if $user && $user.role === 'admin'}
 <Button onclick={() => {
-    if (!$user) {
-        toast.error("Authentication Required", {
-            description: "You must be logged in to add a source."
-        });
-        return;
-    }
     open = true;
 }}>
     <Plus class="w-4 h-4 mr-2" />
     Add Source
 </Button>
+{/if}
 
 <Dialog.Root bind:open>
     <Dialog.Content class="sm:max-w-[500px] border-border/60 bg-background backdrop-blur-xl">

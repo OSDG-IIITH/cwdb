@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
 import { z } from 'zod';
 
@@ -93,6 +93,7 @@ export async function refreshSource(sourceId: number): Promise<boolean> {
     try {
         const res = await fetch(`${API_BASE}/api/sources/${sourceId}/sync`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
         });
         return res.ok;
@@ -106,6 +107,7 @@ export async function toggleSourceLike(sourceId: number): Promise<{ liked: boole
     try {
         const res = await fetch(`${API_BASE}/api/sources/${sourceId}/like`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
         });
         if (!res.ok) {

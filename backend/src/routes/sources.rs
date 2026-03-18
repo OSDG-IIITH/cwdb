@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -32,11 +32,6 @@ pub struct SourceRow {
     pub liked: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ListSourcesQuery {
-    pub filter: Option<String>,
-}
-
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct ResourceRow {
     pub id: i32,
@@ -56,6 +51,14 @@ pub async fn create_source(
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };
+
+    if user.role != "admin" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": "Only admins can add sources" })),
+        )
+            .into_response();
+    }
 
     let github = GitHubClient::new();
 
@@ -81,7 +84,7 @@ pub async fn create_source(
         r#"INSERT INTO sources (owner, repo, branch, created_by)
            VALUES ($1, $2, $3, $4)
            ON CONFLICT (owner, repo, branch) DO UPDATE 
-           SET owner = EXCLUDED.owner, created_by = EXCLUDED.created_by
+           SET owner = EXCLUDED.owner
            RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count, false as liked"#,
         payload.owner,
         payload.repo,
@@ -104,68 +107,35 @@ pub async fn create_source(
 pub async fn list_sources(
     State(state): State<AppState>,
     cookies: Cookies,
-    Query(query): Query<ListSourcesQuery>,
 ) -> impl IntoResponse {
     let current_user_id = match get_authenticated_user(&state, &cookies).await {
         Ok(u) => Some(u.id),
         Err(_) => None,
     };
 
-    let filter_user_id = if let Some(filter) = &query.filter {
-        if filter == "mine" {
-            if let Some(uid) = current_user_id {
-                Some(uid)
-            } else {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(serde_json::json!({ "error": "Authentication required for filter=mine" })),
-                )
-                    .into_response();
-            }
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    let result = if let Some(uid) = filter_user_id {
-        sqlx::query_as!(
-            SourceRow,
-            r#"SELECT 
-                s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
-                EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $1) as liked
-               FROM sources s 
-               WHERE s.created_by = $1"#,
-            uid
-        )
-        .fetch_all(&state.db)
-        .await
-    } else {
-        match current_user_id {
-            Some(uid) => {
-                 sqlx::query_as!(
-                    SourceRow,
-                    r#"SELECT 
-                        s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
-                        EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $1) as liked
-                       FROM sources s"#,
-                    uid
-                )
-                .fetch_all(&state.db)
-                .await
-            },
-            None => {
-                 sqlx::query_as!(
-                    SourceRow,
-                    r#"SELECT 
-                        s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
-                        false as liked
-                       FROM sources s"#
-                )
-                .fetch_all(&state.db)
-                .await
-            }
+    let result = match current_user_id {
+        Some(uid) => {
+             sqlx::query_as!(
+                SourceRow,
+                r#"SELECT 
+                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
+                    EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $1) as liked
+                   FROM sources s"#,
+                uid
+            )
+            .fetch_all(&state.db)
+            .await
+        },
+        None => {
+             sqlx::query_as!(
+                SourceRow,
+                r#"SELECT 
+                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
+                    false as liked
+                   FROM sources s"#
+            )
+            .fetch_all(&state.db)
+            .await
         }
     };
 
@@ -219,10 +189,10 @@ pub async fn sync_source(
         }
     };
 
-    if user.role != "admin" && source.created_by != user.id {
+    if user.role != "admin" {
         return (
             StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": "You do not have permission to sync this source" })),
+            Json(serde_json::json!({ "error": "Only admins can sync sources" })),
         )
             .into_response();
     }

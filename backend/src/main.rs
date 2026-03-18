@@ -7,6 +7,10 @@ mod search;
 
 use axum::{
     Router,
+    extract::Request,
+    http::StatusCode,
+    middleware::{self, Next},
+    response::Response,
     routing::{delete, get, post},
 };
 use meilisearch_sdk::client::Client;
@@ -22,6 +26,21 @@ pub struct AppState {
     pub config: config::Config,
 }
 
+async fn require_json_for_mutations(req: Request, next: Next) -> Result<Response, StatusCode> {
+    let method = req.method().clone();
+    if method == axum::http::Method::POST || method == axum::http::Method::DELETE || method == axum::http::Method::PUT || method == axum::http::Method::PATCH {
+        let content_type = req.headers().get(axum::http::header::CONTENT_TYPE);
+        if let Some(ct) = content_type {
+            if !ct.to_str().unwrap_or("").starts_with("application/json") {
+                return Err(StatusCode::UNSUPPORTED_MEDIA_TYPE);
+            }
+        } else {
+            return Err(StatusCode::UNSUPPORTED_MEDIA_TYPE);
+        }
+    }
+    Ok(next.run(req).await)
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::registry()
@@ -35,6 +54,12 @@ async fn main() {
 
     search::init_indexes(&meili, &db).await;
 
+    let origins: Vec<axum::http::HeaderValue> = config
+        .allowed_origins
+        .iter()
+        .map(|o| o.parse().unwrap())
+        .collect();
+
     let state = AppState {
         db,
         meili,
@@ -47,12 +72,6 @@ async fn main() {
         .route("/api/auth/callback", get(routes::auth::callback))
         .route("/api/auth/me", get(routes::auth::me))
         .route("/api/auth/logout", post(routes::auth::logout))
-        .route("/api/test/index", post(routes::test::index_document))
-        .route("/api/test/search", get(routes::test::search_documents))
-        .route("/api/test/resource", post(routes::test::create_resource))
-        .route("/api/test/resources", get(routes::test::list_resources))
-        .route("/api/test/sync", post(routes::test::sync_resource))
-        .route("/api/test/github-tree", get(routes::test::github_tree))
         .route("/api/sources", post(routes::sources::create_source))
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
@@ -69,17 +88,11 @@ async fn main() {
         )
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
         .layer(tower_http::compression::CompressionLayer::new())
+        .layer(middleware::from_fn(require_json_for_mutations))
         .layer(CookieManagerLayer::new())
         .layer(
             CorsLayer::new()
-                .allow_origin([
-                    "http://localhost:5173"
-                        .parse::<axum::http::HeaderValue>()
-                        .unwrap(),
-                    "http://127.0.0.1:5173"
-                        .parse::<axum::http::HeaderValue>()
-                        .unwrap(),
-                ])
+                .allow_origin(origins)
                 .allow_credentials(true)
                 .allow_methods([
                     axum::http::Method::GET,

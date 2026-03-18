@@ -88,6 +88,7 @@
             <Clock class="h-3 w-3" />
             <span>{timeAgo(source.last_synced_at)}</span>
         </div>
+        {#if $user && $user.role === 'admin'}
         <Button
             variant="outline"
             size="sm"
@@ -98,5 +99,6 @@
             <RefreshCw class={`mr-1.5 h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Sync</span>
         </Button>
+        {/if}
     </div>
 </Card.Root>

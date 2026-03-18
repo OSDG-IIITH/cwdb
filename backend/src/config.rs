@@ -10,6 +10,9 @@ pub struct Config {
     pub ms_client_secret: String,
     pub ms_redirect_uri: String,
     pub admin_emails: Vec<String>,
+    pub frontend_url: String,
+    pub allowed_origins: Vec<String>,
+    pub cookie_secure: bool,
 }
 
 impl Config {
@@ -31,6 +34,14 @@ impl Config {
             admin_emails: env::var("ADMIN_EMAILS")
                 .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
                 .unwrap_or_default(),
+            frontend_url: env::var("FRONTEND_URL")
+                .unwrap_or_else(|_| "http://localhost:5173".into()),
+            allowed_origins: env::var("ALLOWED_ORIGINS")
+                .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
+                .unwrap_or_else(|_| vec!["http://localhost:5173".to_string(), "http://127.0.0.1:5173".to_string()]),
+            cookie_secure: env::var("COOKIE_SECURE")
+                .map(|s| s.to_lowercase() == "true")
+                .unwrap_or(false),
         }
     }
 }

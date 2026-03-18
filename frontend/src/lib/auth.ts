@@ -9,7 +9,7 @@ export interface User {
 export const user = writable<User | null>(null);
 export const loading = writable(true);
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
 
 export async function fetchUser() {
     loading.set(true);
@@ -37,6 +37,7 @@ export function login() {
 export async function logout() {
     await fetch(`${API_BASE}/api/auth/logout`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
     });
     user.set(null);

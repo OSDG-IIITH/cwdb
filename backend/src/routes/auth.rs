@@ -14,7 +14,6 @@ const SESSION_COOKIE: &str = "cwdb_session";
 const OAUTH_STATE_COOKIE: &str = "cwdb_oauth_state";
 const OAUTH_NONCE_COOKIE: &str = "cwdb_oauth_nonce";
 const SESSION_DURATION_DAYS: i64 = 7;
-const FRONTEND_URL: &str = "http://localhost:5173";
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
@@ -186,12 +185,16 @@ pub async fn callback(
     cookie.set_path("/");
     cookie.set_http_only(true);
     cookie.set_max_age(time::Duration::days(SESSION_DURATION_DAYS));
-    cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    if secure {
+        cookie.set_same_site(tower_cookies::cookie::SameSite::None);
+    } else {
+        cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    }
     cookie.set_secure(secure);
 
     cookies.add(cookie);
 
-    Redirect::temporary(FRONTEND_URL).into_response()
+    Redirect::temporary(&state.config.frontend_url).into_response()
 }
 
 pub async fn me(
@@ -223,7 +226,7 @@ pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> Redirect
     removal.set_secure(should_use_secure_cookies(&state));
     cookies.remove(removal);
 
-    Redirect::temporary(FRONTEND_URL)
+    Redirect::temporary(&state.config.frontend_url)
 }
 
 pub async fn get_authenticated_user(
@@ -271,14 +274,18 @@ pub fn get_session_id(cookies: &Cookies) -> Option<Uuid> {
 }
 
 fn should_use_secure_cookies(state: &AppState) -> bool {
-    state.config.ms_redirect_uri.starts_with("https://")
+    state.config.cookie_secure
 }
 
 fn build_cookie(name: &'static str, value: String, secure: bool, max_age: time::Duration) -> Cookie<'static> {
     let mut cookie = Cookie::new(name, value);
     cookie.set_path("/");
     cookie.set_http_only(true);
-    cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    if secure {
+        cookie.set_same_site(tower_cookies::cookie::SameSite::None);
+    } else {
+        cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
+    }
     cookie.set_secure(secure);
     cookie.set_max_age(max_age);
     cookie
