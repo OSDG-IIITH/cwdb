@@ -6,7 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use tokio::time::{Duration, sleep};
 use tower_cookies::Cookies;
 
 use crate::{AppState, github::GitHubClient, routes::auth::get_authenticated_user};
@@ -234,6 +234,17 @@ pub async fn sync_source(
         }
     };
 
+    let mut tx = match state.db.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("failed to start transaction: {}", e) })),
+            )
+                .into_response();
+        }
+    };
+
     let mut inserted = 0;
     let mut updated = 0;
 
@@ -246,7 +257,7 @@ pub async fn sync_source(
             source.owner, source.repo, source.branch, entry.path
         );
 
-        let result = sqlx::query!(
+        let row = match sqlx::query!(
             r#"INSERT INTO resources (source_id, file_path, path_hash, title, download_url, type, sha)
                VALUES ($1, $2, $3, $4, $5, $6, $7)
                ON CONFLICT (source_id, path_hash) DO UPDATE
@@ -265,62 +276,140 @@ pub async fn sync_source(
             resource_type,
             entry.sha
         )
-        .fetch_one(&state.db)
-        .await;
-
-        if let Ok(row) = result {
-            if row.is_insert.unwrap_or(false) {
-                inserted += 1;
-            } else {
-                updated += 1;
+        .fetch_one(&mut *tx)
+        .await
+        {
+            Ok(row) => row,
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": format!("failed to upsert resources: {}", e) })),
+                )
+                    .into_response();
             }
+        };
+
+        if row.is_insert.unwrap_or(false) {
+            inserted += 1;
+        } else {
+            updated += 1;
         }
     }
 
-    let current_hashes: HashSet<String> = tree
+    let current_hashes: Vec<String> = tree
         .iter()
         .map(|entry| compute_path_hash(&entry.path))
         .collect();
 
-    let existing_resources = sqlx::query!(
-        r#"SELECT id, path_hash FROM resources WHERE source_id = $1"#,
-        source_id
+    let stale_resource_ids = match sqlx::query_scalar!(
+        r#"DELETE FROM resources
+           WHERE source_id = $1
+             AND NOT (path_hash = ANY($2))
+           RETURNING id"#,
+        source_id,
+        &current_hashes
     )
-    .fetch_all(&state.db)
+    .fetch_all(&mut *tx)
     .await
-    .unwrap_or_default();
-
-    let mut stale_resource_ids = Vec::new();
-    for row in existing_resources {
-        if !current_hashes.contains(&row.path_hash) {
-            stale_resource_ids.push(row.id);
-            let _ = sqlx::query!("DELETE FROM resources WHERE id = $1", row.id)
-                .execute(&state.db)
-                .await;
+    {
+        Ok(ids) => ids,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("failed to remove stale resources: {}", e) })),
+            )
+                .into_response();
         }
-    }
+    };
 
-    let _ = sqlx::query!(
-        r#"UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1"#,
-        source_id
-    )
-    .execute(&state.db)
-    .await;
-
-    let resources = sqlx::query_as!(
+    let resources = match sqlx::query_as!(
         ResourceRow,
         r#"SELECT id, source_id, file_path, title, type, like_count FROM resources WHERE source_id = $1"#,
         source_id
     )
-    .fetch_all(&state.db)
+    .fetch_all(&mut *tx)
     .await
-    .unwrap_or_default();
+    {
+        Ok(rows) => rows,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("failed to load synced resources: {}", e) })),
+            )
+                .into_response();
+        }
+    };
 
-    let index = state.meili.index("resources");
-
-    for stale_id in stale_resource_ids {
-        let _ = index.delete_document(stale_id).await;
+    if let Err(e) = sqlx::query!(
+        r#"UPDATE sources SET source_status = 'index_sync_pending' WHERE id = $1"#,
+        source_id
+    )
+    .execute(&mut *tx)
+    .await
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("failed to mark pending index sync: {}", e) })),
+        )
+            .into_response();
     }
+
+    if let Err(e) = tx.commit().await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("failed to commit transaction: {}", e) })),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = sync_meili_index(&state, &source, &resources, &stale_resource_ids).await {
+        return (
+            StatusCode::BAD_GATEWAY,
+            Json(serde_json::json!({
+                "error": "database sync committed, but search index sync failed",
+                "details": e,
+                "source_status": "index_sync_pending"
+            })),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = sqlx::query!(
+        r#"UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1"#,
+        source_id
+    )
+    .execute(&state.db)
+    .await
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": "search index synced, but failed to finalize source status",
+                "details": e.to_string(),
+                "source_status": "index_sync_pending"
+            })),
+        )
+            .into_response();
+    }
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "inserted": inserted,
+            "updated": updated,
+            "total": resources.len()
+        })),
+    )
+        .into_response()
+}
+
+async fn sync_meili_index(
+    state: &AppState,
+    source: &SourceRow,
+    resources: &[ResourceRow],
+    stale_resource_ids: &[i32],
+) -> Result<(), String> {
+    let index = state.meili.index("resources");
 
     let docs: Vec<_> = resources
         .iter()
@@ -339,17 +428,56 @@ pub async fn sync_source(
         })
         .collect();
 
-    let _ = index.add_documents(&docs, Some("id")).await;
+    const MAX_ATTEMPTS: u8 = 3;
+    let mut last_error = String::from("unknown meilisearch sync error");
 
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({
-            "inserted": inserted,
-            "updated": updated,
-            "total": resources.len()
-        })),
-    )
-        .into_response()
+    for attempt in 1..=MAX_ATTEMPTS {
+        match sync_meili_index_once(state, &index, &docs, stale_resource_ids).await {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                last_error = e;
+                if attempt < MAX_ATTEMPTS {
+                    let backoff_ms = 250_u64 * u64::from(attempt);
+                    sleep(Duration::from_millis(backoff_ms)).await;
+                }
+            }
+        }
+    }
+
+    Err(last_error)
+}
+
+async fn sync_meili_index_once(
+    state: &AppState,
+    index: &meilisearch_sdk::indexes::Index,
+    docs: &[serde_json::Value],
+    stale_resource_ids: &[i32],
+) -> Result<(), String> {
+    for stale_id in stale_resource_ids {
+        let task = index
+            .delete_document(*stale_id)
+            .await
+            .map_err(|e| format!("failed to delete stale document {}: {}", stale_id, e))?;
+
+        state
+            .meili
+            .wait_for_task(task, None, None)
+            .await
+            .map_err(|e| format!("delete task failed for stale document {}: {}", stale_id, e))?;
+    }
+
+    let task = index
+        .add_documents(docs, Some("id"))
+        .await
+        .map_err(|e| format!("failed to add/update documents: {}", e))?;
+
+    state
+        .meili
+        .wait_for_task(task, None, None)
+        .await
+        .map_err(|e| format!("add/update task failed: {}", e))?;
+
+    Ok(())
 }
 
 fn compute_path_hash(path: &str) -> String {
