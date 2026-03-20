@@ -5,27 +5,102 @@ use axum::{
     response::IntoResponse,
 };
 use tower_cookies::Cookies;
-use uuid::Uuid;
 
 use crate::AppState;
+use crate::routes::auth::get_authenticated_user;
 
-const SESSION_COOKIE: &str = "cwdb_session";
+async fn toggle_generic_like(
+    state: &AppState,
+    user_id: i32,
+    entity_id: i32,
+    like_table: &str,
+    entity_table: &str,
+    fk_column: &str,
+) -> Result<(bool, i32), (StatusCode, Json<serde_json::Value>)> {
+    let mut tx = state.db.begin().await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+    })?;
 
-async fn get_user_id_from_session(state: &AppState, cookies: &Cookies) -> Option<i32> {
-    let session_id = cookies
-        .get(SESSION_COOKIE)
-        .and_then(|c| Uuid::parse_str(c.value()).ok())?;
+    let check_query = format!("SELECT 1 as exists FROM {} WHERE user_id = $1 AND {} = $2", like_table, fk_column);
+    let existing: Option<i32> = sqlx::query_scalar(&check_query)
+        .bind(user_id)
+        .bind(entity_id)
+        .fetch_optional(&mut *tx)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        })?;
 
-    sqlx::query_scalar!(
-        r#"SELECT u.id FROM users u
-           JOIN sessions s ON s.user_id = u.id
-           WHERE s.id = $1 AND s.expires_at > NOW()"#,
-        session_id
-    )
-    .fetch_optional(&state.db)
-    .await
-    .ok()
-    .flatten()
+    let liked;
+
+    if existing.is_some() {
+        let delete_query = format!("DELETE FROM {} WHERE user_id = $1 AND {} = $2", like_table, fk_column);
+        sqlx::query(&delete_query)
+            .bind(user_id)
+            .bind(entity_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+            })?;
+        liked = false;
+    } else {
+        let insert_query = format!("INSERT INTO {} (user_id, {}) VALUES ($1, $2)", like_table, fk_column);
+        let insert = sqlx::query(&insert_query)
+            .bind(user_id)
+            .bind(entity_id)
+            .execute(&mut *tx)
+            .await;
+
+        if insert.is_err() {
+            return Err((
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "error": format!("{} not found", entity_table) })),
+            ));
+        }
+        liked = true;
+    }
+
+    let update_query = format!(
+        "UPDATE {} SET like_count = (SELECT COUNT(*)::int FROM {} WHERE {} = $1) WHERE id = $1",
+        entity_table, like_table, fk_column
+    );
+
+    let _ = sqlx::query(&update_query)
+        .bind(entity_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        })?;
+
+    tx.commit().await.map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+    })?;
+
+    let get_count_query = format!("SELECT like_count FROM {} WHERE id = $1", entity_table);
+    let like_count: i32 = sqlx::query_scalar(&get_count_query)
+        .bind(entity_id)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(0);
+
+    Ok((liked, like_count))
 }
 
 pub async fn toggle_like(
@@ -33,108 +108,18 @@ pub async fn toggle_like(
     cookies: Cookies,
     Path(resource_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user_id = match get_user_id_from_session(&state, &cookies).await {
-        Some(id) => id,
-        None => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({ "error": "Authentication required" })),
-            );
-        }
+    let user = match get_authenticated_user(&state, &cookies).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
     };
 
-    let mut tx = match state.db.begin().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-
-    let existing = sqlx::query!(
-        r#"SELECT 1 as exists FROM likes WHERE user_id = $1 AND resource_id = $2"#,
-        user_id,
-        resource_id
-    )
-    .fetch_optional(&mut *tx)
-    .await;
-
-    let liked: bool;
-
-    match existing {
-        Ok(Some(_)) => {
-            let _ = sqlx::query!(
-                r#"DELETE FROM likes WHERE user_id = $1 AND resource_id = $2"#,
-                user_id,
-                resource_id
-            )
-            .execute(&mut *tx)
-            .await;
-
-            liked = false;
-        }
-        Ok(None) => {
-            let insert = sqlx::query!(
-                r#"INSERT INTO likes (user_id, resource_id) VALUES ($1, $2)"#,
-                user_id,
-                resource_id
-            )
-            .execute(&mut *tx)
-            .await;
-
-            if insert.is_err() {
-                return (
-                    StatusCode::NOT_FOUND,
-                    Json(serde_json::json!({ "error": "Resource not found" })),
-                );
-            }
-
-            liked = true;
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
+    match toggle_generic_like(&state, user.id, resource_id, "likes", "resources", "resource_id").await {
+        Ok((liked, like_count)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "liked": liked, "like_count": like_count })),
+        ).into_response(),
+        Err(e) => e.into_response(),
     }
-
-    if let Err(e) = sqlx::query!(
-        r#"UPDATE resources
-           SET like_count = (SELECT COUNT(*)::int FROM likes WHERE resource_id = $1)
-           WHERE id = $1"#,
-        resource_id
-    )
-    .execute(&mut *tx)
-    .await
-    {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    if let Err(e) = tx.commit().await {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    let like_count = sqlx::query_scalar!(
-        r#"SELECT like_count FROM resources WHERE id = $1"#,
-        resource_id
-    )
-    .fetch_one(&state.db)
-    .await
-    .unwrap_or(0);
-
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "liked": liked, "like_count": like_count })),
-    )
 }
 
 pub async fn get_likes(
@@ -152,15 +137,18 @@ pub async fn get_likes(
         Ok(Some(count)) => (
             StatusCode::OK,
             Json(serde_json::json!({ "like_count": count })),
-        ),
+        )
+            .into_response(),
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({ "error": "Resource not found" })),
-        ),
+        )
+            .into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
-        ),
+        )
+            .into_response(),
     }
 }
 
@@ -169,104 +157,16 @@ pub async fn toggle_source_like(
     cookies: Cookies,
     Path(source_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user_id = match get_user_id_from_session(&state, &cookies).await {
-        Some(id) => id,
-        None => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({ "error": "Authentication required" })),
-            );
-        }
+    let user = match get_authenticated_user(&state, &cookies).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
     };
 
-    let mut tx = match state.db.begin().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
-    };
-
-    let existing = sqlx::query!(
-        r#"SELECT 1 as exists FROM source_likes WHERE user_id = $1 AND source_id = $2"#,
-        user_id,
-        source_id
-    )
-    .fetch_optional(&mut *tx)
-    .await;
-
-    let liked: bool;
-
-    match existing {
-        Ok(Some(_)) => {
-            let _ = sqlx::query!(
-                r#"DELETE FROM source_likes WHERE user_id = $1 AND source_id = $2"#,
-                user_id,
-                source_id
-            )
-            .execute(&mut *tx)
-            .await;
-
-            liked = false;
-        }
-        Ok(None) => {
-            let insert = sqlx::query!(
-                r#"INSERT INTO source_likes (user_id, source_id) VALUES ($1, $2)"#,
-                user_id,
-                source_id
-            )
-            .execute(&mut *tx)
-            .await;
-
-            if insert.is_err() {
-                return (
-                    StatusCode::NOT_FOUND,
-                    Json(serde_json::json!({ "error": "Source not found" })),
-                );
-            }
-
-            liked = true;
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            );
-        }
+    match toggle_generic_like(&state, user.id, source_id, "source_likes", "sources", "source_id").await {
+        Ok((liked, like_count)) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "liked": liked, "like_count": like_count })),
+        ).into_response(),
+        Err(e) => e.into_response(),
     }
-
-    if let Err(e) = sqlx::query!(
-        r#"UPDATE sources
-           SET like_count = (SELECT COUNT(*)::int FROM source_likes WHERE source_id = $1)
-           WHERE id = $1"#,
-        source_id
-    )
-    .execute(&mut *tx)
-    .await
-    {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    if let Err(e) = tx.commit().await {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        );
-    }
-
-    let like_count =
-        sqlx::query_scalar!(r#"SELECT like_count FROM sources WHERE id = $1"#, source_id)
-            .fetch_one(&state.db)
-            .await
-            .unwrap_or(0);
-
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "liked": liked, "like_count": like_count })),
-    )
 }
