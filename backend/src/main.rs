@@ -42,23 +42,23 @@ async fn require_json_for_mutations(req: Request, next: Next) -> Result<Response
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let config = config::Config::from_env();
-    let db = db::init_pool(&config).await;
-    let meili = search::init_client(&config);
+    let config = config::Config::from_env()?;
+    let db = db::init_pool(&config).await?;
+    let meili = search::init_client(&config)?;
 
     search::init_indexes(&meili, &db).await;
 
     let origins: Vec<axum::http::HeaderValue> = config
         .allowed_origins
         .iter()
-        .map(|o| o.parse().unwrap())
-        .collect();
+        .map(|o| o.parse())
+        .collect::<Result<_, _>>()?;
 
     let state = AppState {
         db,
@@ -107,6 +107,8 @@ async fn main() {
     let addr = format!("0.0.0.0:{}", config.server_port);
     tracing::info!("Listening on {}", addr);
 
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    axum::serve(listener, app).await?;
+
+    Ok(())
 }
