@@ -472,7 +472,7 @@ fn extract_title(path: &str) -> String {
 }
 
 fn determine_resource_type(path: &str) -> String {
-    let filename = path.split('/').last().unwrap_or(path).to_lowercase();
+    let filename = path.split('/').next_back().unwrap_or(path).to_lowercase();
     if filename.contains("end") || filename.contains("mid") || filename.contains("quiz") {
         return "exam".to_string();
     }

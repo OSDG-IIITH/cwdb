@@ -58,9 +58,9 @@ async fn apply_settings(client: &Client, db: &PgPool) {
         };
 
     let settings = meilisearch_sdk::settings::Settings::new()
-        .with_searchable_attributes(&searchable_attributes)
-        .with_filterable_attributes(&filterable_attributes)
-        .with_sortable_attributes(&sortable_attributes)
+        .with_searchable_attributes(searchable_attributes)
+        .with_filterable_attributes(filterable_attributes)
+        .with_sortable_attributes(sortable_attributes)
         .with_synonyms(synonyms);
 
     match index.set_settings(&settings).await {
