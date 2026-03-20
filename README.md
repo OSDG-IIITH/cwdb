@@ -6,7 +6,9 @@
 - **Rust** (for the backend)
 - `bun` (for the frontend)
 
-### 1. Environment Setup
+## Setup Instructions
+
+### Environment Setup
 
 Clone the repo and set up the environment variables:
 
@@ -16,7 +18,7 @@ cp .env.example .env
 
 Update `.env` with your Microsoft Entra ID credentials ([Guide](https://gist.github.com/nuxshed/610509f2b7c1093ef6f6646d8c779707))
 
-### 2. Start Services
+### Start Services
 
 Start Postgres and Meilisearch:
 
@@ -24,7 +26,7 @@ Start Postgres and Meilisearch:
 docker-compose up -d
 ```
 
-### 3. Backend Setup
+### Backend
 
 Navigate to the backend directory:
 
@@ -52,7 +54,7 @@ cargo run
 
 The backend API will be available at `http://localhost:3000`.
 
-### 4. Frontend Setup
+### Frontend
 
 Navigate to the frontend:
 
