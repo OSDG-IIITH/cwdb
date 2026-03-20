@@ -143,3 +143,16 @@ export async function listAllResources(owner?: string, repo?: string): Promise<R
         return [];
     }
 }
+export async function deleteSource(sourceId: number): Promise<boolean> {
+    try {
+        const res = await fetch(`${API_BASE}/api/sources/${sourceId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+        return res.ok;
+    } catch (e) {
+        console.error("Delete source failed:", e);
+        return false;
+    }
+}

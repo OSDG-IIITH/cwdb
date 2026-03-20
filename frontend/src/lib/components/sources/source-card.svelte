@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { refreshSource, toggleSourceLike, type Source } from '$lib/api';
+    import { refreshSource, toggleSourceLike, deleteSource, type Source } from '$lib/api';
     import { Button } from '$lib/components/ui/button';
     import * as Card from '$lib/components/ui/card';
-    import { RefreshCw, Github, GitBranch, Archive, AlertCircle, Clock, Heart } from '@lucide/svelte';
+    import { RefreshCw, Github, GitBranch, Archive, AlertCircle, Clock, Heart, Trash2 } from '@lucide/svelte';
     import { user } from '$lib/auth';
     import { toast } from 'svelte-sonner';
 
     const { source, onrefresh } = $props<{ source: Source; onrefresh?: () => void }>();
     let refreshing = $state(false);
+    let deleting = $state(false);
     let localLikeState = $state<{ liked: boolean; like_count: number } | null>(null);
     let liked = $derived(localLikeState?.liked ?? source.liked);
     let likeCount = $derived(localLikeState?.like_count ?? source.like_count);
@@ -27,6 +28,19 @@
                 description: `${source.owner}/${source.repo} has been successfully updated.`,
             });
             onrefresh?.();
+        }
+    }
+
+    async function handleDelete() {
+        if (!confirm(`Are you sure you want to delete ${source.owner}/${source.repo}?`)) return;
+        deleting = true;
+        const success = await deleteSource(source.id);
+        deleting = false;
+        if (success) {
+            toast.success("Source Deleted", { description: "Source has been removed." });
+            onrefresh?.();
+        } else {
+            toast.error("Failed to delete source");
         }
     }
 
@@ -89,16 +103,29 @@
             <span>{timeAgo(source.last_synced_at)}</span>
         </div>
         {#if $user && $user.role === 'admin'}
-        <Button
-            variant="outline"
-            size="sm"
-            onclick={handleRefresh}
-            disabled={refreshing}
-            class="h-7 px-3 text-xs text-muted-foreground border-border/60 hover:bg-background/70"
-        >
-            <RefreshCw class={`mr-1.5 h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Sync</span>
-        </Button>
+        <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                onclick={handleRefresh}
+                disabled={refreshing || deleting}
+                class="h-7 px-3 text-xs text-muted-foreground border-border/60 hover:bg-background/70"
+            >
+                <RefreshCw class={`mr-1.5 h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Sync</span>
+            </Button>
+            <Button
+                variant="outline"
+                size="icon"
+                onclick={handleDelete}
+                disabled={refreshing || deleting}
+                class="h-7 w-7 hover:bg-destructive/10 hover:text-destructive border-border/60"
+                title="Delete source"
+            >
+                <Trash2 class="h-3.5 w-3.5" />
+                <span class="sr-only">Delete</span>
+            </Button>
+        </div>
         {/if}
     </div>
 </Card.Root>
