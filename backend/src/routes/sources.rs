@@ -340,35 +340,12 @@ pub async fn sync_source(
         }
     };
 
-    if let Err(e) = sqlx::query!(
-        r#"UPDATE sources SET source_status = 'index_sync_pending' WHERE id = $1"#,
-        source_id
-    )
-    .execute(&mut *tx)
-    .await
-    {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": format!("failed to mark pending index sync: {}", e) })),
-        )
-            .into_response();
-    }
-
-    if let Err(e) = tx.commit().await {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": format!("failed to commit transaction: {}", e) })),
-        )
-            .into_response();
-    }
-
     if let Err(e) = sync_meili_index(&state, &source, &resources, &stale_resource_ids).await {
         return (
             StatusCode::BAD_GATEWAY,
             Json(serde_json::json!({
-                "error": "database sync committed, but search index sync failed",
-                "details": e,
-                "source_status": "index_sync_pending"
+                "error": "search index sync failed, rolling back",
+                "details": e
             })),
         )
             .into_response();
@@ -378,16 +355,20 @@ pub async fn sync_source(
         r#"UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1"#,
         source_id
     )
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await
     {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({
-                "error": "search index synced, but failed to finalize source status",
-                "details": e.to_string(),
-                "source_status": "index_sync_pending"
-            })),
+            Json(serde_json::json!({ "error": format!("failed to update source status: {}", e) })),
+        )
+            .into_response();
+    }
+
+    if let Err(e) = tx.commit().await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("failed to commit transaction: {}", e) })),
         )
             .into_response();
     }
@@ -500,3 +481,41 @@ fn determine_resource_type(path: &str) -> String {
     }
     "".to_string()
 }
+
+pub async fn delete_source(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    cookies: Cookies,
+) -> impl IntoResponse {
+    let user = match get_authenticated_user(&state, &cookies).await {
+        Ok(u) => u,
+        Err(e) => return e.into_response(),
+    };
+
+    if user.role != "admin" {
+        return (StatusCode::FORBIDDEN).into_response();
+    }
+
+    let resource_ids = match sqlx::query_scalar!(
+        "SELECT id FROM resources WHERE source_id = $1",
+        id
+    )
+    .fetch_all(&state.db)
+    .await {
+        Ok(ids) => ids,
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+    };
+
+    let index = state.meili.index("resources");
+    for rid in resource_ids {
+        let _ = index.delete_document(rid).await;
+    }
+
+    match sqlx::query!("DELETE FROM sources WHERE id = $1", id)
+        .execute(&state.db)
+        .await {
+        Ok(_) => StatusCode::NO_CONTENT.into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+

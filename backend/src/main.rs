@@ -75,6 +75,7 @@ async fn main() {
         .route("/api/sources", post(routes::sources::create_source))
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
+        .route("/api/sources/{id}", delete(routes::sources::delete_source))
         .route("/api/search", get(routes::search::search))
         .route(
             "/api/sources/{id}/like",
