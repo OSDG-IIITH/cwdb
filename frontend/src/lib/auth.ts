@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 export interface User {
-    id: number;
+    id: string;
     email: string;
     role: string;
 }
@@ -31,24 +31,16 @@ export async function fetchUser() {
 }
 
 export function login() {
-    window.location.href = `${API_BASE}/api/auth/login`;
+    if (import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+        const email = import.meta.env.VITE_MOCK_EMAIL || 'student@iiit.ac.in';
+        window.location.href = `${API_BASE}/api/auth/mock/login?email=${encodeURIComponent(email)}`;
+    } else {
+        window.location.href = `${API_BASE}/api/auth/login`;
+    }
 }
 
-export async function logout() {
+export function logout() {
+    user.set(null);
     loading.set(true);
-    try {
-        await fetch(`${API_BASE}/api/auth/logout`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-        });
-    } catch (e) {
-        // The fetch might throw a CORS error when it follows the backend's 302 redirect
-        // to the SvelteKit frontend (which lacks cross-origin headers).
-        // Since the backend already cleared the session cookie, we can safely ignore it.
-    } finally {
-        user.set(null);
-        loading.set(false);
-        window.location.href = '/';
-    }
+    window.location.href = `${API_BASE}/api/auth/logout`;
 }

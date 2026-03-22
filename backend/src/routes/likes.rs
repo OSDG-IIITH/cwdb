@@ -4,14 +4,14 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use tower_cookies::Cookies;
 
 use crate::AppState;
-use crate::routes::auth::get_authenticated_user;
+use crate::routes::auth::upsertuser;
+use ocas_auth::Claims;
 
 async fn toggle_generic_like(
     state: &AppState,
-    user_id: i32,
+    user_id: uuid::Uuid,
     entity_id: i32,
     like_table: &str,
     entity_table: &str,
@@ -105,10 +105,10 @@ async fn toggle_generic_like(
 
 pub async fn toggle_like(
     State(state): State<AppState>,
-    cookies: Cookies,
+    claims: Claims,
     Path(resource_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };
@@ -154,10 +154,10 @@ pub async fn get_likes(
 
 pub async fn toggle_source_like(
     State(state): State<AppState>,
-    cookies: Cookies,
+    claims: Claims,
     Path(source_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };

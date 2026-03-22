@@ -5,9 +5,10 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use tower_cookies::Cookies;
 
-use crate::{AppState, routes::auth::get_authenticated_user};
+use crate::AppState;
+use crate::routes::auth::upsertuser;
+use ocas_auth::Claims;
 
 #[derive(Debug, Deserialize)]
 pub struct ResourceQuery {
@@ -65,10 +66,10 @@ pub async fn list_resources(
 
 pub async fn delete_resource(
     State(state): State<AppState>,
-    cookies: Cookies,
+    claims: Claims,
     Path(resource_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };

@@ -9,7 +9,7 @@ CREATE TABLE sources (
     source_status VARCHAR(50) NOT NULL DEFAULT 'active',
     like_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    created_by INT NOT NULL,
+    created_by UUID NOT NULL,
     UNIQUE(owner, repo, branch)
 );
 
@@ -30,7 +30,7 @@ CREATE TABLE resources (
 );
 
 CREATE TABLE likes (
-    user_id INT NOT NULL,
+    user_id UUID NOT NULL,
     resource_id INT NOT NULL REFERENCES resources(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (user_id, resource_id)
@@ -41,7 +41,7 @@ CREATE INDEX idx_resources_path_hash ON resources(path_hash);
 CREATE INDEX idx_likes_resource_id ON likes(resource_id);
 
 CREATE TABLE source_likes (
-    user_id INT NOT NULL,
+    user_id UUID NOT NULL,
     source_id INT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (user_id, source_id)

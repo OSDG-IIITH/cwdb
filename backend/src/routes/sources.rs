@@ -7,9 +7,10 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::time::{Duration, sleep};
-use tower_cookies::Cookies;
 
-use crate::{AppState, github::GitHubClient, routes::auth::get_authenticated_user};
+use crate::AppState;
+use crate::routes::auth::{OptionalAuth, upsertuser};
+use ocas_auth::Claims;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSource {
@@ -27,7 +28,7 @@ pub struct SourceRow {
     pub source_status: String,
     pub last_synced_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub created_by: i32,
+    pub created_by: uuid::Uuid,
     pub like_count: i32,
     pub liked: Option<bool>,
 }
@@ -44,10 +45,10 @@ pub struct ResourceRow {
 
 pub async fn create_source(
     State(state): State<AppState>,
-    cookies: Cookies,
+    claims: Claims,
     Json(payload): Json<CreateSource>,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };
@@ -60,7 +61,7 @@ pub async fn create_source(
             .into_response();
     }
 
-    let github = GitHubClient::new();
+    let github = crate::github::GitHubClient::new();
 
     let branch = match &payload.branch {
         Some(b) => b.clone(),
@@ -106,11 +107,11 @@ pub async fn create_source(
 
 pub async fn list_sources(
     State(state): State<AppState>,
-    cookies: Cookies,
+    auth: OptionalAuth,
 ) -> impl IntoResponse {
-    let current_user_id = match get_authenticated_user(&state, &cookies).await {
-        Ok(u) => Some(u.id),
-        Err(_) => None,
+    let current_user_id = match auth {
+        OptionalAuth::Authenticated(u) => Some(u.id),
+        OptionalAuth::Anonymous => None,
     };
 
     let result = match current_user_id {
@@ -151,10 +152,10 @@ pub async fn list_sources(
 
 pub async fn sync_source(
     State(state): State<AppState>,
-    cookies: Cookies,
+    claims: Claims,
     Path(source_id): Path<i32>,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };
@@ -206,7 +207,7 @@ pub async fn sync_source(
         _ => vec![],
     };
 
-    let github = GitHubClient::new();
+    let github = crate::github::GitHubClient::new();
     let tree = match github
         .get_repo_tree(
             &source.owner,
@@ -484,10 +485,10 @@ fn determine_resource_type(path: &str) -> String {
 
 pub async fn delete_source(
     State(state): State<AppState>,
+    claims: Claims,
     Path(id): Path<i32>,
-    cookies: Cookies,
 ) -> impl IntoResponse {
-    let user = match get_authenticated_user(&state, &cookies).await {
+    let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
     };
@@ -518,4 +519,3 @@ pub async fn delete_source(
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }
-

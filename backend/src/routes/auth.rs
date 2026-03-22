@@ -1,306 +1,158 @@
-use axum::{
-    Json,
-    extract::{Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Redirect, Response},
-};
-use serde::Deserialize;
-use tower_cookies::{Cookie, Cookies};
+use axum::{Json, extract::FromRequestParts, http::request::Parts};
+use ocas_auth::{AppRoleLoader, AuthError, Claims};
 use uuid::Uuid;
 
-use crate::{AppState, auth};
+use crate::AppState;
 
-const SESSION_COOKIE: &str = "cwdb_session";
-const OAUTH_STATE_COOKIE: &str = "cwdb_oauth_state";
-const OAUTH_NONCE_COOKIE: &str = "cwdb_oauth_nonce";
-const SESSION_DURATION_DAYS: i64 = 7;
-
-#[derive(Deserialize)]
-pub struct CallbackQuery {
-    code: String,
-    state: String,
-}
-
-pub async fn login(State(state): State<AppState>, cookies: Cookies) -> Redirect {
-    let secure = should_use_secure_cookies(&state);
-
-    let oauth_state = Uuid::new_v4().to_string();
-    let oauth_nonce = Uuid::new_v4().to_string();
-
-    cookies.add(build_cookie(
-        OAUTH_STATE_COOKIE,
-        oauth_state.clone(),
-        secure,
-        time::Duration::minutes(10),
-    ));
-    cookies.add(build_cookie(
-        OAUTH_NONCE_COOKIE,
-        oauth_nonce.clone(),
-        secure,
-        time::Duration::minutes(10),
-    ));
-
-    let url = auth::build_login_url(&state.config, &oauth_state, &oauth_nonce);
-    Redirect::temporary(&url)
-}
-
-pub async fn callback(
-    State(state): State<AppState>,
-    cookies: Cookies,
-    Query(query): Query<CallbackQuery>,
-) -> Response {
-    let secure = should_use_secure_cookies(&state);
-
-    let expected_state = cookies
-        .get(OAUTH_STATE_COOKIE)
-        .map(|cookie| cookie.value().to_string());
-    let expected_nonce = cookies
-        .get(OAUTH_NONCE_COOKIE)
-        .map(|cookie| cookie.value().to_string());
-
-    clear_cookie(&cookies, OAUTH_STATE_COOKIE, secure);
-    clear_cookie(&cookies, OAUTH_NONCE_COOKIE, secure);
-
-    if expected_state.as_deref() != Some(query.state.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({ "error": "Invalid OAuth state" })),
-        )
-            .into_response();
-    }
-
-    let expected_nonce = match expected_nonce {
-        Some(value) => value,
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "error": "Missing OAuth nonce" })),
-            )
-                .into_response();
-        }
-    };
-
-    let token_response = match auth::exchange_code(&state.config, &query.code).await {
-        Ok(t) => t,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    };
-
-    let claims = match auth::decode_id_token(&state.config, &token_response.id_token, Some(&expected_nonce)).await {
-        Ok(c) => c,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    };
-
-    let email = match auth::extract_email(&claims) {
-        Ok(e) => e,
-        Err(e) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    };
-
-    if let Err(e) = auth::validate_domain(&email) {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response();
-    }
-
-    let user = sqlx::query_as!(
-        UserRow,
-        r#"INSERT INTO users (email) VALUES ($1)
-           ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-           RETURNING id, email, role"#,
-        email
-    )
-    .fetch_one(&state.db)
-    .await;
-
-    let mut user = match user {
-        Ok(u) => u,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": e.to_string() })),
-            )
-                .into_response();
-        }
-    };
-
-    if state
-        .config
-        .admin_emails
-        .iter()
-        .any(|e| e.eq_ignore_ascii_case(&user.email))
-        && user.role != "admin"
-    {
-        let update_result = sqlx::query!(
-            "UPDATE users SET role = 'admin' WHERE id = $1 RETURNING role",
-            user.id
-        )
-        .fetch_one(&state.db)
-        .await;
-
-        if let Ok(row) = update_result {
-            user.role = row.role;
-        }
-    }
-
-    let session_id = Uuid::new_v4();
-    let expires_at = chrono::Utc::now() + chrono::Duration::days(SESSION_DURATION_DAYS);
-
-    let session_result = sqlx::query!(
-        r#"INSERT INTO sessions (id, user_id, expires_at) VALUES ($1, $2, $3)"#,
-        session_id,
-        user.id,
-        expires_at
-    )
-    .execute(&state.db)
-    .await;
-
-    if let Err(e) = session_result {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response();
-    }
-
-    let mut cookie = Cookie::new(SESSION_COOKIE, session_id.to_string());
-    cookie.set_path("/");
-    cookie.set_http_only(true);
-    cookie.set_max_age(time::Duration::days(SESSION_DURATION_DAYS));
-    if secure {
-        cookie.set_same_site(tower_cookies::cookie::SameSite::None);
-    } else {
-        cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
-    }
-    cookie.set_secure(secure);
-
-    cookies.add(cookie);
-
-    Redirect::temporary(&state.config.frontend_url).into_response()
-}
-
-pub async fn me(
-    State(state): State<AppState>,
-    cookies: Cookies,
-) -> (StatusCode, Json<serde_json::Value>) {
-    match get_authenticated_user(&state, &cookies).await {
-        Ok(u) => (
-            StatusCode::OK,
-            Json(serde_json::json!({
-                "id": u.id,
-                "email": u.email,
-                "role": u.role,
-            })),
-        ),
-        Err(e) => e,
-    }
-}
-
-pub async fn logout(State(state): State<AppState>, cookies: Cookies) -> impl IntoResponse {
-    if let Some(session_id) = get_session_id(&cookies) {
-        let _ = sqlx::query!(r#"DELETE FROM sessions WHERE id = $1"#, session_id)
-            .execute(&state.db)
-            .await;
-    }
-
-    let mut removal = Cookie::from(SESSION_COOKIE);
-    removal.set_path("/");
-    removal.set_secure(should_use_secure_cookies(&state));
-    cookies.remove(removal);
-
-    (StatusCode::OK, Json(serde_json::json!({ "message": "Logged out" })))
-}
-
-pub async fn get_authenticated_user(
-    state: &AppState,
-    cookies: &Cookies,
-) -> Result<UserRow, (StatusCode, Json<serde_json::Value>)> {
-    let session_id = match get_session_id(cookies) {
-        Some(id) => id,
-        None => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(serde_json::json!({ "error": "Not authenticated" })),
-            ));
-        }
-    };
-
-    let user = sqlx::query_as!(
-        UserRow,
-        r#"SELECT u.id, u.email, u.role
-           FROM users u
-           JOIN sessions s ON s.user_id = u.id
-           WHERE s.id = $1 AND s.expires_at > NOW()"#,
-        session_id
-    )
-    .fetch_optional(&state.db)
-    .await;
-
-    match user {
-        Ok(Some(u)) => Ok(u),
-        Ok(None) => Err((
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({ "error": "Session expired or invalid" })),
-        )),
-        Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )),
-    }
-}
-
-pub fn get_session_id(cookies: &Cookies) -> Option<Uuid> {
-    cookies
-        .get(SESSION_COOKIE)
-        .and_then(|c| Uuid::parse_str(c.value()).ok())
-}
-
-fn should_use_secure_cookies(state: &AppState) -> bool {
-    state.config.cookie_secure
-}
-
-fn build_cookie(name: &'static str, value: String, secure: bool, max_age: time::Duration) -> Cookie<'static> {
-    let mut cookie = Cookie::new(name, value);
-    cookie.set_path("/");
-    cookie.set_http_only(true);
-    if secure {
-        cookie.set_same_site(tower_cookies::cookie::SameSite::None);
-    } else {
-        cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
-    }
-    cookie.set_secure(secure);
-    cookie.set_max_age(max_age);
-    cookie
-}
-
-fn clear_cookie(cookies: &Cookies, name: &'static str, secure: bool) {
-    let mut removal = Cookie::from(name);
-    removal.set_path("/");
-    removal.set_secure(secure);
-    cookies.remove(removal);
-}
-
-#[derive(Debug)]
-pub struct UserRow {
-    pub id: i32,
+/// local user representation bridging ocas identity with cwdb roles
+pub struct CwdbUser {
+    pub id: Uuid,
     pub email: String,
     pub role: String,
 }
+
+impl AppRoleLoader for AppState {
+    type Role = CwdbUser;
+    type Error = AuthError;
+
+    async fn loadrole(&self, userid: Uuid) -> Result<CwdbUser, AuthError> {
+        let existing = sqlx::query_as!(
+            CwdbUser,
+            "SELECT id, email, role FROM users WHERE id = $1",
+            userid
+        )
+        .fetch_optional(&self.db)
+        .await
+        .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+
+        if let Some(user) = existing {
+            return Ok(user);
+        }
+
+        Err(AuthError::Unauthorized("user not found".into()))
+    }
+}
+
+/// upserts user on first login, assigns admin role if email is in ADMIN_EMAILS
+pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, AuthError> {
+    let existing = sqlx::query_as!(
+        CwdbUser,
+        "SELECT id, email, role FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+
+    if let Some(user) = existing {
+        if user.email != claims.email {
+            sqlx::query!("UPDATE users SET email = $1 WHERE id = $2", claims.email, claims.sub)
+                .execute(&state.db)
+                .await
+                .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+        }
+        return Ok(user);
+    }
+
+    let role = if state
+        .config
+        .admin_emails
+        .iter()
+        .any(|e| e.eq_ignore_ascii_case(&claims.email))
+    {
+        "admin"
+    } else {
+        "user"
+    };
+
+    let user = sqlx::query_as!(
+        CwdbUser,
+        "INSERT INTO users (id, email, role) VALUES ($1, $2, $3) RETURNING id, email, role",
+        claims.sub,
+        claims.email,
+        role
+    )
+    .fetch_one(&state.db)
+    .await
+    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+
+    Ok(user)
+}
+
+/// GET /api/auth/me — returns current user info
+pub async fn me(
+    claims: Claims,
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Result<Json<serde_json::Value>, AuthError> {
+    let user = upsertuser(&state, &claims).await?;
+    Ok(Json(serde_json::json!({
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+    })))
+}
+
+/// optional auth extractor — returns None when no token, 401 on bad token
+pub enum OptionalAuth {
+    Authenticated(CwdbUser),
+    Anonymous,
+}
+
+impl FromRequestParts<AppState> for OptionalAuth {
+    type Rejection = AuthError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+        let has_token = parts
+            .headers
+            .get("authorization")
+            .map(|v| v.to_str().ok().is_some_and(|s| s.starts_with("Bearer ")))
+            .unwrap_or(false)
+            || parts
+                .headers
+                .get("cookie")
+                .and_then(|v| v.to_str().ok())
+                .is_some_and(|c| c.contains("ocas_access="));
+
+        if !has_token {
+            return Ok(OptionalAuth::Anonymous);
+        }
+
+        let claims = Claims::from_request_parts(parts, state).await?;
+        let user = upsertuser(state, &claims).await?;
+        Ok(OptionalAuth::Authenticated(user))
+    }
+}
+
+/// GET /api/auth/mock/login?email=foo@bar.com
+#[cfg(feature = "mock")]
+pub async fn mock_login(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    let email = params.get("email").cloned().unwrap_or_else(|| "student@iiit.ac.in".to_string());
+    
+    // Create a mock token using faculty helper so it can take the custom email directly
+    let mut mock_claims = ocas_auth::mock::faculty(&email);
+    // Use a deterministic UUID so logging in multiple times with the same email doesn't create new conflicting users
+    mock_claims.claims.sub = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_URL, email.as_bytes());
+    let token = mock_claims.token();
+    
+    // Set it in cookie and redirect to frontend
+    let mut resp = axum::response::Redirect::to("http://localhost:5173").into_response();
+    let headers = resp.headers_mut();
+    
+    let cookie = format!("ocas_access={}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600", token);
+    headers.append(
+        axum::http::header::SET_COOKIE,
+        cookie.parse().unwrap(),
+    );
+    
+    resp
+}
+
+#[cfg(not(feature = "mock"))]
+pub async fn mock_login() -> impl axum::response::IntoResponse {
+    (axum::http::StatusCode::NOT_FOUND, "Mock login not enabled")
+}
+
+

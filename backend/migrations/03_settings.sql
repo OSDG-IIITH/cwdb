@@ -15,6 +15,7 @@ INSERT INTO settings (key, value) VALUES ('synonyms', '{
 
 INSERT INTO settings (key, value) VALUES ('global_ignore_patterns', '[
     ".git",
+    ".github",
     "node_modules",
     "__pycache__",
     ".venv",

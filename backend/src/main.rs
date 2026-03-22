@@ -1,4 +1,3 @@
-mod auth;
 mod config;
 mod db;
 mod github;
@@ -7,15 +6,10 @@ mod search;
 
 use axum::{
     Router,
-    extract::Request,
-    http::StatusCode,
-    middleware::{self, Next},
-    response::Response,
     routing::{delete, get, post},
 };
 use meilisearch_sdk::client::Client;
 use sqlx::PgPool;
-use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -24,21 +18,6 @@ pub struct AppState {
     pub db: PgPool,
     pub meili: Client,
     pub config: config::Config,
-}
-
-async fn require_json_for_mutations(req: Request, next: Next) -> Result<Response, StatusCode> {
-    let method = req.method().clone();
-    if method == axum::http::Method::POST || method == axum::http::Method::DELETE || method == axum::http::Method::PUT || method == axum::http::Method::PATCH {
-        let content_type = req.headers().get(axum::http::header::CONTENT_TYPE);
-        if let Some(ct) = content_type {
-            if !ct.to_str().unwrap_or("").starts_with("application/json") {
-                return Err(StatusCode::UNSUPPORTED_MEDIA_TYPE);
-            }
-        } else {
-            return Err(StatusCode::UNSUPPORTED_MEDIA_TYPE);
-        }
-    }
-    Ok(next.run(req).await)
 }
 
 #[tokio::main]
@@ -54,6 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     search::init_indexes(&meili, &db).await;
 
+    let mut ocasconfig = ocas_auth::OcasConfig::fromenv();
+    #[cfg(feature = "mock")]
+    {
+        tracing::info!("Mock feature enabled, overriding OCAS_URL to point to localhost");
+        ocasconfig.url = format!("http://localhost:{}", config.server_port);
+    }
+    
+    let ocasclient = ocas_auth::OcasClient::new(ocasconfig).await;
+
     let origins: Vec<axum::http::HeaderValue> = config
         .allowed_origins
         .iter()
@@ -68,10 +56,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/health", get(routes::health::health))
-        .route("/api/auth/login", get(routes::auth::login))
-        .route("/api/auth/callback", get(routes::auth::callback))
         .route("/api/auth/me", get(routes::auth::me))
-        .route("/api/auth/logout", post(routes::auth::logout))
+        .route("/api/auth/mock/login", get(routes::auth::mock_login))
         .route("/api/sources", post(routes::sources::create_source))
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
@@ -88,9 +74,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             delete(routes::resources::delete_resource),
         )
         .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
+        .with_state(state)
+        .nest("/api/auth", ocasclient.authrouter());
+
+    #[cfg(feature = "mock")]
+    let app = app.merge(ocas_auth::mock::mockjwks());
+
+    let app = app
         .layer(tower_http::compression::CompressionLayer::new())
-        .layer(middleware::from_fn(require_json_for_mutations))
-        .layer(CookieManagerLayer::new())
+        .layer(axum::middleware::from_fn(ocas_auth::refresh::refreshmw))
+        .layer(ocasclient.layer())
         .layer(
             CorsLayer::new()
                 .allow_origin(origins)
@@ -101,8 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     axum::http::Method::DELETE,
                 ])
                 .allow_headers([axum::http::header::CONTENT_TYPE]),
-        )
-        .with_state(state);
+        );
 
     let addr = format!("0.0.0.0:{}", config.server_port);
     tracing::info!("Listening on {}", addr);
