@@ -1,7 +1,11 @@
 # cwdb
 
+cwdb is a coursework discovery platform that helps students find useful course resources from previous years in one place.
+
+
 ## Prerequisites
-Docker, Rust and `cargo`, `sqlx-cli` and `bun`
+Docker, Rust, `cargo`, `sqlx-cli` and `bun`
+
 
 ## Backend
 
@@ -41,7 +45,6 @@ cargo run --features mock
 
 The backend runs on `http://localhost:3000`.
 
----
 
 ## Frontend
 
@@ -68,7 +71,6 @@ bun dev
 
 The frontend runs on `http://localhost:5173`.
 
----
 
 ## Nix Flake ❄️
 
