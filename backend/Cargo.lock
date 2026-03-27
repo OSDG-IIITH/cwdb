@@ -1494,6 +1494,7 @@ dependencies = [
 [[package]]
 name = "ocas-auth"
 version = "0.1.0"
+source = "git+https://github.com/nuxshed/ocas#27d02951832986199882ae52f6de024031d80824"
 dependencies = [
  "axum",
  "base64",
