@@ -1,6 +1,6 @@
 <script lang="ts">
     import { listSources, type Source } from '$lib/api';
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import SourceCard from '$lib/components/sources/source-card.svelte';
     import NewSourceDialog from '$lib/components/sources/new-source-dialog.svelte';
     import { Loader2 } from '@lucide/svelte';
@@ -13,9 +13,13 @@
 
     let sources = $state<Source[]>([]);
     let loading = $state(true);
+    let showLoadingIndicator = $state(false);
     let searchQuery = $state('');
     let sortBy = $state<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
     let searchInput = $state<HTMLInputElement | null>(null);
+
+    const LOADING_INDICATOR_DELAY_MS = 250;
+    let loadingTimer: ReturnType<typeof setTimeout> | null = null;
 
     let filteredSources = $derived(
         sources
@@ -34,7 +38,7 @@
     );
 
     function handleKeydown(e: KeyboardEvent) {
-	const activeTag = document.activeElement?.tagName;
+        const activeTag = document.activeElement?.tagName;
         if (e.key === '/' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
             e.preventDefault();
             searchInput?.focus();
@@ -42,10 +46,44 @@
     }
 
     async function loadSources() {
-        loading = true;
-        sources = await listSources();
-        loading = false;
+        startLoading();
+        try {
+            sources = await listSources();
+        } finally {
+            stopLoading();
+        }
     }
+
+    function startLoading() {
+        loading = true;
+        showLoadingIndicator = false;
+
+        if (loadingTimer) {
+            clearTimeout(loadingTimer);
+        }
+
+        loadingTimer = setTimeout(() => {
+            if (loading) {
+                showLoadingIndicator = true;
+            }
+        }, LOADING_INDICATOR_DELAY_MS);
+    }
+
+    function stopLoading() {
+        loading = false;
+        showLoadingIndicator = false;
+
+        if (loadingTimer) {
+            clearTimeout(loadingTimer);
+            loadingTimer = null;
+        }
+    }
+
+    onDestroy(() => {
+        if (loadingTimer) {
+            clearTimeout(loadingTimer);
+        }
+    });
 
     onMount(() => {
         loadSources();
@@ -103,10 +141,12 @@
             <NewSourceDialog on:created={loadSources} />
         </div>
 
-        {#if loading}
+        {#if loading && showLoadingIndicator}
              <div class="flex justify-center items-center py-20">
                 <Loader2 class="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
+        {:else if loading}
+            <div class="py-20" aria-hidden="true"></div>
         {:else if sources.length === 0 && searchQuery === ''}
             <div class="text-center py-20">
                 <p class="text-muted-foreground mb-4">No sources found.</p>
