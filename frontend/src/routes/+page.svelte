@@ -128,7 +128,7 @@
 	{/if}
 
 	<!-- footer -->
-	<footer class="mt-10 text-center text-sm text-muted-foreground py-6">
+	<footer class="mt-10 hidden py-6 text-center text-sm text-muted-foreground md:block">
 		Made with ♥ by
 		<a
 			href="https://github.com/nuxshed"
