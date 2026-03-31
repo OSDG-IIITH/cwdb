@@ -98,7 +98,7 @@ impl GitHubClient {
             .tree
             .into_iter()
             .filter(|e| e.entry_type == "blob")
-            .filter(|e| !ignore.matched(&e.path, false).is_ignore())
+            .filter(|e| !ignore.matched_path_or_any_parents(&e.path, false).is_ignore())
             .collect();
 
         Ok((branch, filtered))
