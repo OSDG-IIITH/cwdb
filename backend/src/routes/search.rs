@@ -24,6 +24,7 @@ pub struct ResourceHit {
     pub title: String,
     pub r#type: Option<String>,
     pub like_count: i32,
+    pub course_name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -43,6 +44,7 @@ struct MeiliHit {
     #[serde(rename = "type")]
     resource_type: Option<String>,
     like_count: i32,
+    course_name: Option<String>,
 }
 
 pub async fn search(
@@ -69,6 +71,7 @@ pub async fn search(
                         branch: hit.branch,
                         r#type: hit.resource_type,
                         like_count: hit.like_count,
+                        course_name: hit.course_name,
                     }
                 })
                 .collect();

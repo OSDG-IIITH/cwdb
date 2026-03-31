@@ -116,6 +116,12 @@
 											{r.type}
 										</span>
 									{/if}
+
+									{#if r.course_name}
+										<span class="px-2 py-0.5 bg-muted rounded">
+											{r.course_name.replace(/\b\w/g, (c) => c.toUpperCase())}
+										</span>
+									{/if}
 								</div>
 							</button>
 						</li>

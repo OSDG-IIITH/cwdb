@@ -41,6 +41,7 @@ pub struct ResourceRow {
     pub title: String,
     pub r#type: String,
     pub like_count: i32,
+    pub course_id: Option<uuid::Uuid>,
 }
 
 pub async fn create_source(
@@ -292,6 +293,16 @@ pub async fn sync_source(
 
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
+            if let Some(cid) = state.courses.resolve(&entry.path) {
+                let _ = sqlx::query!(
+                    "UPDATE resources SET course_id = $1 WHERE source_id = $2 AND path_hash = $3",
+                    cid,
+                    source_id,
+                    path_hash
+                )
+                .execute(&mut *tx)
+                .await;
+            }
         } else {
             updated += 1;
         }
@@ -325,7 +336,7 @@ pub async fn sync_source(
 
     let resources = match sqlx::query_as!(
         ResourceRow,
-        r#"SELECT id, source_id, file_path, title, type, like_count FROM resources WHERE source_id = $1"#,
+        r#"SELECT id, source_id, file_path, title, type, like_count, course_id FROM resources WHERE source_id = $1"#,
         source_id
     )
     .fetch_all(&mut *tx)
@@ -396,6 +407,10 @@ async fn sync_meili_index(
     let docs: Vec<_> = resources
         .iter()
         .map(|r| {
+            let course_name = r
+                .course_id
+                .and_then(|cid| state.courses.name(cid))
+                .map(String::from);
             serde_json::json!({
                 "id": r.id,
                 "source_id": r.source_id,
@@ -405,7 +420,9 @@ async fn sync_meili_index(
                 "owner": source.owner,
                 "repo": source.repo,
                 "branch": source.branch,
-                "type": r.r#type
+                "type": r.r#type,
+                "course_id": r.course_id,
+                "course_name": course_name
             })
         })
         .collect();

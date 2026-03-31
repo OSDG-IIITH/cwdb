@@ -1,4 +1,5 @@
 mod config;
+mod courses;
 mod db;
 mod github;
 mod routes;
@@ -18,6 +19,7 @@ pub struct AppState {
     pub db: PgPool,
     pub meili: Client,
     pub config: config::Config,
+    pub courses: courses::CourseRegistry,
 }
 
 #[tokio::main]
@@ -48,10 +50,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|o| o.parse())
         .collect::<Result<_, _>>()?;
 
+    let courses = courses::CourseRegistry::load(&db).await?;
+
     let state = AppState {
         db,
         meili,
         config: config.clone(),
+        courses,
     };
 
     let app = Router::new()

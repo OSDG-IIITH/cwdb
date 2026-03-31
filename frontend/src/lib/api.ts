@@ -12,6 +12,7 @@ export const ResourceSchema = z.object({
     title: z.string(),
     type: z.string().nullable().optional(),
     like_count: z.number(),
+    course_name: z.string().nullable().optional(),
 });
 
 export type Resource = z.infer<typeof ResourceSchema>;
