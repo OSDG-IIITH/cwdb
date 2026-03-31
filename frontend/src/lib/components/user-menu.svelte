@@ -90,7 +90,7 @@
 		</DropdownMenu.Trigger>
 	{/if}
 
-	<DropdownMenu.Content {align} {side} class="w-69 bg-card/30" sideOffset={12}>
+	<DropdownMenu.Content {align} {side} class="w-69 bg-sidebar" sideOffset={12}>
 		{#if $user}
 			<div class="px-3 py-2.5 border-b">
 				<p class="text-sm font-medium leading-none">{getNameFromEmail($user.email)}</p>
@@ -107,8 +107,8 @@
 						class={cn(
 							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
 							themeVariant === 'default' && mode.current === 'light'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:bg-background/50'
+								? 'bg-sidebar text-foreground shadow-sm'
+								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
@@ -124,8 +124,8 @@
 						class={cn(
 							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
 							themeVariant === 'mint'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:bg-background/50'
+								? 'bg-sidebar text-foreground shadow-sm'
+								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
@@ -141,8 +141,8 @@
 						class={cn(
 							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
 							themeVariant === 'amethyst'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:bg-background/50'
+								? 'bg-sidebar text-foreground shadow-sm'
+								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
@@ -158,8 +158,8 @@
 						class={cn(
 							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
 							themeVariant === 'default' && mode.current === 'dark'
-								? 'bg-background text-foreground shadow-sm'
-								: 'text-muted-foreground hover:bg-background/50'
+								? 'bg-sidebar text-foreground shadow-sm'
+								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
