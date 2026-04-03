@@ -36,6 +36,9 @@ impl CourseRegistry {
             }
         }
 
+        // sort longest name first so "advanced computer networks" matches before "computer networks"
+        names.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
+
         tracing::info!("loaded {} courses ({} aliases)", names.len(), aliases.len());
 
         Ok(Self { aliases, names })
@@ -104,18 +107,25 @@ mod tests {
         let id_dsa2 = Uuid::new_v4();
         let id_sci2 = Uuid::new_v4();
         let id_dna = Uuid::new_v4();
+        let id_cn = Uuid::new_v4();
+        let id_acn = Uuid::new_v4();
 
         let mut aliases = HashMap::new();
         aliases.insert("cso".to_string(), Some(id_cso));
         aliases.insert("dsa".to_string(), None);
+        aliases.insert("cn".to_string(), Some(id_cn));
+        aliases.insert("acn".to_string(), Some(id_acn));
 
-        let names = vec![
+        let mut names = vec![
             (normalize("Computer Systems Organisation"), id_cso),
             (normalize("Digital Signal Analysis"), id_dsa1),
             (normalize("Data Structures & Algorithms"), id_dsa2),
             (normalize("Science 2"), id_sci2),
             (normalize("Data & Applications"), id_dna),
+            (normalize("Computer Networks"), id_cn),
+            (normalize("Advanced Computer Networks"), id_acn),
         ];
+        names.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
 
         CourseRegistry { aliases, names }
     }
@@ -154,6 +164,16 @@ mod tests {
         let id = reg.resolve("Year2/CS/DA-Data & Applications/DA_end_2023_M.pdf");
         assert_eq!(id, reg.resolve("Data-and-Applications/slides.pdf"));
         assert!(id.is_some());
+    }
+
+    #[test]
+    fn longestmatch() {
+        let reg = registry();
+        let id_cn = reg.resolve("sem4/Computer-Networks/notes.pdf");
+        let id_acn = reg.resolve("sem6/Advanced-Computer-Networks/notes.pdf");
+        assert!(id_cn.is_some());
+        assert!(id_acn.is_some());
+        assert_ne!(id_cn, id_acn);
     }
 
     #[test]
