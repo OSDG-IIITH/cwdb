@@ -24,8 +24,6 @@
 	function titlecase(str: string): string {
 		return str.replace(/\b\w/g, (c) => c.toUpperCase());
 	}
-
-
 </script>
 
 <Popover.Root bind:open>
@@ -36,8 +34,8 @@
 				type="button"
 				aria-label="filter courses"
 				class={[
-					'h-12 w-12 shrink-0 inline-flex items-center justify-center rounded-md border shadow-xs transition-all outline-none',
-					'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
+					'inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border shadow-xs transition-all outline-none',
+					'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
 					selected
 						? 'border-border bg-input/30 text-foreground'
 						: 'border-border bg-input/30 text-muted-foreground hover:text-foreground',

@@ -49,23 +49,23 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="max-w-3xl mx-auto px-4 min-h-screen flex flex-col justify-between relative">
+<div class="relative mx-auto flex min-h-screen max-w-3xl flex-col justify-between px-4">
 	<!-- logo + searchbar -->
 	<div
 		class={active
-			? 'fixed top-0 left-0 right-0 z-40 bg-background border-b border-border'
-			: 'flex-1 flex flex-col justify-center items-center text-center'}
+			? 'fixed top-0 right-0 left-0 z-40 border-b border-border bg-background'
+			: 'flex flex-1 flex-col items-center justify-center text-center'}
 	>
 		<div
 			class={`w-full ${
 				active
-					? 'max-w-3xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'
+					? 'mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between'
 					: 'flex flex-col items-center gap-4'
 			}`}
 		>
 			<!-- logo -->
 			<div
-				class={`font-bold text-foreground font-mono tracking-tight ${
+				class={`font-mono font-bold tracking-tight text-foreground ${
 					active ? 'text-3xl' : 'text-8xl'
 				}`}
 			>
@@ -74,10 +74,10 @@
 
 			<!-- searchbar + filter -->
 			<!-- FIXME: show course filter on mobile -->
-			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} hidden md:flex items-stretch gap-2`}>
+			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} hidden items-stretch gap-2 md:flex`}>
 				<div class="relative flex-1">
 					<svg
-						class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10"
+						class="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
@@ -90,7 +90,7 @@
 					<Input
 						bind:ref={searchInput}
 						type="text"
-						class="w-full h-12 pl-10 pr-4 border-border focus-visible:ring-0 focus-visible:border-border"
+						class="h-12 w-full border-border pr-4 pl-10 focus-visible:border-border focus-visible:ring-0"
 						placeholder="search"
 						bind:value={query}
 						oninput={search}
@@ -104,7 +104,7 @@
 			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} md:hidden`}>
 				<div class="relative w-full">
 					<svg
-						class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10"
+						class="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
@@ -117,7 +117,7 @@
 					<Input
 						bind:ref={searchInput}
 						type="text"
-						class="w-full h-12 pl-10 pr-4 border-border focus-visible:ring-0 focus-visible:border-border"
+						class="h-12 w-full border-border pr-4 pl-10 focus-visible:border-border focus-visible:ring-0"
 						placeholder="search"
 						bind:value={query}
 						oninput={search}
@@ -129,38 +129,38 @@
 
 	<!-- results -->
 	{#if active}
-		<div class="flex-1 mt-32 sm:mt-20">
+		<div class="mt-32 flex-1 sm:mt-20">
 			<ul class="mt-4 mb-10 space-y-4">
 				{#if results.length > 0}
 					{#each results as r (r.id)}
 						<li>
 							<button
 								type="button"
-								class="w-full text-left cursor-pointer p-4 border border-border rounded-md bg-background hover:bg-muted/30 transition-colors"
+								class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
 								onclick={() => openRaw(r)}
 							>
 								<div class="text-base font-medium text-foreground">{r.title}</div>
-								<div class="text-xs text-muted-foreground mt-1">{r.file_path}</div>
+								<div class="mt-1 text-xs text-muted-foreground">{r.file_path}</div>
 
-								<div class="flex flex-wrap items-center gap-2 mt-3 text-xs text-muted-foreground">
+								<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 									<a
 										href={repoUrl(r)}
 										target="_blank"
 										rel="noopener"
-										class="px-2 py-0.5 bg-muted rounded hover:underline"
+										class="rounded bg-muted px-2 py-0.5 hover:underline"
 										onclick={(e: MouseEvent) => e.stopPropagation()}
 									>
 										{r.owner}/{r.repo}
 									</a>
 
 									{#if r.type}
-										<span class="px-2 py-0.5 bg-muted rounded">
+										<span class="rounded bg-muted px-2 py-0.5">
 											{r.type}
 										</span>
 									{/if}
 
 									{#if r.course_name}
-										<span class="px-2 py-0.5 bg-muted rounded">
+										<span class="rounded bg-muted px-2 py-0.5">
 											{r.course_name.replace(/\b\w/g, (c) => c.toUpperCase())}
 										</span>
 									{/if}

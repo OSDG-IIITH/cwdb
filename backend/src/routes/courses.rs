@@ -215,3 +215,70 @@ pub async fn togglepin(
 
     (StatusCode::OK, Json(serde_json::json!({ "pinned": pinned }))).into_response()
 }
+
+#[derive(Debug, Serialize)]
+struct CourseInfo {
+    id: uuid::Uuid,
+    name: String,
+    aliases: Vec<String>,
+}
+
+pub async fn getcourse(
+    State(state): State<AppState>,
+    Path(id): Path<uuid::Uuid>,
+) -> impl IntoResponse {
+    let course = sqlx::query_as!(
+        CourseInfo,
+        "SELECT id, name, aliases FROM courses WHERE id = $1",
+        id
+    )
+    .fetch_optional(&state.db)
+    .await;
+
+    let course = match course {
+        Ok(Some(c)) => c,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "error": "course not found" })),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+                .into_response()
+        }
+    };
+
+    let resources = sqlx::query_as!(
+        super::resources::ResourceRow,
+        r#"
+        SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.type, r.like_count
+        FROM resources r
+        JOIN sources s ON r.source_id = s.id
+        WHERE r.course_id = $1 AND s.source_status NOT IN ('archived', 'error')
+        "#,
+        id
+    )
+    .fetch_all(&state.db)
+    .await;
+
+    match resources {
+        Ok(resources) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "course": course,
+                "resources": resources,
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+            .into_response(),
+    }
+}

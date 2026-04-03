@@ -8,7 +8,6 @@
 	import { Sun, Moon, LogIn, LogOut, User, Sprout, Gem, Stone } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 
-
 	function getNameFromEmail(email: string): string {
 		const namePart = email.split('@')[0];
 		return namePart
@@ -35,7 +34,7 @@
 
 	onMount(() => {
 		themeVariant = localStorage.getItem('theme-variant') || 'default';
-        applyThemeVariant(themeVariant);
+		applyThemeVariant(themeVariant);
 	});
 
 	function applyThemeVariant(v: string) {
@@ -46,24 +45,24 @@
 		} else if (v === 'amethyst') {
 			document.documentElement.classList.add('amethyst');
 			setMode('dark');
-		} 
+		}
 		localStorage.setItem('theme-variant', v);
 		themeVariant = v;
 	}
 
-    function setVariant(v: string) {
-        applyThemeVariant(v);
-    }
+	function setVariant(v: string) {
+		applyThemeVariant(v);
+	}
 
-    function handleStandardLight() {
-        setVariant('default');
-        setMode('light');
-    }
+	function handleStandardLight() {
+		setVariant('default');
+		setMode('light');
+	}
 
-    function handleStandardDark() {
-        setVariant('default');
-        setMode('dark');
-    }
+	function handleStandardDark() {
+		setVariant('default');
+		setMode('dark');
+	}
 </script>
 
 <svelte:window bind:innerWidth />
@@ -72,57 +71,59 @@
 	{#if $loading}
 		<DropdownMenu.Trigger
 			disabled
-			class="h-10 w-10 rounded-full bg-muted flex items-center justify-center opacity-60"
+			class="flex h-10 w-10 items-center justify-center rounded-full bg-muted opacity-60"
 		>
 			<User class="h-4 w-4 text-muted-foreground" />
 		</DropdownMenu.Trigger>
 	{:else if $user}
 		<DropdownMenu.Trigger
-			class="h-10 w-10 rounded-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+			class="h-10 w-10 rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
 		>
 			<Avatar.Root class="h-10 w-10 cursor-pointer">
 				<Avatar.Fallback class="text-xs font-medium">{getInitials($user.email)}</Avatar.Fallback>
 			</Avatar.Root>
 		</DropdownMenu.Trigger>
 	{:else}
-		<DropdownMenu.Trigger class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-10 w-10')}>
+		<DropdownMenu.Trigger
+			class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-10 w-10')}
+		>
 			<User class="h-4 w-4" />
 		</DropdownMenu.Trigger>
 	{/if}
 
 	<DropdownMenu.Content {align} {side} class="w-69 bg-sidebar" sideOffset={12}>
 		{#if $user}
-			<div class="px-3 py-2.5 border-b">
-				<p class="text-sm font-medium leading-none">{getNameFromEmail($user.email)}</p>
-				<p class="text-xs text-muted-foreground mt-1 truncate">{$user.email}</p>
+			<div class="border-b px-3 py-2.5">
+				<p class="text-sm leading-none font-medium">{getNameFromEmail($user.email)}</p>
+				<p class="mt-1 truncate text-xs text-muted-foreground">{$user.email}</p>
 			</div>
 		{/if}
 
 		<div class="p-1.5">
-			<div class="flex items-center justify-between px-2 py-1 gap-2">
-				<span class="text-xs font-medium text-muted-foreground mr-4">Theme</span>
-                <div class="grid grid-cols-4 gap-2 w-full bg-muted/40 rounded-md p-1.5">
+			<div class="flex items-center justify-between gap-2 px-2 py-1">
+				<span class="mr-4 text-xs font-medium text-muted-foreground">Theme</span>
+				<div class="grid w-full grid-cols-4 gap-2 rounded-md bg-muted/40 p-1.5">
 					<button
 						type="button"
 						class={cn(
-							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
+							'flex h-9 w-9 items-center justify-center rounded-sm p-2 transition-all',
 							themeVariant === 'default' && mode.current === 'light'
 								? 'bg-sidebar text-foreground shadow-sm'
 								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
-                            handleStandardLight();
+							handleStandardLight();
 						}}
 						aria-label="Light Mode"
-                        title="Light"
+						title="Light"
 					>
 						<Sun class="h-4 w-4" />
 					</button>
-                    <button
+					<button
 						type="button"
 						class={cn(
-							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
+							'flex h-9 w-9 items-center justify-center rounded-sm p-2 transition-all',
 							themeVariant === 'mint'
 								? 'bg-sidebar text-foreground shadow-sm'
 								: 'text-muted-foreground hover:bg-sidebar/50'
@@ -132,14 +133,14 @@
 							setVariant('mint');
 						}}
 						aria-label="Mint Theme"
-                        title="Mint"
+						title="Mint"
 					>
 						<Sprout class="h-4 w-4" />
 					</button>
-                    <button
+					<button
 						type="button"
 						class={cn(
-							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
+							'flex h-9 w-9 items-center justify-center rounded-sm p-2 transition-all',
 							themeVariant === 'amethyst'
 								? 'bg-sidebar text-foreground shadow-sm'
 								: 'text-muted-foreground hover:bg-sidebar/50'
@@ -149,24 +150,24 @@
 							setVariant('amethyst');
 						}}
 						aria-label="Amethyst Theme"
-                        title="Amethyst"
+						title="Amethyst"
 					>
 						<Stone class="h-4 w-4" />
 					</button>
 					<button
 						type="button"
 						class={cn(
-							'flex items-center justify-center p-2 rounded-sm transition-all h-9 w-9',
+							'flex h-9 w-9 items-center justify-center rounded-sm p-2 transition-all',
 							themeVariant === 'default' && mode.current === 'dark'
 								? 'bg-sidebar text-foreground shadow-sm'
 								: 'text-muted-foreground hover:bg-sidebar/50'
 						)}
 						onclick={(e) => {
 							e.preventDefault();
-                            handleStandardDark();
+							handleStandardDark();
 						}}
 						aria-label="Dark Mode"
-                        title="Dark"
+						title="Dark"
 					>
 						<Moon class="h-4 w-4" />
 					</button>
