@@ -11,6 +11,7 @@ use crate::AppState;
 #[derive(Debug, Deserialize)]
 pub struct SearchQuery {
     pub q: Option<String>,
+    pub course: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -54,7 +55,18 @@ pub async fn search(
     let q = query.q.unwrap_or_default();
     let index = state.meili.index("resources");
 
-    match index.search().with_query(&q).execute::<MeiliHit>().await {
+    let filter = query
+        .course
+        .as_ref()
+        .map(|id| format!("course_id = \"{}\"", id));
+
+    let mut search = index.search();
+    search.with_query(&q);
+    if let Some(ref f) = filter {
+        search.with_filter(f);
+    }
+
+    match search.execute::<MeiliHit>().await {
         Ok(results) => {
             let resources: Vec<ResourceHit> = results
                 .hits

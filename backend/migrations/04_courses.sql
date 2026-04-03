@@ -9,6 +9,13 @@ CREATE TABLE courses (
 ALTER TABLE resources ADD COLUMN course_id UUID REFERENCES courses(id);
 CREATE INDEX idx_resources_course_id ON resources(course_id);
 
+CREATE TABLE coursepins (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, course_id)
+);
+
 -- seed courses from courses.json
 -- note: alias collisions exist:
 --   DSA -> "Digital Signal Analysis" AND "Data Structures and Algorithms"

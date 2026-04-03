@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { Search, Archive, FolderOpen } from '@lucide/svelte';
+	import { Search, Archive, FolderOpen, BookOpen } from '@lucide/svelte';
 
 	const links = [
 		{ href: '/', icon: Search, label: 'Search' },
 		{ href: '/resources', icon: FolderOpen, label: 'Resources' },
+		{ href: '/courses', icon: BookOpen, label: 'Courses' },
 		{ href: '/sources', icon: Archive, label: 'Sources' }
 	];
 

@@ -1,16 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { searchResources, type Resource } from '$lib/api';
+	import { searchResources, listcourses, type Resource, type Course } from '$lib/api';
 	import { Input } from '$lib/components/ui/input';
+	import CourseFilter from '$lib/components/coursefilter.svelte';
 
 	let query = $state('');
 	let results = $state<Resource[]>([]);
+	let courses = $state<Course[]>([]);
+	let selectedcourse = $state<string | null>(null);
 
 	async function search() {
-		results = await searchResources(query);
+		results = await searchResources(query, selectedcourse ?? undefined);
 	}
 
-	onMount(search);
+	$effect(() => {
+		selectedcourse;
+		search();
+	});
+
+	onMount(async () => {
+		const res = await listcourses({ per_page: 100 });
+		courses = [...res.pinned, ...res.courses];
+	});
 
 	function rawUrl(r: Resource) {
 		const b = r.branch || 'main';
@@ -25,6 +36,7 @@
 		window.open(rawUrl(r), '_blank');
 	}
 
+	let active = $derived(query.length > 0 || selectedcourse !== null);
 	let searchInput: HTMLInputElement | null = $state(null);
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -40,13 +52,13 @@
 <div class="max-w-3xl mx-auto px-4 min-h-screen flex flex-col justify-between relative">
 	<!-- logo + searchbar -->
 	<div
-		class={query.length > 0
+		class={active
 			? 'fixed top-0 left-0 right-0 z-40 bg-background border-b border-border'
 			: 'flex-1 flex flex-col justify-center items-center text-center'}
 	>
 		<div
 			class={`w-full ${
-				query.length > 0
+				active
 					? 'max-w-3xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'
 					: 'flex flex-col items-center gap-4'
 			}`}
@@ -54,39 +66,69 @@
 			<!-- logo -->
 			<div
 				class={`font-bold text-foreground font-mono tracking-tight ${
-					query.length > 0 ? 'text-3xl' : 'text-8xl'
+					active ? 'text-3xl' : 'text-8xl'
 				}`}
 			>
 				cwdb
 			</div>
 
-			<!-- searchbar -->
-			<div class={`relative w-full ${query.length === 0 ? 'mt-2' : 'mt-0'}`}>
-				<svg
-					class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					viewBox="0 0 24 24"
-					aria-hidden="true"
-				>
-					<circle cx="11" cy="11" r="7" stroke="currentColor" />
-					<line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" />
-				</svg>
-				<Input
-					bind:ref={searchInput}
-					type="text"
-					class="w-full pl-10 pr-4 py-3 h-auto border-border focus-visible:ring-0 focus-visible:border-border"
-					placeholder="search"
-					bind:value={query}
-					oninput={search}
-				/>
+			<!-- searchbar + filter -->
+			<!-- FIXME: show course filter on mobile -->
+			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} hidden md:flex items-stretch gap-2`}>
+				<div class="relative flex-1">
+					<svg
+						class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<circle cx="11" cy="11" r="7" stroke="currentColor" />
+						<line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" />
+					</svg>
+					<Input
+						bind:ref={searchInput}
+						type="text"
+						class="w-full h-12 pl-10 pr-4 border-border focus-visible:ring-0 focus-visible:border-border"
+						placeholder="search"
+						bind:value={query}
+						oninput={search}
+					/>
+				</div>
+				{#if active}
+					<CourseFilter {courses} bind:selected={selectedcourse} />
+				{/if}
+			</div>
+			<!-- mobile: search only -->
+			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} md:hidden`}>
+				<div class="relative w-full">
+					<svg
+						class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<circle cx="11" cy="11" r="7" stroke="currentColor" />
+						<line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" />
+					</svg>
+					<Input
+						bind:ref={searchInput}
+						type="text"
+						class="w-full h-12 pl-10 pr-4 border-border focus-visible:ring-0 focus-visible:border-border"
+						placeholder="search"
+						bind:value={query}
+						oninput={search}
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- results -->
-	{#if query.length > 0}
+	{#if active}
 		<div class="flex-1 mt-32 sm:mt-20">
 			<ul class="mt-4 mb-10 space-y-4">
 				{#if results.length > 0}

@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { Search, Archive, FolderOpen } from '@lucide/svelte';
-	
+	import { Search, Archive, FolderOpen, BookOpen } from '@lucide/svelte';
+
 	const links = [
 		{ href: '/', icon: Search, label: 'Search' },
 		{ href: '/resources', icon: FolderOpen, label: 'Resources' },
+		{ href: '/courses', icon: BookOpen, label: 'Courses' },
 		{ href: '/sources', icon: Archive, label: 'Sources' }
 	];
 
@@ -28,6 +29,8 @@
 			} else if (e.key === '2') {
                 goto('/resources');
             } else if (e.key === '3') {
+				goto('/courses');
+			} else if (e.key === '4') {
 				goto('/sources');
 			}
 		};
