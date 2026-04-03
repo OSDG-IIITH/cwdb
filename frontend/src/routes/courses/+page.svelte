@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { listcourses, type Course } from '$lib/api';
 	import { onDestroy, onMount } from 'svelte';
-	import { Loader2, Search } from '@lucide/svelte';
+	import { Loader2, Search, FileText } from '@lucide/svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
 	import CourseCard from '$lib/components/courses/course-card.svelte';
 	import { Input } from '$lib/components/ui/input';
@@ -10,6 +10,7 @@
 	let courses = $state<Course[]>([]);
 	let pinned = $state<Course[]>([]);
 	let total = $state(0);
+	let unclassifiedcount = $state(0);
 	let currentpage = $state(1);
 	let loading = $state(true);
 	let showloadingindicator = $state(false);
@@ -40,6 +41,7 @@
 			courses = res.courses;
 			pinned = res.pinned;
 			total = res.total;
+			unclassifiedcount = res.unclassified_count;
 		} finally {
 			stoploading();
 		}
@@ -150,6 +152,32 @@
 					{#each courses as course (course.id)}
 						<CourseCard {course} onpintoggle={loadcourses} />
 					{/each}
+				</div>
+			{/if}
+
+			{#if unclassifiedcount > 0 && !searchquery}
+				<div class="mt-8">
+					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+						Other
+					</p>
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+						<a href="/courses/00000000-0000-0000-0000-000000000000" class="block">
+							<div
+								class="group relative flex w-full flex-col justify-between gap-4 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-colors hover:border-border md:px-5 md:py-5"
+							>
+								<div class="space-y-1">
+									<span class="font-mono text-xs font-medium text-muted-foreground">N/A</span>
+									<p class="truncate text-sm font-medium tracking-tight">Unclassified</p>
+								</div>
+								<div class="flex items-center gap-1 text-[11px] text-muted-foreground">
+									<FileText class="h-3 w-3" />
+									<span
+										>{unclassifiedcount} {unclassifiedcount === 1 ? 'resource' : 'resources'}</span
+									>
+								</div>
+							</div>
+						</a>
+					</div>
 				</div>
 			{/if}
 

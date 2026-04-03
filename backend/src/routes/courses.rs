@@ -142,6 +142,13 @@ pub async fn listcourses(
         }
     };
 
+    let unclassified_count: i64 = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) as "count!" FROM resources WHERE course_id IS NULL"#
+    )
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(0);
+
     match courses {
         Ok(courses) => (
             StatusCode::OK,
@@ -151,6 +158,7 @@ pub async fn listcourses(
                 "total": total,
                 "page": page,
                 "per_page": per_page,
+                "unclassified_count": unclassified_count,
             })),
         )
             .into_response(),
@@ -227,6 +235,42 @@ pub async fn getcourse(
     State(state): State<AppState>,
     Path(id): Path<uuid::Uuid>,
 ) -> impl IntoResponse {
+    if id.is_nil() {
+        let resources = sqlx::query_as!(
+            super::resources::ResourceRow,
+            r#"
+            SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.type, r.like_count
+            FROM resources r
+            JOIN sources s ON r.source_id = s.id
+            WHERE r.course_id IS NULL AND s.source_status NOT IN ('archived', 'error')
+            "#,
+        )
+        .fetch_all(&state.db)
+        .await;
+
+        let info = CourseInfo {
+            id,
+            name: "unclassified".to_string(),
+            aliases: vec![],
+        };
+
+        return match resources {
+            Ok(resources) => (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "course": info,
+                    "resources": resources,
+                })),
+            )
+                .into_response(),
+            Err(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+                .into_response(),
+        };
+    }
+
     let course = sqlx::query_as!(
         CourseInfo,
         "SELECT id, name, aliases FROM courses WHERE id = $1",

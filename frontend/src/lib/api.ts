@@ -36,7 +36,8 @@ export const CoursesResponseSchema = z.object({
 	pinned: z.array(CourseSchema),
 	total: z.number(),
 	page: z.number(),
-	per_page: z.number()
+	per_page: z.number(),
+	unclassified_count: z.number()
 });
 
 export type CoursesResponse = z.infer<typeof CoursesResponseSchema>;
@@ -50,7 +51,7 @@ export async function listcourses(opts?: {
 	per_page?: number;
 	q?: string;
 }): Promise<CoursesResponse> {
-	const empty = { courses: [], pinned: [], total: 0, page: 1, per_page: 30 };
+	const empty = { courses: [], pinned: [], total: 0, page: 1, per_page: 30, unclassified_count: 0 };
 	try {
 		const params = new URLSearchParams();
 		if (opts?.page) params.set('page', String(opts.page));
@@ -67,7 +68,8 @@ export async function listcourses(opts?: {
 			pinned: json.pinned ?? [],
 			total: json.total ?? json.courses?.length ?? 0,
 			page: json.page ?? 1,
-			per_page: json.per_page ?? 30
+			per_page: json.per_page ?? 30,
+			unclassified_count: json.unclassified_count ?? 0
 		});
 	} catch (e) {
 		console.error('Fetch courses failed:', e);
