@@ -24,9 +24,9 @@
 	let loadingtimer: ReturnType<typeof setTimeout> | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
-	let courseid = $derived(page.params.id ?? '');
+	let slug = $derived(page.params.slug ?? '');
 	let path = $derived(page.params.path ? page.params.path.split('/') : []);
-	let basepath = $derived(`/courses/${courseid}`);
+	let basepath = $derived(`/courses/${slug}`);
 	let abbreviation = $derived((course?.aliases ?? [])[0]?.toUpperCase() ?? '');
 
 	function titlecase(str: string): string {
@@ -49,7 +49,7 @@
 	async function loadcourse() {
 		startloading();
 		try {
-			const data = await getcourse(courseid);
+			const data = await getcourse(slug);
 			if (data) {
 				course = data.course;
 				resources = data.resources;
@@ -86,7 +86,7 @@
 				return;
 			}
 			searching = true;
-			searchresults = await searchResources(searchquery, courseid);
+			searchresults = await searchResources(searchquery, course?.name);
 		}, 200);
 	}
 

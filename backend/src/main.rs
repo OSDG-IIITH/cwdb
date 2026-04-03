@@ -69,8 +69,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/sources/{id}", delete(routes::sources::delete_source))
         .route("/api/search", get(routes::search::search))
         .route("/api/courses", get(routes::courses::listcourses))
-        .route("/api/courses/{id}", get(routes::courses::getcourse))
-        .route("/api/courses/{id}/pin", post(routes::courses::togglepin))
+        .route("/api/courses/{slug}", get(routes::courses::getcourse))
+        .route("/api/courses/{slug}/pin", post(routes::courses::togglepin))
         .route(
             "/api/sources/{id}/like",
             post(routes::likes::toggle_source_like),

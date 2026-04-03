@@ -58,7 +58,7 @@ pub async fn search(
     let filter = query
         .course
         .as_ref()
-        .map(|id| format!("course_id = \"{}\"", id));
+        .map(|name| format!("course_name = \"{}\"", name));
 
     let mut search = index.search();
     search.with_query(&q);

@@ -22,7 +22,6 @@ export const SearchResponseSchema = z.object({
 });
 
 export const CourseSchema = z.object({
-	id: z.string(),
 	name: z.string(),
 	aliases: z.array(z.string()),
 	resource_count: z.number(),
@@ -77,9 +76,13 @@ export async function listcourses(opts?: {
 	}
 }
 
-export async function togglecoursepin(courseid: string): Promise<{ pinned: boolean } | null> {
+export function toslug(name: string): string {
+	return name.toLowerCase().replaceAll(' ', '-');
+}
+
+export async function togglecoursepin(slug: string): Promise<{ pinned: boolean } | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/courses/${courseid}/pin`, {
+		const res = await fetch(`${API_BASE}/api/courses/${slug}/pin`, {
 			method: 'POST',
 			credentials: 'include'
 		});
@@ -93,7 +96,6 @@ export async function togglecoursepin(courseid: string): Promise<{ pinned: boole
 }
 
 export const CourseDetailSchema = z.object({
-	id: z.string(),
 	name: z.string(),
 	aliases: z.array(z.string())
 });
@@ -101,10 +103,10 @@ export const CourseDetailSchema = z.object({
 export type CourseDetail = z.infer<typeof CourseDetailSchema>;
 
 export async function getcourse(
-	id: string
+	slug: string
 ): Promise<{ course: CourseDetail; resources: Resource[] } | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/courses/${id}`, { credentials: 'include' });
+		const res = await fetch(`${API_BASE}/api/courses/${slug}`, { credentials: 'include' });
 		if (!res.ok) return null;
 		const json = await res.json();
 		return {
@@ -117,10 +119,10 @@ export async function getcourse(
 	}
 }
 
-export async function searchResources(query: string, courseid?: string): Promise<Resource[]> {
+export async function searchResources(query: string, coursename?: string): Promise<Resource[]> {
 	try {
 		let url = `${API_BASE}/api/search?q=${encodeURIComponent(query)}`;
-		if (courseid) url += `&course=${encodeURIComponent(courseid)}`;
+		if (coursename) url += `&course=${encodeURIComponent(coursename)}`;
 		const res = await fetch(url, {
 			credentials: 'include'
 		});

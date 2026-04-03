@@ -173,11 +173,36 @@ pub async fn listcourses(
 pub async fn togglepin(
     State(state): State<AppState>,
     claims: Claims,
-    Path(course_id): Path<uuid::Uuid>,
+    Path(slug): Path<String>,
 ) -> impl IntoResponse {
     let user = match upsertuser(&state, &claims).await {
         Ok(u) => u,
         Err(e) => return e.into_response(),
+    };
+
+    let name = slug.replace('-', " ");
+    let course_id = match sqlx::query_scalar!(
+        r#"SELECT id FROM courses WHERE LOWER(name) = LOWER($1)"#,
+        name
+    )
+    .fetch_optional(&state.db)
+    .await
+    {
+        Ok(Some(id)) => id,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({ "error": "course not found" })),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+                .into_response()
+        }
     };
 
     let existing = sqlx::query_scalar!(
@@ -226,16 +251,15 @@ pub async fn togglepin(
 
 #[derive(Debug, Serialize)]
 struct CourseInfo {
-    id: uuid::Uuid,
     name: String,
     aliases: Vec<String>,
 }
 
 pub async fn getcourse(
     State(state): State<AppState>,
-    Path(id): Path<uuid::Uuid>,
+    Path(slug): Path<String>,
 ) -> impl IntoResponse {
-    if id.is_nil() {
+    if slug == "unclassified" {
         let resources = sqlx::query_as!(
             super::resources::ResourceRow,
             r#"
@@ -249,7 +273,6 @@ pub async fn getcourse(
         .await;
 
         let info = CourseInfo {
-            id,
             name: "unclassified".to_string(),
             aliases: vec![],
         };
@@ -271,10 +294,12 @@ pub async fn getcourse(
         };
     }
 
+    let name = slug.replace('-', " ");
+
     let course = sqlx::query_as!(
         CourseInfo,
-        "SELECT id, name, aliases FROM courses WHERE id = $1",
-        id
+        "SELECT name, aliases FROM courses WHERE LOWER(name) = LOWER($1)",
+        name
     )
     .fetch_optional(&state.db)
     .await;
@@ -303,9 +328,9 @@ pub async fn getcourse(
         SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.type, r.like_count
         FROM resources r
         JOIN sources s ON r.source_id = s.id
-        WHERE r.course_id = $1 AND s.source_status NOT IN ('archived', 'error')
+        WHERE r.course_id = (SELECT id FROM courses WHERE LOWER(name) = LOWER($1)) AND s.source_status NOT IN ('archived', 'error')
         "#,
-        id
+        name
     )
     .fetch_all(&state.db)
     .await;

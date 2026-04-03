@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { togglecoursepin, type Course } from '$lib/api';
+	import { togglecoursepin, toslug, type Course } from '$lib/api';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Pin, FileText } from '@lucide/svelte';
@@ -18,7 +18,7 @@
 	async function handlepin(e: MouseEvent) {
 		e.preventDefault();
 		e.stopPropagation();
-		const result = await togglecoursepin(course.id);
+		const result = await togglecoursepin(toslug(course.name));
 		if (result) {
 			localpinned = result.pinned;
 			onpintoggle?.();
@@ -26,7 +26,7 @@
 	}
 </script>
 
-<a href="/courses/{course.id}" class="block">
+<a href="/courses/{toslug(course.name)}" class="block">
 	<Card.Root
 		class="group relative flex w-full flex-col justify-between gap-4 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-colors hover:border-border md:px-5 md:py-5"
 	>

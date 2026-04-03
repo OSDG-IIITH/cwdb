@@ -135,7 +135,7 @@
 						Pinned
 					</p>
 					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-						{#each pinned as course (course.id)}
+						{#each pinned as course (course.name)}
 							<CourseCard {course} onpintoggle={loadcourses} />
 						{/each}
 					</div>
@@ -149,7 +149,7 @@
 					</p>
 				{/if}
 				<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-					{#each courses as course (course.id)}
+					{#each courses as course (course.name)}
 						<CourseCard {course} onpintoggle={loadcourses} />
 					{/each}
 				</div>
@@ -161,7 +161,7 @@
 						Other
 					</p>
 					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-						<a href="/courses/00000000-0000-0000-0000-000000000000" class="block">
+						<a href="/courses/unclassified" class="block">
 							<div
 								class="group relative flex w-full flex-col justify-between gap-4 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-colors hover:border-border md:px-5 md:py-5"
 							>

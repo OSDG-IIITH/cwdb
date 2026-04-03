@@ -13,12 +13,12 @@
 	let { courses, selected = $bindable(null) }: Props = $props();
 
 	let open = $state(false);
-	let activecourse = $derived(courses.find((course) => course.id === selected) ?? null);
+	let activecourse = $derived(courses.find((course) => course.name === selected) ?? null);
 	let orderedcourses = $derived.by(() => {
 		if (!selected) return courses;
-		const selectedcourse = courses.find((course) => course.id === selected);
+		const selectedcourse = courses.find((course) => course.name === selected);
 		if (!selectedcourse) return courses;
-		return [selectedcourse, ...courses.filter((course) => course.id !== selected)];
+		return [selectedcourse, ...courses.filter((course) => course.name !== selected)];
 	});
 
 	function titlecase(str: string): string {
@@ -62,15 +62,15 @@
 			<Command.List>
 				<Command.Empty>no courses found</Command.Empty>
 				<Command.Group>
-					{#each orderedcourses as course (course.id)}
+					{#each orderedcourses as course (course.name)}
 						<Command.Item
 							value={course.name}
 							onSelect={() => {
-								selected = selected === course.id ? null : course.id;
+								selected = selected === course.name ? null : course.name;
 								open = false;
 							}}
 						>
-							<Check class={selected === course.id ? 'opacity-100' : 'opacity-0'} />
+							<Check class={selected === course.name ? 'opacity-100' : 'opacity-0'} />
 							{titlecase(course.name)}
 							<span class="ml-auto text-muted-foreground">{course.resource_count}</span>
 						</Command.Item>
