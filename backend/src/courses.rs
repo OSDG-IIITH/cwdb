@@ -168,6 +168,27 @@ impl CourseRegistry {
                     }
                 }
             }
+
+            // tokenize filename stem on all non-alphanumeric boundaries
+            // catches aliases embedded in filenames like "OSN Sep 24.pdf"
+            if let Some(filename) = path.split('/').last() {
+                let stem = match filename.rfind('.') {
+                    Some(i) => &filename[..i],
+                    None => filename,
+                };
+                for token in stem.split(|c: char| !c.is_alphanumeric()) {
+                    let key = token.to_lowercase();
+                    if key.is_empty() {
+                        continue;
+                    }
+                    if let Some(ids) = self.aliases.get(&key) {
+                        let score = if ids.len() == 1 { 0.9 } else { 0.5 };
+                        for &id in ids {
+                            candidates.push((id, score));
+                        }
+                    }
+                }
+            }
         }
 
         let mut best: HashMap<Uuid, f32> = HashMap::new();
