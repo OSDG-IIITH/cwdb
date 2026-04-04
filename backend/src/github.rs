@@ -98,7 +98,10 @@ impl GitHubClient {
             .tree
             .into_iter()
             .filter(|e| e.entry_type == "blob")
-            .filter(|e| !ignore.matched_path_or_any_parents(&e.path, false).is_ignore())
+            .filter(|e| {
+                let full = format!("{}/{}/{}", owner, repo, e.path);
+                !ignore.matched_path_or_any_parents(&full, false).is_ignore()
+            })
             .collect();
 
         Ok((branch, filtered))
