@@ -13,8 +13,10 @@ use ocas_auth::Claims;
 #[derive(Debug, Serialize)]
 pub struct CourseRow {
     pub id: uuid::Uuid,
+    pub code: String,
     pub name: String,
     pub aliases: Vec<String>,
+    pub semester: String,
     pub resource_count: i64,
     pub pinned: bool,
 }
@@ -47,7 +49,7 @@ pub async fn listcourses(
             sqlx::query_as!(
                 CourseRow,
                 r#"
-                SELECT c.id, c.name, c.aliases, COUNT(r.id) as "resource_count!",
+                SELECT c.id, c.code, c.name, c.aliases, c.semester, COUNT(r.id) as "resource_count!",
                     true as "pinned!"
                 FROM courses c
                 LEFT JOIN resources r ON r.course_id = c.id
@@ -93,7 +95,7 @@ pub async fn listcourses(
             sqlx::query_as!(
                 CourseRow,
                 r#"
-                SELECT c.id, c.name, c.aliases, COUNT(r.id) as "resource_count!",
+                SELECT c.id, c.code, c.name, c.aliases, c.semester, COUNT(r.id) as "resource_count!",
                     EXISTS(SELECT 1 FROM coursepins cp WHERE cp.course_id = c.id AND cp.user_id = $5) as "pinned!"
                 FROM courses c
                 LEFT JOIN resources r ON r.course_id = c.id
@@ -119,7 +121,7 @@ pub async fn listcourses(
             sqlx::query_as!(
                 CourseRow,
                 r#"
-                SELECT c.id, c.name, c.aliases, COUNT(r.id) as "resource_count!",
+                SELECT c.id, c.code, c.name, c.aliases, c.semester, COUNT(r.id) as "resource_count!",
                     false as "pinned!"
                 FROM courses c
                 LEFT JOIN resources r ON r.course_id = c.id
@@ -251,8 +253,10 @@ pub async fn togglepin(
 
 #[derive(Debug, Serialize)]
 struct CourseInfo {
+    code: String,
     name: String,
     aliases: Vec<String>,
+    semester: String,
 }
 
 pub async fn getcourse(
@@ -273,8 +277,10 @@ pub async fn getcourse(
         .await;
 
         let info = CourseInfo {
+            code: String::new(),
             name: "unclassified".to_string(),
             aliases: vec![],
+            semester: String::new(),
         };
 
         return match resources {
@@ -298,7 +304,7 @@ pub async fn getcourse(
 
     let course = sqlx::query_as!(
         CourseInfo,
-        "SELECT name, aliases FROM courses WHERE LOWER(name) = LOWER($1)",
+        "SELECT code, name, aliases, semester FROM courses WHERE LOWER(name) = LOWER($1)",
         name
     )
     .fetch_optional(&state.db)
