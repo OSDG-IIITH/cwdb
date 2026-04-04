@@ -94,7 +94,7 @@ impl CourseRegistry {
         None
     }
 
-    pub fn resolve(&self, path: &str) -> Option<Uuid> {
+    pub fn resolve(&self, path: &str, repo: &str) -> Option<Uuid> {
         let season = Self::extractseason(path);
         let mut candidates: Vec<(Uuid, f32)> = Vec::new();
         let mut has_exact = false;
@@ -190,17 +190,16 @@ impl CourseRegistry {
                 }
             }
 
-            if let Some(repo) = path.split('/').nth(1) {
-                for token in repo.split(|c: char| !c.is_alphanumeric()) {
-                    let key = token.to_lowercase();
-                    if key.is_empty() {
-                        continue;
-                    }
-                    if let Some(ids) = self.aliases.get(&key) {
-                        let score = if ids.len() == 1 { 0.9 } else { 0.5 };
-                        for &id in ids {
-                            candidates.push((id, score));
-                        }
+            // alias match on repo name
+            for token in repo.split(|c: char| !c.is_alphanumeric()) {
+                let key = token.to_lowercase();
+                if key.is_empty() {
+                    continue;
+                }
+                if let Some(ids) = self.aliases.get(&key) {
+                    let score = if ids.len() == 1 { 0.9 } else { 0.5 };
+                    for &id in ids {
+                        candidates.push((id, score));
                     }
                 }
             }
@@ -341,6 +340,8 @@ mod tests {
         let inlp = Uuid::from_u128(10);
         let robotics = Uuid::from_u128(11);
         let peu = Uuid::from_u128(12);
+        let mdl = Uuid::from_u128(13);
+        let osn = Uuid::from_u128(14);
 
         let mut aliases: HashMap<String, Vec<Uuid>> = HashMap::new();
         aliases.insert("cso".to_string(), vec![cso]);
@@ -348,6 +349,8 @@ mod tests {
         aliases.insert("ds".to_string(), vec![disc, distsys]);
         aliases.insert("acn".to_string(), vec![acn]);
         aliases.insert("inlp".to_string(), vec![inlp]);
+        aliases.insert("mdl".to_string(), vec![mdl]);
+        aliases.insert("osn".to_string(), vec![osn]);
 
         let mut codes = HashMap::new();
         codes.insert("cs1.201".to_string(), dsa_ds);
@@ -365,6 +368,8 @@ mod tests {
             ("Introduction to NLP", inlp, "monsoon"),
             ("Robotics: Dynamics and Control", robotics, "monsoon"),
             ("Physics of Early Universe", peu, "monsoon"),
+            ("Machine Data Learning", mdl, "monsoon"),
+            ("Operating Systems and Networks", osn, "monsoon"),
         ];
 
         let mut names: Vec<(String, Vec<String>, Uuid)> = course_data
@@ -408,46 +413,62 @@ mod tests {
     fn name_match() {
         let reg = registry();
         // exact substring
-        assert_eq!(reg.resolve("Computer-Systems-Organisation/end.pdf"), Some(Uuid::from_u128(1)));
-        // longest wins: ACN before CN
+        assert_eq!(reg.resolve("Computer-Systems-Organisation/end.pdf", ""), Some(Uuid::from_u128(1)));
+        // longest wins
         assert_ne!(
-            reg.resolve("Advanced-Computer-Networks/notes.pdf"),
-            reg.resolve("Computer-Networks/notes.pdf"),
+            reg.resolve("Advanced-Computer-Networks/notes.pdf", ""),
+            reg.resolve("Computer-Networks/notes.pdf", ""),
         );
         // ampersand + roman numeral
-        assert_eq!(reg.resolve("DA-Data & Applications/end.pdf"), Some(Uuid::from_u128(5)));
-        assert_eq!(reg.resolve("SCI2-Science-II/end.pdf"), Some(Uuid::from_u128(4)));
+        assert_eq!(reg.resolve("DA-Data & Applications/end.pdf", ""), Some(Uuid::from_u128(5)));
+        assert_eq!(reg.resolve("SCI2-Science-II/end.pdf", ""), Some(Uuid::from_u128(4)));
     }
 
     #[test]
     fn alias_and_collision() {
         let reg = registry();
         // unique alias
-        assert_eq!(reg.resolve("sem2/CSO/A1.pdf"), Some(Uuid::from_u128(1)));
-        // collision resolved by season: sem-1 = monsoon → disc (monsoon) beats distsys (both)
-        assert_eq!(reg.resolve("sem-1/ds/notes.pdf"), Some(Uuid::from_u128(8)));
+        assert_eq!(reg.resolve("sem2/CSO/A1.pdf", ""), Some(Uuid::from_u128(1)));
+        // collision resolved by season: sem-1 = monsoon → disc (monsoon) beats distsys
+        assert_eq!(reg.resolve("sem-1/ds/notes.pdf", ""), Some(Uuid::from_u128(8)));
         // collision with both same season → tie → None
-        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf"), None);
+        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", ""), None);
         // no match
-        assert_eq!(reg.resolve("random/file.pdf"), None);
+        assert_eq!(reg.resolve("random/file.pdf", ""), None);
     }
 
     #[test]
     fn code_match() {
         let reg = registry();
-        assert_eq!(reg.resolve("CS1.201 Data Structures/end.pdf"), Some(Uuid::from_u128(3)));
+        assert_eq!(reg.resolve("CS1.201 Data Structures/end.pdf", ""), Some(Uuid::from_u128(3)));
     }
 
     #[test]
     fn fuzzy_match() {
         let reg = registry();
         // prefix: "intro" → "introduction"
-        assert_eq!(reg.resolve("Intro-to-NLP/notes.pdf"), Some(Uuid::from_u128(10)));
+        assert_eq!(reg.resolve("Intro-to-NLP/notes.pdf", ""), Some(Uuid::from_u128(10)));
         // plural: "algorithm" → "algorithms"
-        assert_eq!(reg.resolve("Data-Structures-and-Algorithm/hw.pdf"), Some(Uuid::from_u128(3)));
+        assert_eq!(reg.resolve("Data-Structures-and-Algorithm/hw.pdf", ""), Some(Uuid::from_u128(3)));
         // article strip: "the" dropped
-        assert_eq!(reg.resolve("Physics-of-the-Early-Universe/notes.pdf"), Some(Uuid::from_u128(12)));
+        assert_eq!(reg.resolve("Physics-of-the-Early-Universe/notes.pdf", ""), Some(Uuid::from_u128(12)));
         // colon strip + plural: "Controls" → "Control"
-        assert_eq!(reg.resolve("Robotics-Dynamics-And-Controls/a1.pdf"), Some(Uuid::from_u128(11)));
+        assert_eq!(reg.resolve("Robotics-Dynamics-And-Controls/a1.pdf", ""), Some(Uuid::from_u128(11)));
+    }
+
+    #[test]
+    fn filename_token_match() {
+        let reg = registry();
+        // alias embedded in filename with date suffix
+        assert_eq!(reg.resolve("user/repo/sem-1/OSN Sep 24.pdf", ""), Some(Uuid::from_u128(14)));
+    }
+
+    #[test]
+    fn repo_name_match() {
+        let reg = registry();
+        // repo name contains the alias: "MDL-lecs" → token "mdl" hits alias map
+        assert_eq!(reg.resolve("sem-1/lecture.pdf", "MDL-lecs"), Some(Uuid::from_u128(13)));
+        // plain file with no other signal, repo name is the only hint
+        assert_eq!(reg.resolve("lecture1.pdf", "MDL-lecs"), Some(Uuid::from_u128(13)));
     }
 }

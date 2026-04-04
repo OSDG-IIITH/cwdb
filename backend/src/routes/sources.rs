@@ -293,7 +293,7 @@ pub async fn sync_source(
 
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
-            if let Some(cid) = state.courses.resolve(&entry.path) {
+            if let Some(cid) = state.courses.resolve(&entry.path, &source.repo) {
                 let _ = sqlx::query!(
                     "UPDATE resources SET course_id = $1 WHERE source_id = $2 AND path_hash = $3",
                     cid,
