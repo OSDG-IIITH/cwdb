@@ -189,6 +189,21 @@ impl CourseRegistry {
                     }
                 }
             }
+
+            if let Some(repo) = path.split('/').nth(1) {
+                for token in repo.split(|c: char| !c.is_alphanumeric()) {
+                    let key = token.to_lowercase();
+                    if key.is_empty() {
+                        continue;
+                    }
+                    if let Some(ids) = self.aliases.get(&key) {
+                        let score = if ids.len() == 1 { 0.9 } else { 0.5 };
+                        for &id in ids {
+                            candidates.push((id, score));
+                        }
+                    }
+                }
+            }
         }
 
         let mut best: HashMap<Uuid, f32> = HashMap::new();
