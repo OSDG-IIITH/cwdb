@@ -8,6 +8,7 @@ CREATE TABLE sources (
     poll_frequency INT NOT NULL DEFAULT 7,
     source_status VARCHAR(50) NOT NULL DEFAULT 'active',
     like_count INT NOT NULL DEFAULT 0,
+    aliases JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     created_by UUID NOT NULL,
     UNIQUE(owner, repo, branch)

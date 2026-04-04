@@ -148,6 +148,7 @@ export const SourceSchema = z.object({
 	created_at: z.string().nullable(),
 	created_by: z.string(),
 	like_count: z.number(),
+	aliases: z.record(z.string(), z.string()).optional().default({}),
 	liked: z.boolean()
 });
 
@@ -182,13 +183,14 @@ export async function listSources(filter?: string): Promise<Source[]> {
 export async function createSource(
 	owner: string,
 	repo: string,
-	branch?: string
+	branch?: string,
+	aliases?: Record<string, string>
 ): Promise<Source | null> {
 	try {
 		const res = await fetch(`${API_BASE}/api/sources`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ owner, repo, branch }),
+			body: JSON.stringify({ owner, repo, branch, aliases }),
 			credentials: 'include'
 		});
 		if (!res.ok) {

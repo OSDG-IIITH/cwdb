@@ -5,7 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { createEventDispatcher } from 'svelte';
-	import { Plus, Github, Loader2, Check, AlertCircle, GitBranch, Star } from '@lucide/svelte';
+	import { Plus, Github, Loader2, Check, AlertCircle, GitBranch, Star, ChevronDown } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import { user } from '$lib/auth';
 	import { toast } from 'svelte-sonner';
@@ -13,17 +13,19 @@
 	let open = $state(false);
 	let loading = $state(false);
 
-	// State for URL parsing and verification
 	let url = $state('');
 	let verifying = $state(false);
 	let verified = $state(false);
 	let error = $state('');
+	let aliasestext = $state('');
+	let showoptions = $state(false);
 
 	let parsedData = $state({ owner: '', repo: '', branch: '' });
 	let repoDetails = $state<{
 		description: string;
 		stargazers_count: number;
 		default_branch: string;
+		avatar_url: string;
 	} | null>(null);
 
 	const dispatch = createEventDispatcher();
@@ -102,7 +104,8 @@
 				repoDetails = {
 					description: data.description,
 					stargazers_count: data.stargazers_count,
-					default_branch: data.default_branch
+					default_branch: data.default_branch,
+					avatar_url: data.owner?.avatar_url ?? ''
 				};
 				verified = true;
 			} else {
@@ -116,12 +119,25 @@
 		}
 	}
 
+	function parsealiases(text: string): Record<string, string> {
+		const result: Record<string, string> = {};
+		for (const line of text.split('\n')) {
+			const sep = line.indexOf(':');
+			if (sep < 0) continue;
+			const key = line.slice(0, sep).trim();
+			const val = line.slice(sep + 1).trim();
+			if (key && val) result[key] = val;
+		}
+		return result;
+	}
+
 	async function handleSubmit() {
 		if (!verified || !parsedData.owner || !parsedData.repo) return;
 
 		loading = true;
 		const branchToUse = parsedData.branch || repoDetails?.default_branch;
-		const res = await createSource(parsedData.owner, parsedData.repo, branchToUse);
+		const aliases = aliasestext.trim() ? parsealiases(aliasestext) : undefined;
+		const res = await createSource(parsedData.owner, parsedData.repo, branchToUse, aliases);
 
 		if (res) {
 			await refreshSource(res.id);
@@ -136,6 +152,8 @@
 			parsedData = { owner: '', repo: '', branch: '' };
 			repoDetails = null;
 			verified = false;
+			aliasestext = '';
+			showoptions = false;
 			dispatch('created');
 		} else {
 			error = 'Failed to add source to backend';
@@ -174,7 +192,7 @@
 						{#if verifying}
 							<Loader2 class="h-4 w-4 animate-spin" />
 						{:else if verified}
-							<Check class="h-4 w-4 text-green-500" />
+							<Check class="h-4 w-4 text-foreground" />
 						{:else if error}
 							<AlertCircle class="h-4 w-4 text-destructive" />
 						{/if}
@@ -190,9 +208,17 @@
 					class="animate-in rounded-lg border border-border/60 bg-muted/30 p-4 transition-all fade-in slide-in-from-top-2"
 				>
 					<div class="flex items-start gap-4">
-						<div class="rounded-md bg-background p-2 ring-1 ring-border">
-							<Github class="h-6 w-6" />
-						</div>
+						{#if repoDetails.avatar_url}
+							<img
+								src="{repoDetails.avatar_url}&s=80"
+								alt=""
+								class="h-10 w-10 rounded-md ring-1 ring-border"
+							/>
+						{:else}
+							<div class="rounded-md bg-background p-2 ring-1 ring-border">
+								<Github class="h-6 w-6" />
+							</div>
+						{/if}
 						<div class="space-y-1 overflow-hidden">
 							<h4 class="flex items-center gap-2 leading-none font-medium tracking-tight">
 								{parsedData.owner}/{parsedData.repo}
@@ -213,6 +239,34 @@
 							</div>
 						</div>
 					</div>
+				</div>
+			{/if}
+
+			{#if verified}
+				<div>
+					<button
+						type="button"
+						onclick={() => (showoptions = !showoptions)}
+						class="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ChevronDown class="h-3 w-3 transition-transform {showoptions ? 'rotate-180' : ''}" />
+						Extra options
+					</button>
+
+					{#if showoptions}
+						<div class="animate-in mt-3 space-y-2 fade-in slide-in-from-top-1">
+							<Label for="aliases" class="text-xs text-muted-foreground">
+								Alias mappings
+							</Label>
+							<textarea
+								id="aliases"
+								bind:value={aliasestext}
+								placeholder={"dsa: Data Structures and Algorithms\nsem4/dsa: Digital Signal Analysis"}
+								rows="3"
+								class="w-full rounded-md border border-border/60 bg-background px-3 py-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+							></textarea>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
