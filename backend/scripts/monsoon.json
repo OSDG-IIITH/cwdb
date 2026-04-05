@@ -80,7 +80,9 @@
   {
     "code": "OC2.101",
     "name": "Arts 1",
-    "aliases": [],
+    "aliases": [
+      "arts2"
+    ],
     "instructors": [
       "Saroja T K"
     ],
@@ -123,7 +125,9 @@
   {
     "code": "SC3.202",
     "name": "Bioinformatics",
-    "aliases": [],
+    "aliases": [
+      "bioinf"
+    ],
     "instructors": [
       "Nita Parekh"
     ],
