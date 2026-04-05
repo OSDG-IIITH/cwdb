@@ -13,9 +13,9 @@
 
 	onMount(() => {
 		fetchUser();
-        const v = localStorage.getItem('theme-variant') || 'default';
-        if (v === 'mint') document.documentElement.classList.add('mint');
-        if (v === 'amethyst') document.documentElement.classList.add('amethyst');
+		const v = localStorage.getItem('theme-variant') || 'default';
+		if (v === 'mint') document.documentElement.classList.add('mint');
+		if (v === 'amethyst') document.documentElement.classList.add('amethyst');
 	});
 </script>
 
@@ -24,7 +24,9 @@
 <Toaster />
 <Sidebar />
 <Mobilebar />
-<div class="fixed top-5 right-5 z-50 md:top-auto md:bottom-2 md:left-4 md:right-auto md:rounded-md md:p-2">
+<div
+	class="fixed top-5 right-5 z-50 md:top-auto md:right-auto md:bottom-2 md:left-4 md:rounded-md md:p-2"
+>
 	<UserMenu />
 </div>
 

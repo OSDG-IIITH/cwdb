@@ -1,0 +1,1367 @@
+[
+  {
+    "code": "CS3.402",
+    "name": "Advanced Computer Networks",
+    "aliases": [
+      "ACN"
+    ],
+    "instructors": [
+      "Ankit Gangwal"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE1.610",
+    "name": "Advanced Design of Steel Structures",
+    "aliases": [
+      "ADSS"
+    ],
+    "instructors": [
+      "Sunitha Palissery"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS7.501",
+    "name": "Advanced NLP",
+    "aliases": [
+      "ANLP"
+    ],
+    "instructors": [
+      "Manish Shrivastava"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS3.304",
+    "name": "Advanced Operating Systems",
+    "aliases": [
+      "AOS"
+    ],
+    "instructors": [
+      "Krishna Reddy P"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "GS1.501",
+    "name": "Advanced Remote Sensing",
+    "aliases": [
+      "ARS"
+    ],
+    "instructors": [
+      "Rama Chandra Prasad P",
+      "Kiran Chand T"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.301",
+    "name": "Algorithm Analysis and Design",
+    "aliases": [
+      "AAD"
+    ],
+    "instructors": [
+      "Srinathan Kannan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS3.306",
+    "name": "Algorithms and Operating Systems",
+    "aliases": [
+      "AOS"
+    ],
+    "instructors": [
+      "Lini Teresa Thomas"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "OC2.101",
+    "name": "Arts 1",
+    "aliases": [
+      "arts2"
+    ],
+    "instructors": [
+      "Saroja T K"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.302",
+    "name": "Automata Theory",
+    "aliases": [
+      "AT",
+      "automata"
+    ],
+    "instructors": [
+      "Shantanav Chakraborty"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS0.203a & HS0.203b",
+    "name": "Basics of Ethics",
+    "aliases": [
+      "boe"
+    ],
+    "instructors": [
+      "Saurabh Todariya"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CG3.402",
+    "name": "Behavioral Research & Experimental Design",
+    "aliases": [
+      "BRED"
+    ],
+    "instructors": [
+      "Vinoo Alluri"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC3.202",
+    "name": "Bioinformatics",
+    "aliases": [
+      "bioinf"
+    ],
+    "instructors": [
+      "Nita Parekh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC3.321",
+    "name": "Biomolecular Structure Interaction & Dynamics",
+    "aliases": [
+      "BMSTR"
+    ],
+    "instructors": [
+      "B.Gopalakrishnan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS3.405",
+    "name": "Blockchain and Web3 Development",
+    "aliases": [],
+    "instructors": [
+      "Ankit Gangwal"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD2.421",
+    "name": "Business Fundamentals",
+    "aliases": [
+      "BF"
+    ],
+    "instructors": [
+      "TBD"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Causal Inference",
+    "aliases": [],
+    "instructors": [
+      "Naresh Manwani"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC2.305",
+    "name": "Chemical Kinetics and Reaction Dynamics",
+    "aliases": [
+      "CKRD"
+    ],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC2.309",
+    "name": "Chemistry Topics for Engineers",
+    "aliases": [
+      "CTE"
+    ],
+    "instructors": [
+      "Tapan Kumar Sau",
+      "Prabhakar B"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Classical Text Reading",
+    "aliases": [
+      "CTR"
+    ],
+    "instructors": [
+      "Saurabh Todariya"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC2.410",
+    "name": "CMOS References and Regulators",
+    "aliases": [],
+    "instructors": [
+      "Zia Abbas",
+      "Abhishek P"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CL3.202",
+    "name": "Computational Linguistics 2: Comp Semantics and Discourse parsing",
+    "aliases": [
+      "CL2"
+    ],
+    "instructors": [
+      "Rajakrishnan P Rajkumar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS0.301",
+    "name": "Computer Problem Solving",
+    "aliases": [
+      "CPS"
+    ],
+    "instructors": [
+      "Shatrunjay"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS0.101",
+    "name": "Computer Programming",
+    "aliases": [
+      "cpro",
+      "c programming"
+    ],
+    "instructors": [
+      "Abhishek Deshpande",
+      "Vineet Gandhi",
+      "Girish Varma"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC4.101",
+    "name": "Computing in Sciences 1",
+    "aliases": [
+      "CIS1"
+    ],
+    "instructors": [
+      "Marimuthu Krishnan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "GS2.402",
+    "name": "Cyber GIS: Geospatial Web and GeoBl",
+    "aliases": [
+      "CGGWG"
+    ],
+    "instructors": [
+      "K S Rajan",
+      "Kuldeep Kurte"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS4.405",
+    "name": "Data Analytics 1",
+    "aliases": [
+      "DA1"
+    ],
+    "instructors": [
+      "Krishna Reddy Polepalli"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS4.301",
+    "name": "Data and Applications",
+    "aliases": [
+      "DA",
+      "dna"
+    ],
+    "instructors": [
+      "Ponnurangam Kumaraguru"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.304",
+    "name": "Data Structures & Algorithms for Problem Solving",
+    "aliases": [
+      "DSA"
+    ],
+    "instructors": [
+      "Lini Thomas",
+      "Kshitij Gajjar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS9.429",
+    "name": "Design for Social Innovation",
+    "aliases": [
+      "dsi"
+    ],
+    "instructors": [
+      "Ramesh Loganathan",
+      "Arjun Rajashekar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD1.401",
+    "name": "Design Thinking - Idea to Evaluate",
+    "aliases": [],
+    "instructors": [
+      "Raman Saxena",
+      "Y. Raghu Reddy"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD1.301",
+    "name": "Design Thinking - Research to Define",
+    "aliases": [],
+    "instructors": [
+      "Raman Saxena",
+      "Y. Raghu Reddy"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS7.404",
+    "name": "Digital Image Processing",
+    "aliases": [
+      "DIP"
+    ],
+    "instructors": [
+      "Anoop M Namboodiri"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC2.101",
+    "name": "Digital Systems and Microcontrollers",
+    "aliases": [
+      "DSM"
+    ],
+    "instructors": [
+      "Madhava Krishna",
+      "Anil Kumar V",
+      "Anshu Sarje",
+      "Hari Kumar K",
+      "Chiranjeevi Y"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC2.408",
+    "name": "Digital VLSI Design",
+    "aliases": [],
+    "instructors": [
+      "Zia Abbas"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA5.101",
+    "name": "Discrete Structures",
+    "aliases": [
+      "ds"
+    ],
+    "instructors": [
+      "Praveen P",
+      "Suryajith Ch"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS3.401",
+    "name": "Distributed Systems",
+    "aliases": [
+      "ds"
+    ],
+    "instructors": [
+      "Kishore Kothapalli"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC1.440",
+    "name": "Dynamical Process in Complex Networks",
+    "aliases": [],
+    "instructors": [
+      "Chittaranjan Hens"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE1.607",
+    "name": "Earthquake Resistant Design of Masonry Structures",
+    "aliases": [
+      "ERDMS"
+    ],
+    "instructors": [
+      "P Pravin Kumar Venkat Rao"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC2.102",
+    "name": "Electronic Workshop 1",
+    "aliases": [
+      "EW1"
+    ],
+    "instructors": [
+      "Praful Mankar",
+      "Saikiran"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC3.202",
+    "name": "Embedded Systems Workshop",
+    "aliases": [
+      "ESW"
+    ],
+    "instructors": [
+      "Deepak Gangadharan",
+      "Sachin Chaudhari",
+      "Aftab Hussain"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.407",
+    "name": "Entropy and Information",
+    "aliases": [
+      "EI"
+    ],
+    "instructors": [
+      "Indranil Chakrabarty"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Environmental Humanities",
+    "aliases": [
+      "EH"
+    ],
+    "instructors": [
+      "Subha Chakraburtty"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS9.428",
+    "name": "Environmental Science & Technology",
+    "aliases": [
+      "evs"
+    ],
+    "instructors": [
+      "Ramachandra Prasad Pillutla"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS7.504",
+    "name": "Fairness, Privacy and Ethics in AI",
+    "aliases": [
+      "fpeai"
+    ],
+    "instructors": [
+      "Sujit P Gujar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE4.501",
+    "name": "Finite Element Methods",
+    "aliases": [
+      "FEM"
+    ],
+    "instructors": [
+      "Jofin George"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.412",
+    "name": "Foundations for Signal Processing and Communication",
+    "aliases": [
+      "FSPC"
+    ],
+    "instructors": [
+      "Praful Mankar",
+      "Arti Yardi"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Functional Analysis",
+    "aliases": [
+      "FA"
+    ],
+    "instructors": [
+      "Lakshmi Burra"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "GS3.403",
+    "name": "Geospatial Technology for Disaster Risk Modelling",
+    "aliases": [
+      "GTDRM"
+    ],
+    "instructors": [
+      "Kiran Chand Thumaty",
+      "Rehana Shaik"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Hardware for AI",
+    "aliases": [
+      "hwai"
+    ],
+    "instructors": [
+      "Priyesh Shukla",
+      "Suresh Purini",
+      "Girish Varma"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD1.501",
+    "name": "Human Computer Interaction",
+    "aliases": [
+      "HCI"
+    ],
+    "instructors": [
+      "Raman Saxena"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS7.101",
+    "name": "Human Sciences Lab 1",
+    "aliases": [
+      "hsl1",
+      "hsl"
+    ],
+    "instructors": [
+      "Anirban Dasgupta"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS4.406",
+    "name": "Information Retrieval & Extraction",
+    "aliases": [
+      "IRE"
+    ],
+    "instructors": [
+      "Anil Nelakanti"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.410",
+    "name": "Information Theory",
+    "aliases": [
+      "IT"
+    ],
+    "instructors": [
+      "Arti Yardi"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CG1.402",
+    "name": "Intro to Cognitive Science",
+    "aliases": [
+      "ICS"
+    ],
+    "instructors": [
+      "Vishnu Sreekumar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC3.101",
+    "name": "Introduction to Biology",
+    "aliases": [
+      "ITB"
+    ],
+    "instructors": [
+      "Vinod PK"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS1.208",
+    "name": "Introduction to Film Studies",
+    "aliases": [
+      "IFS"
+    ],
+    "instructors": [
+      "Sushmita Banerji"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS3.201",
+    "name": "Introduction to History",
+    "aliases": [
+      "HIS"
+    ],
+    "instructors": [
+      "Isha Dubey"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CL1.101",
+    "name": "Introduction to Linguistics 1",
+    "aliases": [
+      "ITL1"
+    ],
+    "instructors": [
+      "Aditi Mukherjee"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS1.204",
+    "name": "Introduction to Literature",
+    "aliases": [
+      "itl"
+    ],
+    "instructors": [
+      "Nazia Akhtar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CG3.401",
+    "name": "Introduction to Neural and Cognitive Modeling",
+    "aliases": [
+      "INCM"
+    ],
+    "instructors": [
+      "Bapiraju Surampudi"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CG4.402",
+    "name": "Introduction to Neuroeconomics",
+    "aliases": [],
+    "instructors": [
+      "Kavita Vemuri"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC1.421",
+    "name": "Introduction to Quantum Field Theory",
+    "aliases": [],
+    "instructors": [
+      "Diganta Das",
+      "Monalisa Patra"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS2.201",
+    "name": "Introduction to Sociology",
+    "aliases": [
+      "SOC"
+    ],
+    "instructors": [
+      "Radhika Krishnan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE9.609",
+    "name": "IoT Workshop",
+    "aliases": [
+      "iotw"
+    ],
+    "instructors": [
+      "Maitreya Maity",
+      "Shubham Singhal",
+      "Sunitha Palissery"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CL2.203",
+    "name": "Language and Society",
+    "aliases": [
+      "LNS"
+    ],
+    "instructors": [
+      "Radhika Mamidi"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Language Models and Agents",
+    "aliases": [],
+    "instructors": [
+      "Vasudeva Varma",
+      "Vandan Mujadia"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS4.102",
+    "name": "Making of the Contemporary India",
+    "aliases": [
+      "moci"
+    ],
+    "instructors": [
+      "Aakansha Natani",
+      "Aniket Alam"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA6.301",
+    "name": "Maths for Computer Science 1 - Probability and Statistics",
+    "aliases": [
+      "MCS1PS"
+    ],
+    "instructors": [
+      "Naresh Manvani"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA6.302",
+    "name": "Maths for Computer Science 2 - Linear Algebra",
+    "aliases": [
+      "MCS2LA"
+    ],
+    "instructors": [
+      "Pawan Kumar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS7.503",
+    "name": "Mobile Robotics",
+    "aliases": [],
+    "instructors": [
+      "K Madhava Krishna"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.405",
+    "name": "Modern Complexity Theory",
+    "aliases": [
+      "MCT"
+    ],
+    "instructors": [
+      "Ashok Kumar Das"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS1.210",
+    "name": "Music Workshop",
+    "aliases": [
+      "MW"
+    ],
+    "instructors": [
+      "Saroja T K"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.101",
+    "name": "Networks, Signals and Systems",
+    "aliases": [
+      "nss",
+      "ness"
+    ],
+    "instructors": [
+      "Prasad Krishnan",
+      "Andleeb Zahra"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CG3.502",
+    "name": "Neuroinformatics",
+    "aliases": [],
+    "instructors": [
+      "Vishnu Sreekumar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "NLP for Healthcare",
+    "aliases": [],
+    "instructors": [
+      "Parameswari Krishnamurthy",
+      "Dipti Misra Sharma"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS3.301",
+    "name": "Operating Systems and Networks",
+    "aliases": [
+      "OSN"
+    ],
+    "instructors": [
+      "Karthik Vaidyanathan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC1.415",
+    "name": "Physics of Early Universe",
+    "aliases": [
+      "PEU"
+    ],
+    "instructors": [
+      "Diganta Das"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.402",
+    "name": "Principles of Programming Languages",
+    "aliases": [
+      "PPL"
+    ],
+    "instructors": [
+      "Mrityunjay",
+      "Venkatesh Choppella"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA6.102",
+    "name": "Probability and Random Processes",
+    "aliases": [
+      "PRP"
+    ],
+    "instructors": [
+      "Gowtham Kurri"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA6.101",
+    "name": "Probability and Statistics",
+    "aliases": [
+      "pns",
+      "prs"
+    ],
+    "instructors": [
+      "Tejas Bodas"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD2.401",
+    "name": "Product Management 101",
+    "aliases": [
+      "pm101"
+    ],
+    "instructors": [
+      "Ramesh Swaminathan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "PD2.501",
+    "name": "Product Marketing",
+    "aliases": [
+      "PM"
+    ],
+    "instructors": [
+      "Ravi Warrior"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS1.504",
+    "name": "Quantum Information Theory",
+    "aliases": [
+      "QIT"
+    ],
+    "instructors": [
+      "Siddhartha Das"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Quantum Materials and Devices",
+    "aliases": [
+      "QMD"
+    ],
+    "instructors": [
+      "Mathimalar S"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC1.203",
+    "name": "Quantum Mechanics",
+    "aliases": [
+      "QM"
+    ],
+    "instructors": [
+      "Subhadip Mitra"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Quantum Error-Correcting Codes",
+    "aliases": [
+      "QEC"
+    ],
+    "instructors": [
+      "Lalitha V"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS1.401",
+    "name": "Readings from Hindi Literature",
+    "aliases": [
+      "RHL"
+    ],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA4.101",
+    "name": "Real Analysis",
+    "aliases": [
+      "ra"
+    ],
+    "instructors": [
+      "Samyadeb Bhattacharya",
+      "Lalitha V",
+      "Uttam Singh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS8.501",
+    "name": "Research in Information Security",
+    "aliases": [
+      "RIS"
+    ],
+    "instructors": [
+      "Srinathan Kannan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Rethinking Corruption in India",
+    "aliases": [
+      "RCI"
+    ],
+    "instructors": [
+      "Aniket Alam"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE1.621",
+    "name": "Retrofit of Existing Infrastructure",
+    "aliases": [
+      "REI"
+    ],
+    "instructors": [
+      "Shubham Singhal"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC4.401",
+    "name": "Robotics: Dynamics and Control",
+    "aliases": [
+      "RDC"
+    ],
+    "instructors": [
+      "Antony Thomas"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC1.110",
+    "name": "Science 1",
+    "aliases": [
+      "SCI1"
+    ],
+    "instructors": [
+      "Prabhakar Bhimalapuram"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC4.110",
+    "name": "Science Lab 1",
+    "aliases": [
+      "SL1"
+    ],
+    "instructors": [
+      "Chittaranjan Hens",
+      "Tapan K Sau"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.406",
+    "name": "Signal Detection and Estimation Theory",
+    "aliases": [
+      "SDET"
+    ],
+    "instructors": [
+      "Santosh Nannuru"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.201",
+    "name": "Signal Processing",
+    "aliases": [
+      "SP"
+    ],
+    "instructors": [
+      "Santosh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS6.302",
+    "name": "Software Systems Development",
+    "aliases": [
+      "SSD"
+    ],
+    "instructors": [
+      "Sai Anirudh K",
+      "Abhishek Singh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "GS2.401",
+    "name": "Spatial Informatics",
+    "aliases": [
+      "SI"
+    ],
+    "instructors": [
+      "K S Rajan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "GS0.101",
+    "name": "Spatial Thinking and Practice",
+    "aliases": [
+      "STP"
+    ],
+    "instructors": [
+      "K S Rajan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC2.304",
+    "name": "Spectroscopy",
+    "aliases": [],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CL2.405",
+    "name": "Speech Analysis and Linguistics",
+    "aliases": [
+      "SAL"
+    ],
+    "instructors": [
+      "Chiranjeevi Yarra"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS7.403",
+    "name": "Statistical Methods in AI",
+    "aliases": [
+      "smai"
+    ],
+    "instructors": [
+      "Ravi Kiran S"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "",
+    "name": "Structural Assessment of Existing Infrastructure",
+    "aliases": [
+      "SAEI"
+    ],
+    "instructors": [
+      "Jofin George"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE1.501",
+    "name": "Structural Dynamics",
+    "aliases": [
+      "SD"
+    ],
+    "instructors": [
+      "Sunitha Palissery"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE1.502",
+    "name": "Structural Engineering Design Studio",
+    "aliases": [
+      "SEDS"
+    ],
+    "instructors": [
+      "Shubham Singhal"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC3.203",
+    "name": "Systems Biology",
+    "aliases": [
+      "SB"
+    ],
+    "instructors": [
+      "Vinod PK"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.202",
+    "name": "Systems Thinking",
+    "aliases": [
+      "ST"
+    ],
+    "instructors": [
+      "Spandan",
+      "Vinod"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CE0.501",
+    "name": "Theory of Elasticity",
+    "aliases": [
+      "TE"
+    ],
+    "instructors": [
+      "Pravin Kumar Venkat Rao"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS0.202",
+    "name": "Thinking and Knowing in the Human Sciences 2",
+    "aliases": [
+      "TKHS2"
+    ],
+    "instructors": [
+      "Radhika Krishnan",
+      "Isha Dubey"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS0.216",
+    "name": "Thinking and Knowing in the Human Sciences 3",
+    "aliases": [
+      "TKHS3"
+    ],
+    "instructors": [
+      "Anirban Dasgupta",
+      "Aakansha Natani"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "SC2.401",
+    "name": "Topics in Nanosciences",
+    "aliases": [],
+    "instructors": [
+      "Tapan Kumar Sau"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS6.501",
+    "name": "Topics in Software Engineering",
+    "aliases": [
+      "TSE"
+    ],
+    "instructors": [
+      "Raghu Reddy Y",
+      "Karthik Vaidhyanathan"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "CS9.501",
+    "name": "User Research Methods",
+    "aliases": [
+      "URM"
+    ],
+    "instructors": [
+      "Priyanka Srivastava"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "OC3.101",
+    "name": "Value Education 1",
+    "aliases": [
+      "VE1"
+    ],
+    "instructors": [
+      "TBD"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC2.201",
+    "name": "VLSI Design",
+    "aliases": [
+      "vlsi"
+    ],
+    "instructors": [
+      "Abhishek"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "EC5.407",
+    "name": "Wireless Communications",
+    "aliases": [
+      "WC"
+    ],
+    "instructors": [
+      "Praful Mankar"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS2.303",
+    "name": "Work, Entrepreneurship and Technology in Contemporary Societies",
+    "aliases": [
+      "WETCS"
+    ],
+    "instructors": [
+      "Rajorshi Ray"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS8.201",
+    "name": "Gender and Society",
+    "aliases": [
+      "gns"
+    ],
+    "instructors": [
+      "Sushmita Banerji"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS0.214",
+    "name": "Introduction to Philosophy",
+    "aliases": [
+      "itp"
+    ],
+    "instructors": [
+      "Saurabh Todariya"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS0.303",
+    "name": "Applied Ethics",
+    "aliases": [
+      "ae"
+    ],
+    "instructors": [
+      "Ashwin Jayanti"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS2.202",
+    "name": "Introduction to Psychology",
+    "aliases": [
+      "itp"
+    ],
+    "instructors": [
+      "Priyanka Srivastava"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "HS5.202",
+    "name": "Introduction to Economics",
+    "aliases": [
+      "intro to econ"
+    ],
+    "instructors": [
+      "Anirban Dasgupta"
+    ],
+    "semester": "Monsoon"
+  },
+  {
+    "code": "MA8.401",
+    "name": "Topics in Applied Optimization",
+    "aliases": [],
+    "instructors": [
+      "Pawan Kumar"
+    ],
+    "semester": "Monsoon"
+  }
+]

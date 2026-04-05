@@ -40,8 +40,8 @@ pub async fn init_indexes(client: &Client, db: &PgPool) {
 async fn apply_settings(client: &Client, db: &PgPool) {
     let index = client.index("resources");
 
-    let searchable_attributes = ["title", "file_path", "type", "owner", "repo"];
-    let filterable_attributes = ["type", "owner", "repo", "branch", "source_id"];
+    let searchable_attributes = ["title", "file_path", "type", "owner", "repo", "course_name"];
+    let filterable_attributes = ["type", "owner", "repo", "branch", "source_id", "course_id", "course_name"];
     let sortable_attributes = ["like_count", "created_at"];
 
     let synonyms: HashMap<String, Vec<String>> =

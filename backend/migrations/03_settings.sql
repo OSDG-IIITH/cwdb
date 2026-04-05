@@ -35,5 +35,7 @@ INSERT INTO settings (key, value) VALUES ('global_ignore_patterns', '[
     "CODE_OF_CONDUCT.md",
     "code_of_conduct.md",
     "SECURITY.md",
-    "security.md"
+    "security.md",
+
+    "sanyamseac/exams2k24/scripts"
 ]'::jsonb);

@@ -17,6 +17,7 @@ pub struct CreateSource {
     pub owner: String,
     pub repo: String,
     pub branch: Option<String>,
+    pub aliases: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
@@ -30,6 +31,7 @@ pub struct SourceRow {
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_by: uuid::Uuid,
     pub like_count: i32,
+    pub aliases: serde_json::Value,
     pub liked: Option<bool>,
 }
 
@@ -41,6 +43,7 @@ pub struct ResourceRow {
     pub title: String,
     pub r#type: String,
     pub like_count: i32,
+    pub course_id: Option<uuid::Uuid>,
 }
 
 pub async fn create_source(
@@ -80,17 +83,20 @@ pub async fn create_source(
         },
     };
 
+    let aliases = payload.aliases.unwrap_or(serde_json::json!({}));
+
     let result = sqlx::query_as!(
         SourceRow,
-        r#"INSERT INTO sources (owner, repo, branch, created_by)
-           VALUES ($1, $2, $3, $4)
-           ON CONFLICT (owner, repo, branch) DO UPDATE 
-           SET owner = EXCLUDED.owner
-           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count, false as liked"#,
+        r#"INSERT INTO sources (owner, repo, branch, created_by, aliases)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (owner, repo, branch) DO UPDATE
+           SET aliases = EXCLUDED.aliases
+           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count, aliases, false as liked"#,
         payload.owner,
         payload.repo,
         branch,
-        user.id
+        user.id,
+        aliases
     )
     .fetch_one(&state.db)
     .await;
@@ -118,8 +124,8 @@ pub async fn list_sources(
         Some(uid) => {
              sqlx::query_as!(
                 SourceRow,
-                r#"SELECT 
-                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
+                r#"SELECT
+                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
                     EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $1) as liked
                    FROM sources s"#,
                 uid
@@ -130,8 +136,8 @@ pub async fn list_sources(
         None => {
              sqlx::query_as!(
                 SourceRow,
-                r#"SELECT 
-                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count,
+                r#"SELECT
+                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
                     false as liked
                    FROM sources s"#
             )
@@ -162,8 +168,8 @@ pub async fn sync_source(
 
     let source = sqlx::query_as!(
         SourceRow,
-        r#"SELECT 
-            s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, 
+        r#"SELECT
+            s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
             EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $2) as liked
            FROM sources s WHERE s.id = $1"#,
         source_id,
@@ -235,6 +241,9 @@ pub async fn sync_source(
         }
     };
 
+    let source_aliases: std::collections::HashMap<String, String> =
+        serde_json::from_value(source.aliases.clone()).unwrap_or_default();
+
     let mut tx = match state.db.begin().await {
         Ok(tx) => tx,
         Err(e) => {
@@ -292,6 +301,16 @@ pub async fn sync_source(
 
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
+            if let Some(cid) = state.courses.resolve(&entry.path, &source.repo, &source_aliases) {
+                let _ = sqlx::query!(
+                    "UPDATE resources SET course_id = $1 WHERE source_id = $2 AND path_hash = $3",
+                    cid,
+                    source_id,
+                    path_hash
+                )
+                .execute(&mut *tx)
+                .await;
+            }
         } else {
             updated += 1;
         }
@@ -325,7 +344,7 @@ pub async fn sync_source(
 
     let resources = match sqlx::query_as!(
         ResourceRow,
-        r#"SELECT id, source_id, file_path, title, type, like_count FROM resources WHERE source_id = $1"#,
+        r#"SELECT id, source_id, file_path, title, type, like_count, course_id FROM resources WHERE source_id = $1"#,
         source_id
     )
     .fetch_all(&mut *tx)
@@ -396,6 +415,10 @@ async fn sync_meili_index(
     let docs: Vec<_> = resources
         .iter()
         .map(|r| {
+            let course_name = r
+                .course_id
+                .and_then(|cid| state.courses.name(cid))
+                .map(String::from);
             serde_json::json!({
                 "id": r.id,
                 "source_id": r.source_id,
@@ -405,7 +428,9 @@ async fn sync_meili_index(
                 "owner": source.owner,
                 "repo": source.repo,
                 "branch": source.branch,
-                "type": r.r#type
+                "type": r.r#type,
+                "course_id": r.course_id,
+                "course_name": course_name
             })
         })
         .collect();

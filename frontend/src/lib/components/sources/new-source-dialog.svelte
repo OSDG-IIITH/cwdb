@@ -1,222 +1,290 @@
 <script lang="ts">
-    import { createSource, refreshSource } from '$lib/api';
-    import { Button } from '$lib/components/ui/button';
-    import { Input } from '$lib/components/ui/input';
-    import { Label } from '$lib/components/ui/label';
-    import * as Dialog from '$lib/components/ui/dialog';
-    import { createEventDispatcher } from 'svelte';
-    import { Plus, Github, Loader2, Check, AlertCircle, GitBranch, Star } from '@lucide/svelte';
-    import { cn } from '$lib/utils';
-    import { user } from '$lib/auth';
-    import { toast } from 'svelte-sonner';
+	import { createSource, refreshSource } from '$lib/api';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { createEventDispatcher } from 'svelte';
+	import { Plus, Github, Loader2, Check, AlertCircle, GitBranch, Star, ChevronDown } from '@lucide/svelte';
+	import { cn } from '$lib/utils';
+	import { user } from '$lib/auth';
+	import { toast } from 'svelte-sonner';
 
-    let open = $state(false);
-    let loading = $state(false);
-    
-    // State for URL parsing and verification
-    let url = $state('');
-    let verifying = $state(false);
-    let verified = $state(false);
-    let error = $state('');
-    
-    let parsedData = $state({ owner: '', repo: '', branch: '' });
-    let repoDetails = $state<{ description: string; stargazers_count: number; default_branch: string } | null>(null);
+	let open = $state(false);
+	let loading = $state(false);
 
-    const dispatch = createEventDispatcher();
+	let url = $state('');
+	let verifying = $state(false);
+	let verified = $state(false);
+	let error = $state('');
+	let aliasestext = $state('');
+	let showoptions = $state(false);
 
-    let timer: ReturnType<typeof setTimeout>;
+	let parsedData = $state({ owner: '', repo: '', branch: '' });
+	let repoDetails = $state<{
+		description: string;
+		stargazers_count: number;
+		default_branch: string;
+		avatar_url: string;
+	} | null>(null);
 
-    function handleInput(e: Event) {
-        const input = (e.target as HTMLInputElement).value;
-        url = input;
-        
-        verified = false;
-        error = '';
-        repoDetails = null;
-        parsedData = { owner: '', repo: '', branch: '' };
+	const dispatch = createEventDispatcher();
 
-        clearTimeout(timer);
-        
-        if (!input.trim()) return;
+	let timer: ReturnType<typeof setTimeout>;
 
-        timer = setTimeout(() => {
-            parseAndVerify(input);
-        }, 800);
-    }
+	function handleInput(e: Event) {
+		const input = (e.target as HTMLInputElement).value;
+		url = input;
 
-    async function parseAndVerify(inputUrl: string) {
-        try {
-            // supports:
-            // https://github.com/owner/repo
-            // https://github.com/owner/repo/tree/branch
-            // owner/repo
-            
-            let cleanUrl = inputUrl.trim();
-            
-            if (!cleanUrl.startsWith('http') && !cleanUrl.includes('github.com') && cleanUrl.split('/').length === 2) {
-                const [o, r] = cleanUrl.split('/');
-                parsedData = { owner: o, repo: r, branch: '' };
-            } else {
-                 try {
-                    const u = new URL(cleanUrl);
-                    if (u.hostname !== 'github.com') {
-                        error = "Not a GitHub URL";
-                        return;
-                    }
-                    const parts = u.pathname.split('/').filter(Boolean);
-                    if (parts.length < 2) {
-                        error = "Invalid repository URL";
-                        return;
-                    }
-                    parsedData.owner = parts[0];
-                    parsedData.repo = parts[1];
-                    
-                    if (parts[2] === 'tree' && parts[3]) {
-                        parsedData.branch = parts[3];
-                    }
-                } catch {
-                     error = "Invalid URL format";
-                     return;
-                }
-            }
+		verified = false;
+		error = '';
+		repoDetails = null;
+		parsedData = { owner: '', repo: '', branch: '' };
 
-            if (!parsedData.owner || !parsedData.repo) return;
+		clearTimeout(timer);
 
-            verifying = true;
-            
-            // Verify with GitHub API
-            const res = await fetch(`https://api.github.com/repos/${parsedData.owner}/${parsedData.repo}`);
-            
-            if (res.ok) {
-                const data = await res.json();
-                repoDetails = {
-                    description: data.description,
-                    stargazers_count: data.stargazers_count,
-                    default_branch: data.default_branch
-                };
-                verified = true;
-            } else {
-                if (res.status === 404) error = "Repository not found or private";
-                else error = "Failed to verify repository";
-            }
-        } catch (e) {
-            error = "Error verifying repository";
-        } finally {
-            verifying = false;
-        }
-    }
+		if (!input.trim()) return;
 
-    async function handleSubmit() {
-        if (!verified || !parsedData.owner || !parsedData.repo) return;
-        
-        loading = true;
-        const branchToUse = parsedData.branch || repoDetails?.default_branch;
-        const res = await createSource(parsedData.owner, parsedData.repo, branchToUse);
+		timer = setTimeout(() => {
+			parseAndVerify(input);
+		}, 800);
+	}
 
-        if (res) {
-            await refreshSource(res.id);
-        }
-        
-        loading = false;
+	async function parseAndVerify(inputUrl: string) {
+		try {
+			// supports:
+			// https://github.com/owner/repo
+			// https://github.com/owner/repo/tree/branch
+			// owner/repo
 
-        if (res) {
-            open = false;
-            // Reset everything
-            url = '';
-            parsedData = { owner: '', repo: '', branch: '' };
-            repoDetails = null;
-            verified = false;
-            dispatch('created');
-        } else {
-            error = "Failed to add source to backend";
-        }
-    }
+			let cleanUrl = inputUrl.trim();
+
+			if (
+				!cleanUrl.startsWith('http') &&
+				!cleanUrl.includes('github.com') &&
+				cleanUrl.split('/').length === 2
+			) {
+				const [o, r] = cleanUrl.split('/');
+				parsedData = { owner: o, repo: r, branch: '' };
+			} else {
+				try {
+					const u = new URL(cleanUrl);
+					if (u.hostname !== 'github.com') {
+						error = 'Not a GitHub URL';
+						return;
+					}
+					const parts = u.pathname.split('/').filter(Boolean);
+					if (parts.length < 2) {
+						error = 'Invalid repository URL';
+						return;
+					}
+					parsedData.owner = parts[0];
+					parsedData.repo = parts[1];
+
+					if (parts[2] === 'tree' && parts[3]) {
+						parsedData.branch = parts[3];
+					}
+				} catch {
+					error = 'Invalid URL format';
+					return;
+				}
+			}
+
+			if (!parsedData.owner || !parsedData.repo) return;
+
+			verifying = true;
+
+			// Verify with GitHub API
+			const res = await fetch(
+				`https://api.github.com/repos/${parsedData.owner}/${parsedData.repo}`
+			);
+
+			if (res.ok) {
+				const data = await res.json();
+				repoDetails = {
+					description: data.description,
+					stargazers_count: data.stargazers_count,
+					default_branch: data.default_branch,
+					avatar_url: data.owner?.avatar_url ?? ''
+				};
+				verified = true;
+			} else {
+				if (res.status === 404) error = 'Repository not found or private';
+				else error = 'Failed to verify repository';
+			}
+		} catch (e) {
+			error = 'Error verifying repository';
+		} finally {
+			verifying = false;
+		}
+	}
+
+	function parsealiases(text: string): Record<string, string> {
+		const result: Record<string, string> = {};
+		for (const line of text.split('\n')) {
+			const sep = line.indexOf(':');
+			if (sep < 0) continue;
+			const key = line.slice(0, sep).trim();
+			const val = line.slice(sep + 1).trim();
+			if (key && val) result[key] = val;
+		}
+		return result;
+	}
+
+	async function handleSubmit() {
+		if (!verified || !parsedData.owner || !parsedData.repo) return;
+
+		loading = true;
+		const branchToUse = parsedData.branch || repoDetails?.default_branch;
+		const aliases = aliasestext.trim() ? parsealiases(aliasestext) : undefined;
+		const res = await createSource(parsedData.owner, parsedData.repo, branchToUse, aliases);
+
+		if (res) {
+			await refreshSource(res.id);
+		}
+
+		loading = false;
+
+		if (res) {
+			open = false;
+			// Reset everything
+			url = '';
+			parsedData = { owner: '', repo: '', branch: '' };
+			repoDetails = null;
+			verified = false;
+			aliasestext = '';
+			showoptions = false;
+			dispatch('created');
+		} else {
+			error = 'Failed to add source to backend';
+		}
+	}
 </script>
 
 {#if $user && $user.role === 'admin'}
-<Button onclick={() => {
-    open = true;
-}}>
-    <Plus class="w-4 h-4 mr-2" />
-    Add Source
-</Button>
+	<Button
+		onclick={() => {
+			open = true;
+		}}
+	>
+		<Plus class="mr-2 h-4 w-4" />
+		Add Source
+	</Button>
 {/if}
 
 <Dialog.Root bind:open>
-    <Dialog.Content class="sm:max-w-[500px] border-border/60 bg-background backdrop-blur-xl">
-        <Dialog.Header>
-            <Dialog.Title class="text-xl">Add New Source</Dialog.Title>
-        </Dialog.Header>
+	<Dialog.Content class="border-border/60 bg-background backdrop-blur-xl sm:max-w-[500px]">
+		<Dialog.Header>
+			<Dialog.Title class="text-xl">Add New Source</Dialog.Title>
+		</Dialog.Header>
 
-        <div class="grid gap-6 py-4">
-            <div class="space-y-2">
-                <div class="relative">
-                    <Input 
-                        id="url" 
-                        value={url} 
-                        oninput={handleInput}
-                        placeholder="https://github.com/owner/repo" 
-                        class="pr-10 font-mono text-sm focus-visible:ring-0"
-                    />
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        {#if verifying}
-                            <Loader2 class="h-4 w-4 animate-spin" />
-                        {:else if verified}
-                            <Check class="h-4 w-4 text-green-500" />
-                        {:else if error}
-                            <AlertCircle class="h-4 w-4 text-destructive" />
-                        {/if}
-                    </div>
-                </div>
-                {#if error}
-                    <p class="text-xs text-destructive mt-1.5 px-1">{error}</p>
-                {/if}
-            </div>
+		<div class="grid gap-6 py-4">
+			<div class="space-y-2">
+				<div class="relative">
+					<Input
+						id="url"
+						value={url}
+						oninput={handleInput}
+						placeholder="https://github.com/owner/repo"
+						class="pr-10 font-mono text-sm focus-visible:ring-0"
+					/>
+					<div class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground">
+						{#if verifying}
+							<Loader2 class="h-4 w-4 animate-spin" />
+						{:else if verified}
+							<Check class="h-4 w-4 text-foreground" />
+						{:else if error}
+							<AlertCircle class="h-4 w-4 text-destructive" />
+						{/if}
+					</div>
+				</div>
+				{#if error}
+					<p class="mt-1.5 px-1 text-xs text-destructive">{error}</p>
+				{/if}
+			</div>
 
-            {#if verified && repoDetails}
-                <div class="rounded-lg border border-border/60 bg-muted/30 p-4 transition-all animate-in fade-in slide-in-from-top-2">
-                    <div class="flex items-start gap-4">
-                        <div class="rounded-md bg-background p-2 ring-1 ring-border">
-                            <Github class="h-6 w-6" />
-                        </div>
-                        <div class="space-y-1 overflow-hidden">
-                            <h4 class="font-medium leading-none tracking-tight flex items-center gap-2">
-                                {parsedData.owner}/{parsedData.repo}
-                            </h4>
-                            <p class="text-xs text-muted-foreground line-clamp-2">
-                                {repoDetails.description || 'No description provided.'}
-                            </p>
-                            
-                            <div class="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                                <span class="flex items-center gap-1">
-                                    <Star class="h-3 w-3" />
-                                    {repoDetails.stargazers_count.toLocaleString()}
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <GitBranch class="h-3 w-3" />
-                                    {parsedData.branch || repoDetails.default_branch}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {/if}
-        </div>
+			{#if verified && repoDetails}
+				<div
+					class="animate-in rounded-lg border border-border/60 bg-muted/30 p-4 transition-all fade-in slide-in-from-top-2"
+				>
+					<div class="flex items-start gap-4">
+						{#if repoDetails.avatar_url}
+							<img
+								src="{repoDetails.avatar_url}&s=80"
+								alt=""
+								class="h-10 w-10 rounded-md ring-1 ring-border"
+							/>
+						{:else}
+							<div class="rounded-md bg-background p-2 ring-1 ring-border">
+								<Github class="h-6 w-6" />
+							</div>
+						{/if}
+						<div class="space-y-1 overflow-hidden">
+							<h4 class="flex items-center gap-2 leading-none font-medium tracking-tight">
+								{parsedData.owner}/{parsedData.repo}
+							</h4>
+							<p class="line-clamp-2 text-xs text-muted-foreground">
+								{repoDetails.description || 'No description provided.'}
+							</p>
 
-        <Dialog.Footer>
-            <Button 
-                type="submit" 
-                onclick={handleSubmit} 
-                disabled={!verified || loading || verifying}
-                class="w-full sm:w-auto"
-            >
-                {#if loading}
-                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                    Adding Source...
-                {:else}
-                    Add Repository
-                {/if}
-            </Button>
-        </Dialog.Footer>
-    </Dialog.Content>
+							<div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+								<span class="flex items-center gap-1">
+									<Star class="h-3 w-3" />
+									{repoDetails.stargazers_count.toLocaleString()}
+								</span>
+								<span class="flex items-center gap-1">
+									<GitBranch class="h-3 w-3" />
+									{parsedData.branch || repoDetails.default_branch}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			{#if verified}
+				<div>
+					<button
+						type="button"
+						onclick={() => (showoptions = !showoptions)}
+						class="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+					>
+						<ChevronDown class="h-3 w-3 transition-transform {showoptions ? 'rotate-180' : ''}" />
+						Extra options
+					</button>
+
+					{#if showoptions}
+						<div class="animate-in mt-3 space-y-2 fade-in slide-in-from-top-1">
+							<Label for="aliases" class="text-xs text-muted-foreground">
+								Alias mappings
+							</Label>
+							<textarea
+								id="aliases"
+								bind:value={aliasestext}
+								placeholder={"dsa: Data Structures and Algorithms\nsem4/dsa: Digital Signal Analysis"}
+								rows="3"
+								class="w-full rounded-md border border-border/60 bg-background px-3 py-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+							></textarea>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
+
+		<Dialog.Footer>
+			<Button
+				type="submit"
+				onclick={handleSubmit}
+				disabled={!verified || loading || verifying}
+				class="w-full sm:w-auto"
+			>
+				{#if loading}
+					<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					Adding Source...
+				{:else}
+					Add Repository
+				{/if}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
 </Dialog.Root>

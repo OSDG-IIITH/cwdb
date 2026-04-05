@@ -1,0 +1,1774 @@
+[
+  {
+    "code": "CS1.406",
+    "name": "Advanced Algorithms",
+    "aliases": [
+      "AA"
+    ],
+    "instructors": [
+      "Suryajith Ch"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC3.303",
+    "name": "Advanced Bioinformatics",
+    "aliases": [
+      "AB"
+    ],
+    "instructors": [
+      "Nita Parekh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.411",
+    "name": "Advanced Devices",
+    "aliases": [
+      "AD"
+    ],
+    "instructors": [
+      "Anshu Sarje"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.501",
+    "name": "Advanced Optimization: Theory and Applications",
+    "aliases": [
+      "AOTA"
+    ],
+    "instructors": [
+      "Pawan Kumar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE1.603",
+    "name": "Advanced Structural Analysis",
+    "aliases": [
+      "ASA"
+    ],
+    "instructors": [
+      "Pravin Kumar Venkat Rao"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.501",
+    "name": "Advances in Robotics & Control",
+    "aliases": [
+      "ARC"
+    ],
+    "instructors": [
+      "Spandan Roy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "",
+    "name": "Algebraic Methods in Reaction Networks",
+    "aliases": [
+      "AMRN"
+    ],
+    "instructors": [
+      "Abhishek Deshpande"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.103",
+    "name": "Analog Electronic Circuits",
+    "aliases": [
+      "AEC"
+    ],
+    "instructors": [
+      "Zia Abbas"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.401",
+    "name": "Analog IC Design",
+    "aliases": [
+      "Analog Integrated Circuit Design"
+    ],
+    "instructors": [
+      "Abhishek Srivastava"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE1.608",
+    "name": "Analysis & Design of Precast and Prestressed Structures",
+    "aliases": [
+      "ADPPS"
+    ],
+    "instructors": [
+      "Shubham Singhal"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE1.609",
+    "name": "Analysis and Design of Bridge Structures",
+    "aliases": [
+      "ADBS"
+    ],
+    "instructors": [
+      "Jofin George"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL3.408",
+    "name": "Applications of Language Models",
+    "aliases": [
+      "ALM"
+    ],
+    "instructors": [
+      "Vasudeva Varma"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS9.441",
+    "name": "Applied Attention Theory",
+    "aliases": [
+      "AAT"
+    ],
+    "instructors": [
+      "Priyanka Srivastava"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "OC2.102",
+    "name": "Arts 2",
+    "aliases": [
+      "arts2"
+    ],
+    "instructors": [
+      "Saroja TK"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.203",
+    "name": "Basics of Ethics",
+    "aliases": [
+      "boe"
+    ],
+    "instructors": [
+      "Yusuf Indorewala",
+      "Saurabh Todariya"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG3.403",
+    "name": "Behavioral Research: Statistical Methods",
+    "aliases": [
+      "BRSM"
+    ],
+    "instructors": [
+      "Vishnu Sreekumar",
+      "Bapi Raju S"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.203",
+    "name": "Biomolecular Structures",
+    "aliases": [
+      "BMSTR"
+    ],
+    "instructors": [
+      "Deva Priyakumar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "PD2.422",
+    "name": "Business Finance",
+    "aliases": [
+      "BF"
+    ],
+    "instructors": [
+      "Sarath Babu"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.102",
+    "name": "Classical Mechanics",
+    "aliases": [
+      "CM"
+    ],
+    "instructors": [
+      "Diganta Das"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG2.401",
+    "name": "Cognitive Neuroscience",
+    "aliases": [],
+    "instructors": [
+      "Bhaktee Dongaonkar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG3.501",
+    "name": "Cognitive Science and AI",
+    "aliases": [
+      "csai"
+    ],
+    "instructors": [
+      "Bapi Raju S"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.203",
+    "name": "Communication Theory",
+    "aliases": [
+      "CT"
+    ],
+    "instructors": [
+      "Sachin Chaudhari"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.403",
+    "name": "Compilers",
+    "aliases": [],
+    "instructors": [
+      "Venkatesh Choppella"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL3.101",
+    "name": "Computational Linguistics 1",
+    "aliases": [
+      "CL1"
+    ],
+    "instructors": [
+      "Parameswari Krishnamurthy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL2.404",
+    "name": "Computational Psycholinguistics",
+    "aliases": [],
+    "instructors": [
+      "Rajakrishnan P Rajkumar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.302",
+    "name": "Computer Graphics",
+    "aliases": [
+      "CG"
+    ],
+    "instructors": [
+      "PJ Narayanan",
+      "GS Raghavendra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS2.201",
+    "name": "Computer Systems Organization",
+    "aliases": [
+      "cso"
+    ],
+    "instructors": [
+      "Praveen Paruchuri",
+      "Deepak Gangadharan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.505",
+    "name": "Computer Vision",
+    "aliases": [
+      "CV"
+    ],
+    "instructors": [
+      "Makarand Tapaswi",
+      "Ravi Kiran"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC4.102",
+    "name": "Computing in Sciences 2",
+    "aliases": [
+      "CIS2"
+    ],
+    "instructors": [
+      "Prabhakar B"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS0.302",
+    "name": "Computing Tools",
+    "aliases": [],
+    "instructors": [
+      "Sriranjani K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA7.501",
+    "name": "Continuous Variable Quantum Information Theory and Computation",
+    "aliases": [
+      "CVQITC"
+    ],
+    "instructors": [
+      "Uttam Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.201",
+    "name": "Data Structures and Algorithms",
+    "aliases": [
+      "DSA"
+    ],
+    "instructors": [
+      "Lini Thomas",
+      "Kshitij Gajjar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS4.401",
+    "name": "Data Systems",
+    "aliases": [],
+    "instructors": [
+      "Kamal Karlaalem"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS4.302",
+    "name": "Data Visualisation",
+    "aliases": [
+      "DV"
+    ],
+    "instructors": [
+      "Kamal Karlapalem"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.301",
+    "name": "Design and Analysis of Software Systems",
+    "aliases": [
+      "DASS"
+    ],
+    "instructors": [
+      "Raghu Reddy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE5.501",
+    "name": "Design of Hydraulic Structures",
+    "aliases": [
+      "DHS"
+    ],
+    "instructors": [
+      "Shaik Rehana"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS4.303",
+    "name": "Digital Democracy and Data Governance",
+    "aliases": [
+      "DDDG"
+    ],
+    "instructors": [
+      "Aakansha Natani"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.303",
+    "name": "Digital Signal Analysis",
+    "aliases": [
+      "DSA"
+    ],
+    "instructors": [
+      "Anil Kumar Vuppala"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE8.401",
+    "name": "Disaster Management",
+    "aliases": [],
+    "instructors": [
+      "Jofin George",
+      "Shubham Singhal"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS3.401",
+    "name": "Distributed Systems",
+    "aliases": [
+      "DS"
+    ],
+    "instructors": [
+      "Lini Thomas"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CE1.601",
+    "name": "Earthquake Engineering",
+    "aliases": [
+      "EE"
+    ],
+    "instructors": [
+      "Sunitha P"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.101",
+    "name": "Electrodynamics",
+    "aliases": [
+      "EDY"
+    ],
+    "instructors": [
+      "Diganta Das"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.202",
+    "name": "Electronics Workshop 2",
+    "aliases": [
+      "EW2"
+    ],
+    "instructors": [
+      "Arti Yardi",
+      "Spandan Roy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.303",
+    "name": "Environmental & Social Governance in Mineral Extraction",
+    "aliases": [
+      "ESGME"
+    ],
+    "instructors": [
+      "Radhika Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.217",
+    "name": "Ethics and the Digital Society",
+    "aliases": [
+      "EDS"
+    ],
+    "instructors": [
+      "Nimmi Rangaswamy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.218",
+    "name": "Ethics in Research",
+    "aliases": [
+      "ER"
+    ],
+    "instructors": [
+      "Bhaktee Dongaonkar",
+      "Vinoo Alluri",
+      "Priyanka Srivastava"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS2.303",
+    "name": "Ethnography in praxis: An investigation into Field, Scales and Theory",
+    "aliases": [
+      "EPIIFST"
+    ],
+    "instructors": [
+      "Rajorshi Ray"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL3.409",
+    "name": "Evaluation Methods for NLP",
+    "aliases": [
+      "EMN"
+    ],
+    "instructors": [
+      "Manish Shrivastava",
+      "Parameswari Krishnamurthy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.202",
+    "name": "Gender, Culture and Representation",
+    "aliases": [
+      "GCR"
+    ],
+    "instructors": [
+      "Subha Chakraburtty"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.101",
+    "name": "General and Structural Chemistry",
+    "aliases": [
+      "GSC"
+    ],
+    "instructors": [
+      "Tapan Kumar Sau"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.219",
+    "name": "Governance of AI: Ethics and Regulation",
+    "aliases": [],
+    "instructors": [
+      "Amber Sinha"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS3.304",
+    "name": "Gutenberg Parenthesis",
+    "aliases": [],
+    "instructors": [
+      "Aniket Alam"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS9.433",
+    "name": "Hydro Informatics",
+    "aliases": [
+      "hydro",
+      "hyd"
+    ],
+    "instructors": [
+      "Shaik Rehana"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.102",
+    "name": "Information and Communication",
+    "aliases": [],
+    "instructors": [
+      "Arti Yardi",
+      "Lalitha Vadlamani"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS8.402",
+    "name": "Information Security Audit and Assurance",
+    "aliases": [
+      "ISAA"
+    ],
+    "instructors": [
+      "Shatrunjay Rawat"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS3.404",
+    "name": "Internals of Application Servers",
+    "aliases": [
+      "IAS"
+    ],
+    "instructors": [
+      "Ramesh Loganathan",
+      "Arjun Rajashekar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.204",
+    "name": "Intro to Processor Architecture",
+    "aliases": [
+      "IPA"
+    ],
+    "instructors": [
+      "Deepak Gangadharan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.402",
+    "name": "Intro to UAV Design",
+    "aliases": [
+      "uav"
+    ],
+    "instructors": [
+      "Harikumar K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.305",
+    "name": "Introduction to Algorithms Engineering",
+    "aliases": [
+      "IAE"
+    ],
+    "instructors": [
+      "Kishore Kothapalli"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS9.311",
+    "name": "Introduction to Brain and Cognition",
+    "aliases": [
+      "IBC"
+    ],
+    "instructors": [
+      "Kavitha Vemuri"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.205",
+    "name": "Introduction to Coding Theory",
+    "aliases": [
+      "ICT"
+    ],
+    "instructors": [
+      "Lalitha Vadlamani"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.408",
+    "name": "Introduction to Game Theory",
+    "aliases": [
+      "IGT"
+    ],
+    "instructors": [
+      "Sujit Gujar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.102",
+    "name": "Introduction to Human Sciences",
+    "aliases": [
+      "IHS"
+    ],
+    "instructors": [
+      "Aakansha Natani",
+      "Ashwin Jayanti"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS8.301",
+    "name": "Introduction to Information Security",
+    "aliases": [
+      "IIS"
+    ],
+    "instructors": [
+      "Ankit Gangwal"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS3.303",
+    "name": "Introduction to IoT",
+    "aliases": [
+      "iot"
+    ],
+    "instructors": [
+      "Kavitha Vemuri",
+      "Suresh Purini"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL1.102",
+    "name": "Introduction to Linguistics 2",
+    "aliases": [
+      "ITL2"
+    ],
+    "instructors": [
+      "Aditi Mukherjee"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.401",
+    "name": "Introduction to NLP",
+    "aliases": [
+      "inlp"
+    ],
+    "instructors": [
+      "Manish Shrivastava"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.420",
+    "name": "Introduction to Particle Physics",
+    "aliases": [
+      "IPP"
+    ],
+    "instructors": [
+      "Subhadip Mitra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.204",
+    "name": "Introduction to Philosophy of Technology",
+    "aliases": [],
+    "instructors": [
+      "Ashwin Jayanti"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS9.312",
+    "name": "Introduction to Quantum Information and Computation",
+    "aliases": [
+      "IQIC"
+    ],
+    "instructors": [
+      "Uttam Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.201",
+    "name": "Introduction to Software Systems",
+    "aliases": [
+      "iss"
+    ],
+    "instructors": [
+      "Sai Anirudh Karre"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "GS0.301",
+    "name": "Introduction to Spatial Sciences",
+    "aliases": [
+      "ISS"
+    ],
+    "instructors": [
+      "RC Prasad",
+      "KS Rajan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.206",
+    "name": "Introduction to Statistical Signal Processing",
+    "aliases": [],
+    "instructors": [
+      "Santosh Nannuru"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.220",
+    "name": "Language and Power",
+    "aliases": [],
+    "instructors": [
+      "Priya Prithiviraj"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL2.204",
+    "name": "Language Typology and Universals",
+    "aliases": [
+      "LTU"
+    ],
+    "instructors": [
+      "Radhika Mamidi"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA2.101",
+    "name": "Linear Algebra",
+    "aliases": [
+      "la"
+    ],
+    "instructors": [
+      "Siddhartha Das",
+      "Indranil Chakrabarty"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA4.303",
+    "name": "Linear Partial Differential Equations and Variational Calculus",
+    "aliases": [
+      "LPDEVC"
+    ],
+    "instructors": [
+      "Samyadeb Bhattacharya"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC4.411",
+    "name": "Machine Learning for Natural Sciences",
+    "aliases": [
+      "MLNS"
+    ],
+    "instructors": [
+      "Prabhakar B",
+      "Vinod PK"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.301",
+    "name": "Machine, Data and Learning",
+    "aliases": [
+      "MDL"
+    ],
+    "instructors": [
+      "Praveen Paruchuri",
+      "Sujit Gujar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.101",
+    "name": "Making of Contemporary World",
+    "aliases": [
+      "mocw"
+    ],
+    "instructors": [
+      "Anirban Dasgupta",
+      "Isha Dubey"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.503",
+    "name": "Mathematical Foundations of Data Science",
+    "aliases": [
+      "MFDS"
+    ],
+    "instructors": [
+      "Suryajith Ch",
+      "Girish Verma"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC3.316",
+    "name": "Mathematical Models in Biology",
+    "aliases": [
+      "MMB"
+    ],
+    "instructors": [
+      "Abhishek Deshpande"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.404",
+    "name": "Mechatronics System Design",
+    "aliases": [
+      "MSD"
+    ],
+    "instructors": [
+      "Nagamanikandan",
+      "Harikumar K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.201",
+    "name": "Mechatronics System Design 1",
+    "aliases": [
+      "MSD1"
+    ],
+    "instructors": [
+      "Nagamanikandan",
+      "Harikumar K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS3.305",
+    "name": "Migrants and Migrations in Modern South Asia",
+    "aliases": [
+      "MMMSA"
+    ],
+    "instructors": [
+      "Isha Dubey"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.316",
+    "name": "Molecular Modeling and Simulations",
+    "aliases": [
+      "MMS"
+    ],
+    "instructors": [
+      "Deva Priyakumar",
+      "Marimuthu Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.315",
+    "name": "Molecular Symmetry and Quantum Mechanics",
+    "aliases": [
+      "MSQM"
+    ],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS1.209",
+    "name": "Music Language Creativity",
+    "aliases": [
+      "MLC"
+    ],
+    "instructors": [
+      "TK Saroja"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG4.401",
+    "name": "Music, Mind, and Technology",
+    "aliases": [
+      "MMT"
+    ],
+    "instructors": [
+      "Vinoo Alluri"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.306",
+    "name": "Numerical Algorithms",
+    "aliases": [
+      "NA"
+    ],
+    "instructors": [
+      "Pawan Kumar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "GS1.401",
+    "name": "Optical Remote Sensing",
+    "aliases": [
+      "ORS"
+    ],
+    "instructors": [
+      "RC Prasad"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.404",
+    "name": "Optimization Methods",
+    "aliases": [
+      "OM"
+    ],
+    "instructors": [
+      "Naresh Manwani"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.202",
+    "name": "Organic Chemistry",
+    "aliases": [
+      "OC"
+    ],
+    "instructors": [
+      "Prabhakar B"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "PD2.423",
+    "name": "Organizational Operations",
+    "aliases": [],
+    "instructors": [
+      "Santanu Mandal"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS3.307",
+    "name": "Performance Modeling of Computer Systems",
+    "aliases": [
+      "PMCS"
+    ],
+    "instructors": [
+      "Tejas Bodas"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.304",
+    "name": "Philosophy of Mind and Cognition",
+    "aliases": [
+      "PMC"
+    ],
+    "instructors": [
+      "Saurabh Todariya"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC2.301",
+    "name": "Physics of Soft Condensed Matter",
+    "aliases": [
+      "PSCM"
+    ],
+    "instructors": [
+      "Marimuthu Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS8.401",
+    "name": "Principles of Information Security",
+    "aliases": [
+      "PIS"
+    ],
+    "instructors": [
+      "Kannan Srinathan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "PD1.411",
+    "name": "Product Design Workshop",
+    "aliases": [
+      "PDW"
+    ],
+    "instructors": [
+      "Prakash Yalla",
+      "Raghu Reddy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "PD2.502",
+    "name": "Product Lifecycle Management",
+    "aliases": [
+      "PLM"
+    ],
+    "instructors": [
+      "Ravi Warrier"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.409",
+    "name": "Quantum Algorithms",
+    "aliases": [
+      "QA"
+    ],
+    "instructors": [
+      "Shantanav Chakraborty"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.205",
+    "name": "Radio Frequency Based Sensors design: Principles and Applications",
+    "aliases": [
+      "RFBSDPA"
+    ],
+    "instructors": [
+      "Andleep"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.302",
+    "name": "Research Methods in Human Sciences",
+    "aliases": [
+      "RMHS"
+    ],
+    "instructors": [
+      "Isha Dubey",
+      "Anirban Dasgupta"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.405",
+    "name": "Responsible & Safe AI Systems",
+    "aliases": [
+      "rsai"
+    ],
+    "instructors": [
+      "Ponnurangam Kumaraguru"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.403",
+    "name": "Robotics: Planning and Navigation",
+    "aliases": [
+      "RPN"
+    ],
+    "instructors": [
+      "Madhava Krishna K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.207",
+    "name": "Science and Technology: Critical Perspectives",
+    "aliases": [
+      "STCP"
+    ],
+    "instructors": [
+      "Yusuf Indorewala"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.111",
+    "name": "Science 2",
+    "aliases": [
+      "SCI2"
+    ],
+    "instructors": [
+      "Nita Parekh",
+      "Chittaranjan Hens"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC4.111",
+    "name": "Science Lab 2",
+    "aliases": [
+      "SL2"
+    ],
+    "instructors": [
+      "Tapan Kumar Sau",
+      "Chittaranjan Hens"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS7.301",
+    "name": "Science, Technology and Society",
+    "aliases": [
+      "sts"
+    ],
+    "instructors": [
+      "Radhika Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS2.304",
+    "name": "Sociology of Platform Economies",
+    "aliases": [
+      "SPE"
+    ],
+    "instructors": [
+      "Rajorshi Ray"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.401",
+    "name": "Software Engineering",
+    "aliases": [
+      "SE"
+    ],
+    "instructors": [
+      "Karthik Vaidhyanathan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS3.302",
+    "name": "Software Programming for Performance",
+    "aliases": [
+      "SPP"
+    ],
+    "instructors": [
+      "Suresh Purini"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS4.410",
+    "name": "Spatial Data Sciences",
+    "aliases": [
+      "SDS"
+    ],
+    "instructors": [
+      "KS Rajan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.408",
+    "name": "Speech Signal Processing",
+    "aliases": [
+      "SSP"
+    ],
+    "instructors": [
+      "Anil Kumar Vuppala"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.205",
+    "name": "Statistical Mechanics",
+    "aliases": [
+      "SM"
+    ],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.403",
+    "name": "Statistical Methods in AI",
+    "aliases": [
+      "smai"
+    ],
+    "instructors": [
+      "Vineet Gandhi",
+      "CV Jawahar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS8.403",
+    "name": "System and Network Security",
+    "aliases": [
+      "SNS"
+    ],
+    "instructors": [
+      "Ashok Kumar Das"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS9.424",
+    "name": "Technology Product Entrepreneurship",
+    "aliases": [
+      "tpe"
+    ],
+    "instructors": [
+      "Ramesh Loganathan",
+      "Prakash Yalla"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.308",
+    "name": "The Universe Across Scales",
+    "aliases": [
+      "uas"
+    ],
+    "instructors": [
+      "Subhadip Mitra",
+      "Chittaranjan Hens",
+      "Diganta Das"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC1.204",
+    "name": "Thermodynamics",
+    "aliases": [
+      "TH"
+    ],
+    "instructors": [
+      "Harjinder Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.201",
+    "name": "Thinking and Knowing in the Human Sciences 1",
+    "aliases": [
+      "TKHS1"
+    ],
+    "instructors": [
+      "Saurabh Todariya",
+      "Subha Chakraburtty"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.402",
+    "name": "Time Frequency Analysis",
+    "aliases": [
+      "TFA"
+    ],
+    "instructors": [
+      "Anil Kumar Vuppala",
+      "Chiranjeevi Yerra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS8.502",
+    "name": "Topics in Information-Theoretic Privacy",
+    "aliases": [
+      "TIP"
+    ],
+    "instructors": [
+      "Gowtham Kurri",
+      "Prasad Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS7.603",
+    "name": "Topics in Reinforcement Learning",
+    "aliases": [
+      "TRL"
+    ],
+    "instructors": [
+      "Tejas Bodas",
+      "Harikumar K"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL5.401",
+    "name": "Topics in SSMT",
+    "aliases": [
+      "ssmt"
+    ],
+    "instructors": [
+      "Chiranjeevi Yerra",
+      "Parameswari Krishnamurthy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS5.401",
+    "name": "User Interaction and Usability of Digital Products",
+    "aliases": [
+      "UIUDP"
+    ],
+    "instructors": [
+      "Raman Saxena"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "OC3.102",
+    "name": "Value 2 Education",
+    "aliases": [],
+    "instructors": [
+      "Shatrunjay Rawat"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.215",
+    "name": "AI and Human Rights",
+    "aliases": [
+      "aihr"
+    ],
+    "instructors": [
+      "Aakansha Natani"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG5.405",
+    "name": "Art, Vision, & Feelings",
+    "aliases": [
+      "AVF"
+    ],
+    "instructors": [
+      "Priyanka Srivastava",
+      "Shrikant Bharadwaj"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "",
+    "name": "Bioinstrumentation and Devices",
+    "aliases": [],
+    "instructors": [
+      "Anshu Sarje"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.412",
+    "name": "CMOS Oscillator Design",
+    "aliases": [],
+    "instructors": [
+      "Abhishek Pullela"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.221",
+    "name": "Constitutional Ethics",
+    "aliases": [],
+    "instructors": [
+      "Khaliq Parkar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS1.301",
+    "name": "Critical Viewing and Reading",
+    "aliases": [
+      "CVR"
+    ],
+    "instructors": [
+      "Sushmita Banerji"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA4.301",
+    "name": "Differential Equations",
+    "aliases": [
+      "DE"
+    ],
+    "instructors": [
+      "Lakshmi Burra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.402",
+    "name": "Engineering Virtual Reality Systems",
+    "aliases": [
+      "EVRS"
+    ],
+    "instructors": [
+      "Sai Anirudh Karre",
+      "Raghu Reddy"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.206",
+    "name": "Foundations of RF and Microwave Sensors",
+    "aliases": [
+      "FRMS"
+    ],
+    "instructors": [
+      "Andleeb Zahra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS5.301",
+    "name": "Growth and Development",
+    "aliases": [],
+    "instructors": [
+      "Anirban Dasgupta"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.502",
+    "name": "Information-Theoretic Methods in Computer Science",
+    "aliases": [
+      "IMCS"
+    ],
+    "instructors": [
+      "Gowtham Kurri"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC4.202",
+    "name": "Intro to Robotics: Perception and Planning",
+    "aliases": [
+      "irprp"
+    ],
+    "instructors": [
+      "K Madhava Krishna",
+      "Antony Thomas"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.305",
+    "name": "Knowing India Through Data",
+    "aliases": [
+      "KITD"
+    ],
+    "instructors": [
+      "Angarika Rakshit"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.504",
+    "name": "Law, Technology and Digital Governance",
+    "aliases": [
+      "LTDG"
+    ],
+    "instructors": [
+      "Raman Saxena",
+      "G.K. Goswami"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CG1.403",
+    "name": "Learning and Memory",
+    "aliases": [
+      "lnm"
+    ],
+    "instructors": [
+      "Bhaktee Dongaonkar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CL3.406",
+    "name": "Linguistic Data 3: Data Modeling in ILs",
+    "aliases": [
+      "ld3"
+    ],
+    "instructors": [
+      "Rajakrishnan P Rajkumar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS0.210",
+    "name": "Literature and the Ethics of telling a Story",
+    "aliases": [
+      "LETS"
+    ],
+    "instructors": [
+      "Sushmita Banerji"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.414",
+    "name": "Machine Learning for Communication",
+    "aliases": [
+      "MLC"
+    ],
+    "instructors": [
+      "Saikiran Bulusu"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC5.450",
+    "name": "Mathematical Methods in Sciences",
+    "aliases": [
+      "MMS"
+    ],
+    "instructors": [
+      "Monalisa Patra"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA8.402",
+    "name": "Mathematics for Finance",
+    "aliases": [
+      "MF"
+    ],
+    "instructors": [
+      "Sukrit Mittal"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS1.505",
+    "name": "Quantum aspects of Cryptography",
+    "aliases": [
+      "QAC"
+    ],
+    "instructors": [
+      "Atul Singh Arora"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS1.302",
+    "name": "Readings in Russian Literature",
+    "aliases": [
+      "RRL"
+    ],
+    "instructors": [
+      "Nazia Akhtar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "PD2.403",
+    "name": "Sustainable Growth Strategy for Startup",
+    "aliases": [
+      "SGSS"
+    ],
+    "instructors": [
+      "Sridhar Kalyanasundaram"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS8.304",
+    "name": "The Digital City",
+    "aliases": [
+      "DC"
+    ],
+    "instructors": [
+      "Khaliq Parkar"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.207",
+    "name": "The Mathematics of Information: Theory & Application",
+    "aliases": [
+      "mita"
+    ],
+    "instructors": [
+      "Prasad Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "HS3.303",
+    "name": "Theories and Practices of Nationalism",
+    "aliases": [
+      "tpn"
+    ],
+    "instructors": [
+      "Aniket Alam"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "MA5.501",
+    "name": "Topics in Discrete Mathematics",
+    "aliases": [
+      "TDM"
+    ],
+    "instructors": [
+      "Prasad Krishnan"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.502",
+    "name": "Flexible Electronics",
+    "aliases": [
+      "FE"
+    ],
+    "instructors": [
+      "Aftab Hussain"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "CS6.303",
+    "name": "Foundations for Trustworthy Parallel Computing",
+    "aliases": [
+      "ftpc"
+    ],
+    "instructors": [
+      "Abhishek Kr Singh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC1.202",
+    "name": "Instrumentation and Devices",
+    "aliases": [],
+    "instructors": [
+      "Anshu Sarje"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC2.207",
+    "name": "Introduction to VLSI and Embedded Systems",
+    "aliases": [
+      "vlsi"
+    ],
+    "instructors": [
+      "Aftab Hussain"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC3.404",
+    "name": "Molecular Biology",
+    "aliases": [],
+    "instructors": [
+      "Jagan Pongubala"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "SC3.410",
+    "name": "NGS Data Analysis",
+    "aliases": [],
+    "instructors": [
+      "Nita Parekh"
+    ],
+    "semester": "Spring"
+  },
+  {
+    "code": "EC5.203",
+    "name": "Communicaton and Controls in IoT",
+    "aliases": [
+      "cciot"
+    ],
+    "instructors": [
+      "Sachin Chaudhari",
+      "Aftab Hussain"
+    ],
+    "semester": "Spring"
+  }
+]
