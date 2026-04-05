@@ -117,8 +117,14 @@ impl FromRequestParts<AppState> for OptionalAuth {
             return Ok(OptionalAuth::Anonymous);
         }
 
-        let claims = Claims::from_request_parts(parts, state).await?;
-        let user = upsertuser(state, &claims).await?;
+        let claims = match Claims::from_request_parts(parts, state).await {
+            Ok(c) => c,
+            Err(_) => return Ok(OptionalAuth::Anonymous),
+        };
+        let user = match upsertuser(state, &claims).await {
+            Ok(u) => u,
+            Err(_) => return Ok(OptionalAuth::Anonymous),
+        };
         Ok(OptionalAuth::Authenticated(user))
     }
 }
@@ -135,13 +141,14 @@ pub async fn mock_login(
     let mut mock_claims = ocas_auth::mock::faculty(&email);
     // Use a deterministic UUID so logging in multiple times with the same email doesn't create new conflicting users
     mock_claims.claims.sub = uuid::Uuid::new_v5(&uuid::Uuid::NAMESPACE_URL, email.as_bytes());
+    mock_claims.claims.exp = i64::MAX;
     let token = mock_claims.token();
-    
+
     // Set it in cookie and redirect to frontend
     let mut resp = axum::response::Redirect::to("http://localhost:5173").into_response();
     let headers = resp.headers_mut();
-    
-    let cookie = format!("ocas_access={}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600", token);
+
+    let cookie = format!("ocas_access={}; HttpOnly; SameSite=Lax; Path=/", token);
     headers.append(
         axum::http::header::SET_COOKIE,
         cookie.parse().unwrap(),
