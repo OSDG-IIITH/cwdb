@@ -1,9 +1,15 @@
 <script lang="ts">
 	import ResourceExplorer from '$lib/components/resources/resource-explorer.svelte';
-	import { getcourse, searchResources, type Resource, type CourseDetail } from '$lib/api';
+	import {
+		getcourse,
+		searchResources,
+		togglecoursepin,
+		type Resource,
+		type CourseDetail
+	} from '$lib/api';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import { Loader2, Search, Download } from '@lucide/svelte';
+	import { Loader2, Search, Download, Pin } from '@lucide/svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
@@ -13,6 +19,7 @@
 	let course = $state<CourseDetail | null>(null);
 	let resources = $state<Resource[]>([]);
 	let searchresults = $state<Resource[]>([]);
+	let pinned = $state(false);
 	let loading = $state(true);
 	let showloadingindicator = $state(false);
 	let downloading = $state(false);
@@ -31,6 +38,10 @@
 
 	function titlecase(str: string): string {
 		return str.replace(/\b\w/g, (c) => c.toUpperCase());
+	}
+
+	function capseason(s: string): string {
+		return s.replace(/\b(monsoon|spring|both)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1));
 	}
 
 	function rawurl(r: Resource) {
@@ -53,6 +64,7 @@
 			if (data) {
 				course = data.course;
 				resources = data.resources;
+				pinned = data.pinned;
 			}
 		} finally {
 			stoploading();
@@ -88,6 +100,11 @@
 			searching = true;
 			searchresults = await searchResources(searchquery, course?.name);
 		}, 200);
+	}
+
+	async function handlepin() {
+		const result = await togglecoursepin(slug);
+		if (result) pinned = result.pinned;
 	}
 
 	async function downloadall() {
@@ -145,29 +162,72 @@
 		{:else if loading}
 			<div class="py-20" aria-hidden="true"></div>
 		{:else if course}
-			<div class="mb-6 flex items-end justify-between">
-				<div>
-					{#if abbreviation}
-						<span
-							class="rounded bg-muted px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
-							>{abbreviation}</span
-						>
-					{/if}
-					<h1 class="mt-1 text-2xl font-bold tracking-tight">{titlecase(course.name)}</h1>
-				</div>
+			<div class="relative mb-8">
 				<Button
 					variant="outline"
-					onclick={downloadall}
-					disabled={downloading || resources.length === 0}
+					size="lg"
+					class="group/pin absolute top-0 right-0"
+					onclick={handlepin}
 				>
-					{#if downloading}
-						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						downloading...
-					{:else}
-						<Download class="mr-2 h-4 w-4" />
-						download all
-					{/if}
+					<Pin class={`h-4 w-4 transition-colors ${pinned ? 'fill-foreground' : 'group-hover/pin:fill-foreground/25'}`} />
+					{pinned ? 'Unpin' : 'Pin'}
 				</Button>
+
+				<div class="flex flex-wrap items-center gap-2">
+					{#if course.code}
+						<span
+							class="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
+						>
+							{course.code}
+						</span>
+					{/if}
+					{#if abbreviation}
+						<span
+							class="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
+						>
+							{abbreviation}
+						</span>
+					{/if}
+				</div>
+
+				<h1 class="mt-3 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl">{titlecase(course.name)}</h1>
+
+				<div class="mt-6 flex flex-wrap items-end justify-between gap-4">
+					<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
+						{#if course.semester || course.year}
+							<div>
+								<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Season</div>
+								<div class="text-sm text-foreground">
+									{#if course.semester}{capseason(course.semester)}{/if}{#if course.semester && course.year}{' '}{/if}{#if course.year}{course.year}{/if}
+								</div>
+							</div>
+						{/if}
+						{#if course.instructors.length > 0}
+							<div>
+								<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Instructors</div>
+								<div class="text-sm text-foreground">{course.instructors.join(', ')}</div>
+							</div>
+						{/if}
+						<div>
+							<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Resources</div>
+							<div class="text-sm text-foreground">{resources.length}</div>
+						</div>
+					</div>
+
+					<Button
+						size="lg"
+						onclick={downloadall}
+						disabled={downloading || resources.length === 0}
+					>
+						{#if downloading}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+							Downloading...
+						{:else}
+							<Download class="mr-2 h-4 w-4" />
+							Download
+						{/if}
+					</Button>
+				</div>
 			</div>
 
 			<div class="relative mb-6">

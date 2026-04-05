@@ -96,22 +96,27 @@ export async function togglecoursepin(slug: string): Promise<{ pinned: boolean }
 }
 
 export const CourseDetailSchema = z.object({
+	code: z.string(),
 	name: z.string(),
-	aliases: z.array(z.string())
+	aliases: z.array(z.string()),
+	instructors: z.array(z.string()),
+	semester: z.string(),
+	year: z.number().nullable()
 });
 
 export type CourseDetail = z.infer<typeof CourseDetailSchema>;
 
 export async function getcourse(
 	slug: string
-): Promise<{ course: CourseDetail; resources: Resource[] } | null> {
+): Promise<{ course: CourseDetail; resources: Resource[]; pinned: boolean } | null> {
 	try {
 		const res = await fetch(`${API_BASE}/api/courses/${slug}`, { credentials: 'include' });
 		if (!res.ok) return null;
 		const json = await res.json();
 		return {
 			course: CourseDetailSchema.parse(json.course),
-			resources: z.array(ResourceSchema).parse(json.resources)
+			resources: z.array(ResourceSchema).parse(json.resources),
+			pinned: json.pinned ?? false
 		};
 	} catch (e) {
 		console.error('Fetch course failed:', e);

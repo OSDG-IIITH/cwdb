@@ -256,13 +256,20 @@ struct CourseInfo {
     code: String,
     name: String,
     aliases: Vec<String>,
+    instructors: Vec<String>,
     semester: String,
+    year: Option<i32>,
 }
 
 pub async fn getcourse(
     State(state): State<AppState>,
+    auth: OptionalAuth,
     Path(slug): Path<String>,
 ) -> impl IntoResponse {
+    let current_user_id = match &auth {
+        OptionalAuth::Authenticated(u) => Some(u.id),
+        OptionalAuth::Anonymous => None,
+    };
     if slug == "unclassified" {
         let resources = sqlx::query_as!(
             super::resources::ResourceRow,
@@ -280,7 +287,9 @@ pub async fn getcourse(
             code: String::new(),
             name: "unclassified".to_string(),
             aliases: vec![],
+            instructors: vec![],
             semester: String::new(),
+            year: None,
         };
 
         return match resources {
@@ -289,6 +298,7 @@ pub async fn getcourse(
                 Json(serde_json::json!({
                     "course": info,
                     "resources": resources,
+                    "pinned": false,
                 })),
             )
                 .into_response(),
@@ -304,7 +314,7 @@ pub async fn getcourse(
 
     let course = sqlx::query_as!(
         CourseInfo,
-        "SELECT code, name, aliases, semester FROM courses WHERE LOWER(name) = LOWER($1)",
+        "SELECT code, name, aliases, instructors, semester, year FROM courses WHERE LOWER(name) = LOWER($1)",
         name
     )
     .fetch_optional(&state.db)
@@ -341,12 +351,27 @@ pub async fn getcourse(
     .fetch_all(&state.db)
     .await;
 
+    let pinned = match current_user_id {
+        Some(uid) => sqlx::query_scalar!(
+            r#"SELECT 1 as "exists!" FROM coursepins WHERE user_id = $1 AND course_id = (SELECT id FROM courses WHERE LOWER(name) = LOWER($2))"#,
+            uid,
+            name
+        )
+        .fetch_optional(&state.db)
+        .await
+        .ok()
+        .flatten()
+        .is_some(),
+        None => false,
+    };
+
     match resources {
         Ok(resources) => (
             StatusCode::OK,
             Json(serde_json::json!({
                 "course": course,
                 "resources": resources,
+                "pinned": pinned,
             })),
         )
             .into_response(),
