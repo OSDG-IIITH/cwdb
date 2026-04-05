@@ -26,24 +26,13 @@ def escape(s):
     return s.replace("'", "''")
 
 
-def merge(monsoon, spring):
-    courses = {}
-
-    for course in monsoon:
-        key = normname(course["name"])
-        courses[key] = {
-            "code": course.get("code", ""),
-            "name": course["name"],
-            "aliases": [a.lower() for a in course.get("aliases", [])],
-            "instructors": course.get("instructors", []),
-            "semester": "monsoon",
-        }
-
-    for course in spring:
+def mergeinto(courses, entries, semester):
+    for course in entries:
         key = normname(course["name"])
         if key in courses:
             existing = courses[key]
-            existing["semester"] = "both"
+            if semester and existing["semester"] != semester:
+                existing["semester"] = "both"
             if not existing["code"] and course.get("code"):
                 existing["code"] = course["code"]
             existing_aliases = set(existing["aliases"])
@@ -57,14 +46,22 @@ def merge(monsoon, spring):
                     existing["instructors"].append(inst)
                     existing_instructors.add(inst)
         else:
+            sem = semester or course.get("semester", "").lower()
             courses[key] = {
                 "code": course.get("code", ""),
                 "name": course["name"],
                 "aliases": [a.lower() for a in course.get("aliases", [])],
                 "instructors": course.get("instructors", []),
-                "semester": "spring",
+                "semester": sem,
             }
 
+
+def merge(monsoon, spring, extra=None):
+    courses = {}
+    mergeinto(courses, monsoon, "monsoon")
+    mergeinto(courses, spring, "spring")
+    if extra:
+        mergeinto(courses, extra, "")
     return list(courses.values())
 
 
@@ -79,7 +76,9 @@ def main():
     scriptdir = os.path.dirname(os.path.abspath(__file__))
     monsoon = load(os.path.join(scriptdir, "monsoon.json"))
     spring = load(os.path.join(scriptdir, "spring.json"))
-    courses = merge(monsoon, spring)
+    extra_path = os.path.join(scriptdir, "extra.json")
+    extra = load(extra_path) if os.path.exists(extra_path) else []
+    courses = merge(monsoon, spring, extra)
 
     print(f"-- {len(courses)} courses")
     for c in courses:
