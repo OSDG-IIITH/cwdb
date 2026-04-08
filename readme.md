@@ -4,21 +4,22 @@ cwdb is a coursework discovery platform that helps students find useful course r
 
 
 ## Prerequisites
+
 Docker, Rust, `cargo`, `sqlx-cli` and `bun`
 
 
-## Backend
+Before starting the server, copy the backend
 
-The backend is written in Rust and uses Postgres for data storage.
-Docker is used to run Postgres and Meilisearch.
 
-Before starting the server, copy the backend env file:
+## Setup
+
+Copy the env file:
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
-Then start the local services:
+Start Postgres (port 5433) and Meilisearch (port 7700):
 
 ```bash
 docker-compose up -d
@@ -27,8 +28,15 @@ docker-compose up -d
 Run database migrations:
 
 ```bash
-cd backend
-sqlx migrate run
+cd backend && sqlx migrate run
+```
+
+
+## Backend
+
+First, copy the `.env` file:
+```
+cd backend && cp .env.example .env
 ```
 
 If you have `ocas` set up and running, start the backend with:
@@ -54,11 +62,11 @@ Copy the frontend env file:
 cp frontend/.env.example frontend/.env
 ```
 
-If you want to use `mock` authentication, in `frontend/.env`, keep mock auth enabled and set a mock email:
+If you're using mock auth, set a mock email in `frontend/.env`:
 
 ```env
 VITE_USE_MOCK_AUTH="true"
-VITE_MOCK_EMAIL=
+VITE_MOCK_EMAIL=you@students.iiit.ac.in
 ```
 
 Then start the frontend:
@@ -72,7 +80,30 @@ bun dev
 The frontend runs on `http://localhost:5173`.
 
 
-## Nix Flake ❄️
+## Scripts
+
+`cwdb` comes with scripts to seed and manage data.
+
+**`courses.py`** merges `monsoon.json`, `spring.json`, and `extra.json` into SQL `INSERT` statements for seeding the `courses` table:
+
+```bash
+python3 backend/scripts/courses.py | psql $DATABASE_URL
+```
+
+**`sources.sql`** seeds the database with known sources:
+
+```bash
+psql $DATABASE_URL < backend/scripts/sources.sql
+```
+
+**`regclient.sh`** registers the app with an `ocas` instance and prints the client ID and secret to paste into your `.env`:
+
+```bash
+bash backend/scripts/regclient.sh
+```
+
+
+## Nix
 
 If you use Nix, enter the development shell with:
 
@@ -80,7 +111,7 @@ If you use Nix, enter the development shell with:
 nix develop
 ```
 
-If you use `direnv`, run:
+If you use `direnv`:
 
 ```bash
 direnv allow
