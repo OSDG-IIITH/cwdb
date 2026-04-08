@@ -129,7 +129,7 @@
 				<p class="text-muted-foreground">no matching courses found.</p>
 			</div>
 		{:else}
-			{#if pinned.length > 0}
+			{#if pinned.length > 0 && currentpage === 1}
 				<div class="mb-8">
 					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
 						Pinned
@@ -143,8 +143,8 @@
 			{/if}
 
 			{#if courses.length > 0}
-				{#if pinned.length > 0}
-					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+				{#if pinned.length > 0 && currentpage === 1}
+                                        <p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
 						All Courses
 					</p>
 				{/if}
