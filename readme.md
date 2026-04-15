@@ -39,17 +39,16 @@ First, copy the `.env` file:
 cd backend && cp .env.example .env
 ```
 
-If you have `ocas` set up and running, start the backend with:
+The backend supports two auth methods, selected at compile time:
 
-```bash
-cargo run
-```
+| Feature | Auth | Command |
+|---|---|---|
+| `ocas` | [ocas](https://github.com/nuxshed/ocas) | `cargo run` |
+| `cas` | iiit cas | `cargo run --no-default-features --features cas` |
 
-If you do not have `ocas` running, you can use mock authentication:
+Add the `mock` feature to either to use mock authentication when no auth server is accessible.
 
-```bash
-cargo run --features mock
-```
+See `.env.example` for relevant environment variables.
 
 The backend runs on `http://localhost:3000`.
 
