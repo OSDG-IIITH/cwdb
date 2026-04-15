@@ -7,8 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::AppState;
-use crate::routes::auth::{OptionalAuth, upsertuser};
-use ocas_auth::Claims;
+use crate::routes::auth::{Claims, OptionalAuth, upsertuser};
 
 #[derive(Debug, Serialize)]
 pub struct CourseRow {

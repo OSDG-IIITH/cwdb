@@ -5,6 +5,12 @@ mod github;
 mod routes;
 mod search;
 
+#[cfg(all(feature = "ocas", feature = "cas"))]
+compile_error!("features `ocas` and `cas` are mutually exclusive");
+
+#[cfg(not(any(feature = "ocas", feature = "cas")))]
+compile_error!("one of `ocas` or `cas` must be enabled");
+
 use axum::{
     Router,
     routing::{delete, get, post},
@@ -35,14 +41,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     search::init_indexes(&meili, &db).await;
 
-    let mut ocasconfig = ocas_auth::OcasConfig::fromenv();
-    #[cfg(feature = "mock")]
-    {
+    #[cfg(all(feature = "ocas", not(feature = "mock")))]
+    let ocasclient = ocas_auth::OcasClient::new(ocas_auth::OcasConfig::fromenv()).await;
+
+    #[cfg(all(feature = "ocas", feature = "mock"))]
+    let ocasclient = {
         tracing::info!("Mock feature enabled, overriding OCAS_URL to point to localhost");
-        ocasconfig.url = format!("http://localhost:{}", config.server_port);
-    }
-    
-    let ocasclient = ocas_auth::OcasClient::new(ocasconfig).await;
+        let mut c = ocas_auth::OcasConfig::fromenv();
+        c.url = format!("http://localhost:{}", config.server_port);
+        ocas_auth::OcasClient::new(c).await
+    };
 
     let origins: Vec<axum::http::HeaderValue> = config
         .allowed_origins
@@ -81,17 +89,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/resources/{id}",
             delete(routes::resources::delete_resource),
         )
-        .route("/api/resources/{id}/likes", get(routes::likes::get_likes))
-        .with_state(state)
-        .nest("/api/auth", ocasclient.authrouter());
+        .route("/api/resources/{id}/likes", get(routes::likes::get_likes));
 
-    #[cfg(feature = "mock")]
+    #[cfg(feature = "cas")]
+    let app = app
+        .route("/api/auth/login", get(routes::cas::login))
+        .route("/api/auth/callback", get(routes::cas::callback))
+        .route("/api/auth/logout", get(routes::cas::logout));
+
+    let app = app.with_state(state);
+
+    #[cfg(feature = "ocas")]
+    let app = app.nest("/api/auth", ocasclient.authrouter());
+
+    #[cfg(all(feature = "ocas", feature = "mock"))]
     let app = app.merge(ocas_auth::mock::mockjwks());
+
+    #[cfg(feature = "ocas")]
+    let app = app
+        .layer(axum::middleware::from_fn(ocas_auth::refresh::refreshmw))
+        .layer(ocasclient.layer());
 
     let app = app
         .layer(tower_http::compression::CompressionLayer::new())
-        .layer(axum::middleware::from_fn(ocas_auth::refresh::refreshmw))
-        .layer(ocasclient.layer())
         .layer(
             CorsLayer::new()
                 .allow_origin(origins)

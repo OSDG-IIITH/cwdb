@@ -7,8 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::AppState;
-use crate::routes::auth::upsertuser;
-use ocas_auth::Claims;
+use crate::routes::auth::{Claims, upsertuser};
 
 #[derive(Debug, Deserialize)]
 pub struct ResourceQuery {

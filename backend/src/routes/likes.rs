@@ -6,8 +6,7 @@ use axum::{
 };
 
 use crate::AppState;
-use crate::routes::auth::upsertuser;
-use ocas_auth::Claims;
+use crate::routes::auth::{Claims, upsertuser};
 
 async fn toggle_generic_like(
     state: &AppState,

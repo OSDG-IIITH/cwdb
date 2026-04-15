@@ -9,6 +9,12 @@ pub struct Config {
     pub admin_emails: Vec<String>,
     pub frontend_url: String,
     pub allowed_origins: Vec<String>,
+    #[cfg(feature = "cas")]
+    pub cas_base_url: String,
+    #[cfg(feature = "cas")]
+    pub cas_service_url: String,
+    #[cfg(feature = "cas")]
+    pub session_secret: String,
 }
 
 impl Config {
@@ -31,6 +37,15 @@ impl Config {
             allowed_origins: env::var("ALLOWED_ORIGINS")
                 .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
                 .unwrap_or_else(|_| vec!["http://localhost:5173".to_string(), "http://127.0.0.1:5173".to_string()]),
+            #[cfg(feature = "cas")]
+            cas_base_url: env::var("CAS_BASE_URL")
+                .unwrap_or_else(|_| "https://login.iiit.ac.in/cas".into()),
+            #[cfg(feature = "cas")]
+            cas_service_url: env::var("CAS_SERVICE_URL")
+                .map_err(|_| "CAS_SERVICE_URL must be set")?,
+            #[cfg(feature = "cas")]
+            session_secret: env::var("SESSION_SECRET")
+                .map_err(|_| "SESSION_SECRET must be set")?,
         })
     }
 }
