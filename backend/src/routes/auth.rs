@@ -93,25 +93,6 @@ impl FromRequestParts<AppState> for Claims {
 
 /// upserts user on first login, assigns admin role if email is in ADMIN_EMAILS
 pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, AuthError> {
-    let existing = sqlx::query_as!(
-        CwdbUser,
-        "SELECT id, email, role FROM users WHERE id = $1",
-        claims.sub
-    )
-    .fetch_optional(&state.db)
-    .await
-    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
-
-    if let Some(user) = existing {
-        if user.email != claims.email {
-            sqlx::query!("UPDATE users SET email = $1 WHERE id = $2", claims.email, claims.sub)
-                .execute(&state.db)
-                .await
-                .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
-        }
-        return Ok(user);
-    }
-
     let role = if state
         .config
         .admin_emails
@@ -122,6 +103,34 @@ pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, A
     } else {
         "user"
     };
+
+    let existing = sqlx::query_as!(
+        CwdbUser,
+        "SELECT id, email, role FROM users WHERE id = $1",
+        claims.sub
+    )
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+
+    if let Some(user) = existing {
+        if user.email != claims.email || user.role != role {
+            let user = sqlx::query_as!(
+                CwdbUser,
+                "UPDATE users SET email = $1, role = $2 WHERE id = $3 RETURNING id, email, role",
+                claims.email,
+                role,
+                claims.sub
+            )
+            .fetch_one(&state.db)
+            .await
+            .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+
+            return Ok(user);
+        }
+
+        return Ok(user);
+    }
 
     let user = sqlx::query_as!(
         CwdbUser,
