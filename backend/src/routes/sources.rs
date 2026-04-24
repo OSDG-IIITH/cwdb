@@ -298,6 +298,8 @@ pub async fn sync_source(
             }
         };
 
+        // FIXME: classification runs only for new rows :(
+        //  (we build CourseRegistry at startup and never update)
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
             if let Some(cid) = state.courses.resolve(&entry.path, &source.repo, &source_aliases) {
