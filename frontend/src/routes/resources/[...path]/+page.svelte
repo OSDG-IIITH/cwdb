@@ -5,14 +5,20 @@
 	import PageHeader from '$lib/components/page-header.svelte';
 	import { page } from '$app/state';
 	import { onDestroy } from 'svelte';
+	import { makeloadingstate } from '$lib/hooks/loading';
 
 	let resources = $state<Resource[]>([]);
 	let sources = $state<Source[]>([]);
 	let loading = $state(true);
 	let showLoadingIndicator = $state(false);
-
-	const LOADING_INDICATOR_DELAY_MS = 250;
-	let loadingTimer: ReturnType<typeof setTimeout> | null = null;
+	let loadingcontrol = makeloadingstate(
+		(value) => {
+			loading = value;
+		},
+		(value) => {
+			showLoadingIndicator = value;
+		}
+	);
 
 	let path = $derived(page.params.path ? page.params.path.split('/') : []);
 
@@ -30,7 +36,7 @@
 	});
 
 	async function loadData(owner: string | null, repo: string | null) {
-		startLoading();
+		loadingcontrol.start();
 		try {
 			if (owner && repo) {
 				resources = await listAllResources(owner, repo);
@@ -38,39 +44,12 @@
 				sources = await listSources();
 			}
 		} finally {
-			stopLoading();
-		}
-	}
-
-	function startLoading() {
-		loading = true;
-		showLoadingIndicator = false;
-
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-		}
-
-		loadingTimer = setTimeout(() => {
-			if (loading) {
-				showLoadingIndicator = true;
-			}
-		}, LOADING_INDICATOR_DELAY_MS);
-	}
-
-	function stopLoading() {
-		loading = false;
-		showLoadingIndicator = false;
-
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-			loadingTimer = null;
+			loadingcontrol.stop();
 		}
 	}
 
 	onDestroy(() => {
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-		}
+		loadingcontrol.destroy();
 	});
 </script>
 

@@ -1,6 +1,5 @@
-const API_BASE = import.meta.env.VITE_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
-
 import { z } from 'zod';
+import { apibase } from '$lib/config';
 
 export const ResourceSchema = z.object({
 	id: z.number(),
@@ -57,7 +56,7 @@ export async function listcourses(opts?: {
 		if (opts?.per_page) params.set('per_page', String(opts.per_page));
 		if (opts?.q) params.set('q', opts.q);
 		const qs = params.toString();
-		const res = await fetch(`${API_BASE}/api/courses${qs ? `?${qs}` : ''}`, {
+		const res = await fetch(`${apibase}/api/courses${qs ? `?${qs}` : ''}`, {
 			credentials: 'include'
 		});
 		if (!res.ok) return empty;
@@ -82,7 +81,7 @@ export function toslug(name: string): string {
 
 export async function togglecoursepin(slug: string): Promise<{ pinned: boolean } | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/courses/${slug}/pin`, {
+		const res = await fetch(`${apibase}/api/courses/${slug}/pin`, {
 			method: 'POST',
 			credentials: 'include'
 		});
@@ -110,7 +109,7 @@ export async function getcourse(
 	slug: string
 ): Promise<{ course: CourseDetail; resources: Resource[]; pinned: boolean } | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/courses/${slug}`, { credentials: 'include' });
+		const res = await fetch(`${apibase}/api/courses/${slug}`, { credentials: 'include' });
 		if (!res.ok) return null;
 		const json = await res.json();
 		return {
@@ -126,7 +125,7 @@ export async function getcourse(
 
 export async function searchResources(query: string, coursename?: string): Promise<Resource[]> {
 	try {
-		let url = `${API_BASE}/api/search?q=${encodeURIComponent(query)}`;
+		let url = `${apibase}/api/search?q=${encodeURIComponent(query)}`;
 		if (coursename) url += `&course=${encodeURIComponent(coursename)}`;
 		const res = await fetch(url, {
 			credentials: 'include'
@@ -166,7 +165,7 @@ export const SourcesResponseSchema = z.object({
 export async function listSources(filter?: string): Promise<Source[]> {
 	try {
 		const query = filter ? `?filter=${filter}` : '';
-		const res = await fetch(`${API_BASE}/api/sources${query}`, {
+		const res = await fetch(`${apibase}/api/sources${query}`, {
 			credentials: 'include'
 		});
 		if (!res.ok) {
@@ -192,7 +191,7 @@ export async function createSource(
 	aliases?: Record<string, string>
 ): Promise<Source | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/sources`, {
+		const res = await fetch(`${apibase}/api/sources`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ owner, repo, branch, aliases }),
@@ -213,7 +212,7 @@ export async function createSource(
 
 export async function refreshSource(sourceId: number): Promise<boolean> {
 	try {
-		const res = await fetch(`${API_BASE}/api/sources/${sourceId}/sync`, {
+		const res = await fetch(`${apibase}/api/sources/${sourceId}/sync`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include'
@@ -229,7 +228,7 @@ export async function toggleSourceLike(
 	sourceId: number
 ): Promise<{ liked: boolean; like_count: number } | null> {
 	try {
-		const res = await fetch(`${API_BASE}/api/sources/${sourceId}/like`, {
+		const res = await fetch(`${apibase}/api/sources/${sourceId}/like`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include'
@@ -247,7 +246,7 @@ export async function toggleSourceLike(
 
 export async function listAllResources(owner?: string, repo?: string): Promise<Resource[]> {
 	try {
-		let url = `${API_BASE}/api/resources`;
+		let url = `${apibase}/api/resources`;
 		if (owner && repo) {
 			url += `?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`;
 		}
@@ -267,7 +266,7 @@ export async function listAllResources(owner?: string, repo?: string): Promise<R
 }
 export async function deleteSource(sourceId: number): Promise<boolean> {
 	try {
-		const res = await fetch(`${API_BASE}/api/sources/${sourceId}`, {
+		const res = await fetch(`${apibase}/api/sources/${sourceId}`, {
 			method: 'DELETE',
 			headers: { 'Content-Type': 'application/json' },
 			credentials: 'include'

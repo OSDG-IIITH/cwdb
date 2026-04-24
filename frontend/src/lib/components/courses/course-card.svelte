@@ -3,15 +3,12 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Pin, FileText } from '@lucide/svelte';
+	import { titlecase } from '$lib/utils';
 
 	let { course, onpintoggle }: { course: Course; onpintoggle?: () => void } = $props();
 
 	let localpinned = $state<boolean | null>(null);
 	let pinned = $derived(localpinned ?? course.pinned);
-
-	function titlecase(str: string): string {
-		return str.replace(/\b\w/g, (c) => c.toUpperCase());
-	}
 
 	let abbreviation = $derived((course.aliases ?? [])[0]?.toUpperCase() ?? '');
 

@@ -10,6 +10,8 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Search, ArrowUpDown, Calendar, ArrowDownAZ, ArrowUpAZ } from '@lucide/svelte';
+	import { makeloadingstate } from '$lib/hooks/loading';
+	import { bindslashfocus } from '$lib/hooks/shortcuts';
 
 	let sources = $state<Source[]>([]);
 	let loading = $state(true);
@@ -18,8 +20,15 @@
 	let sortBy = $state<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
 	let searchInput = $state<HTMLInputElement | null>(null);
 
-	const LOADING_INDICATOR_DELAY_MS = 250;
-	let loadingTimer: ReturnType<typeof setTimeout> | null = null;
+	let loadingcontrol = makeloadingstate(
+		(value) => {
+			loading = value;
+		},
+		(value) => {
+			showLoadingIndicator = value;
+		}
+	);
+	let unbindslash: (() => void) | null = null;
 
 	let filteredSources = $derived(
 		sources
@@ -39,60 +48,25 @@
 			})
 	);
 
-	function handleKeydown(e: KeyboardEvent) {
-		const activeTag = document.activeElement?.tagName;
-		if (e.key === '/' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
-			e.preventDefault();
-			searchInput?.focus();
-		}
-	}
-
 	async function loadSources() {
-		startLoading();
+		loadingcontrol.start();
 		try {
 			sources = await listSources();
 		} finally {
-			stopLoading();
-		}
-	}
-
-	function startLoading() {
-		loading = true;
-		showLoadingIndicator = false;
-
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-		}
-
-		loadingTimer = setTimeout(() => {
-			if (loading) {
-				showLoadingIndicator = true;
-			}
-		}, LOADING_INDICATOR_DELAY_MS);
-	}
-
-	function stopLoading() {
-		loading = false;
-		showLoadingIndicator = false;
-
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-			loadingTimer = null;
+			loadingcontrol.stop();
 		}
 	}
 
 	onDestroy(() => {
-		if (loadingTimer) {
-			clearTimeout(loadingTimer);
-		}
+		loadingcontrol.destroy();
+		unbindslash?.();
 	});
 
 	onMount(() => {
+		unbindslash = bindslashfocus(() => searchInput);
 		loadSources();
 	});
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
 	<PageHeader title="Sources" />

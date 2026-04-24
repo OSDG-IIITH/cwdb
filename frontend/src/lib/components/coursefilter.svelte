@@ -4,6 +4,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import { type Course } from '$lib/api';
+	import { titlecase } from '$lib/utils';
 
 	interface Props {
 		courses: Course[];
@@ -20,10 +21,6 @@
 		if (!selectedcourse) return courses;
 		return [selectedcourse, ...courses.filter((course) => course.name !== selected)];
 	});
-
-	function titlecase(str: string): string {
-		return str.replace(/\b\w/g, (c) => c.toUpperCase());
-	}
 </script>
 
 <Popover.Root bind:open>

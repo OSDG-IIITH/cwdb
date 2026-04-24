@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { apibase } from '$lib/config';
 
 export interface User {
 	id: string;
@@ -9,12 +10,10 @@ export interface User {
 export const user = writable<User | null>(null);
 export const loading = writable(true);
 
-const API_BASE = import.meta.env.VITE_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
-
 export async function fetchUser() {
 	loading.set(true);
 	try {
-		const res = await fetch(`${API_BASE}/api/auth/me`, {
+		const res = await fetch(`${apibase}/api/auth/me`, {
 			credentials: 'include'
 		});
 		if (res.ok) {
@@ -33,14 +32,14 @@ export async function fetchUser() {
 export function login() {
 	if (import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
 		const email = import.meta.env.VITE_MOCK_EMAIL || 'student@iiit.ac.in';
-		window.location.href = `${API_BASE}/api/auth/mock/login?email=${encodeURIComponent(email)}`;
+		window.location.href = `${apibase}/api/auth/mock/login?email=${encodeURIComponent(email)}`;
 	} else {
-		window.location.href = `${API_BASE}/api/auth/login`;
+		window.location.href = `${apibase}/api/auth/login`;
 	}
 }
 
 export function logout() {
 	user.set(null);
 	loading.set(true);
-	window.location.href = `${API_BASE}/api/auth/logout`;
+	window.location.href = `${apibase}/api/auth/logout`;
 }

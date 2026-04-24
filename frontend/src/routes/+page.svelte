@@ -3,6 +3,9 @@
 	import { searchResources, listcourses, type Resource, type Course } from '$lib/api';
 	import { Input } from '$lib/components/ui/input';
 	import CourseFilter from '$lib/components/coursefilter.svelte';
+	import { rawgithuburl } from '$lib/utils';
+	import { bindslashfocus } from '$lib/hooks/shortcuts';
+	import { onDestroy } from 'svelte';
 
 	let query = $state('');
 	let results = $state<Resource[]>([]);
@@ -23,31 +26,26 @@
 		courses = [...res.pinned, ...res.courses];
 	});
 
-	function rawUrl(r: Resource) {
-		const b = r.branch || 'main';
-		return `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${b}/${encodeURI(r.file_path)}`;
-	}
-
 	function repoUrl(r: Resource) {
 		return `https://github.com/${r.owner}/${r.repo}`;
 	}
 
 	function openRaw(r: Resource) {
-		window.open(rawUrl(r), '_blank');
+		window.open(rawgithuburl(r), '_blank');
 	}
 
 	let active = $derived(query.length > 0 || selectedcourse !== null);
 	let searchInput: HTMLInputElement | null = $state(null);
+	let unbindslash: (() => void) | null = null;
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === '/' && document.activeElement !== searchInput) {
-			e.preventDefault();
-			searchInput?.focus();
-		}
-	}
+	onMount(() => {
+		unbindslash = bindslashfocus(() => searchInput);
+	});
+
+	onDestroy(() => {
+		unbindslash?.();
+	});
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="relative mx-auto flex min-h-screen max-w-3xl flex-col justify-between px-4">
 	<!-- logo + searchbar -->
@@ -72,9 +70,7 @@
 				cwdb
 			</div>
 
-			<!-- searchbar + filter -->
-			<!-- FIXME: show course filter on mobile -->
-			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} hidden items-stretch gap-2 md:flex`}>
+			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} flex items-stretch gap-2`}>
 				<div class="relative flex-1">
 					<svg
 						class="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
@@ -97,32 +93,10 @@
 					/>
 				</div>
 				{#if active}
-					<CourseFilter {courses} bind:selected={selectedcourse} />
+					<div class="hidden md:block">
+						<CourseFilter {courses} bind:selected={selectedcourse} />
+					</div>
 				{/if}
-			</div>
-			<!-- mobile: search only -->
-			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} md:hidden`}>
-				<div class="relative w-full">
-					<svg
-						class="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						viewBox="0 0 24 24"
-						aria-hidden="true"
-					>
-						<circle cx="11" cy="11" r="7" stroke="currentColor" />
-						<line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" />
-					</svg>
-					<Input
-						bind:ref={searchInput}
-						type="text"
-						class="h-12 w-full border-border pr-4 pl-10 focus-visible:border-border focus-visible:ring-0"
-						placeholder="search"
-						bind:value={query}
-						oninput={search}
-					/>
-				</div>
 			</div>
 		</div>
 	</div>

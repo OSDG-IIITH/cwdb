@@ -2,6 +2,8 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { Search, Archive, FolderOpen, BookOpen } from '@lucide/svelte';
+	import { bindshortcuts } from '$lib/hooks/shortcuts';
+	import { onDestroy, onMount } from 'svelte';
 
 	const links = [
 		{ href: '/', icon: Search, label: 'Search' },
@@ -16,26 +18,20 @@
 		)
 	);
 	const currentIdx = $derived(activeIndex === -1 ? 0 : activeIndex);
-	$effect(() => {
-		const handleKeydown = (e: KeyboardEvent) => {
-			const activeTag = document.activeElement?.tagName;
-			if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+	let unbindshortcuts: (() => void) | null = null;
 
-			if (e.key === '1') {
-				e.preventDefault();
-				goto('/');
-			} else if (e.key === '2') {
-				goto('/resources');
-			} else if (e.key === '3') {
-				goto('/courses');
-			} else if (e.key === '4') {
-				goto('/sources');
-			}
-		};
+	onMount(() => {
+		unbindshortcuts = bindshortcuts({
+			'1': () => goto('/'),
+			'2': () => goto('/resources'),
+			'3': () => goto('/courses'),
+			'4': () => goto('/sources')
+		});
+	});
 
-		window.addEventListener('keydown', handleKeydown);
-
-		return () => window.removeEventListener('keydown', handleKeydown);
+	onDestroy(() => {
+		unbindshortcuts?.();
+		unbindshortcuts = null;
 	});
 </script>
 
@@ -48,7 +44,7 @@
 			style="top: calc(0.5rem + {currentIdx} * 3rem);"
 		></div>
 
-		{#each links as link}
+		{#each links as link (link.href)}
 			<a
 				href={link.href}
 				class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

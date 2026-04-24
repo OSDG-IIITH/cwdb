@@ -15,6 +15,9 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import JSZip from 'jszip';
+	import { makeloadingstate } from '$lib/hooks/loading';
+	import { bindslashfocus } from '$lib/hooks/shortcuts';
+	import { rawgithuburl, titlecase } from '$lib/utils';
 
 	let course = $state<CourseDetail | null>(null);
 	let resources = $state<Resource[]>([]);
@@ -27,8 +30,15 @@
 	let searchinput = $state<HTMLInputElement | null>(null);
 	let searching = $state(false);
 
-	const LOADING_DELAY_MS = 250;
-	let loadingtimer: ReturnType<typeof setTimeout> | null = null;
+	let loadingcontrol = makeloadingstate(
+		(value) => {
+			loading = value;
+		},
+		(value) => {
+			showloadingindicator = value;
+		}
+	);
+	let unbindslash: (() => void) | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
 	let slug = $derived(page.params.slug ?? '');
@@ -36,29 +46,12 @@
 	let basepath = $derived(`/courses/${slug}`);
 	let abbreviation = $derived((course?.aliases ?? [])[0]?.toUpperCase() ?? '');
 
-	function titlecase(str: string): string {
-		return str.replace(/\b\w/g, (c) => c.toUpperCase());
-	}
-
 	function capseason(s: string): string {
 		return s.replace(/\b(monsoon|spring|both)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1));
 	}
 
-	function rawurl(r: Resource) {
-		const b = r.branch || 'main';
-		return `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${b}/${encodeURI(r.file_path)}`;
-	}
-
-	function handlekeydown(e: KeyboardEvent) {
-		const activetag = document.activeElement?.tagName;
-		if (e.key === '/' && activetag !== 'INPUT' && activetag !== 'TEXTAREA') {
-			e.preventDefault();
-			searchinput?.focus();
-		}
-	}
-
 	async function loadcourse() {
-		startloading();
+		loadingcontrol.start();
 		try {
 			const data = await getcourse(slug);
 			if (data) {
@@ -67,25 +60,7 @@
 				pinned = data.pinned;
 			}
 		} finally {
-			stoploading();
-		}
-	}
-
-	function startloading() {
-		loading = true;
-		showloadingindicator = false;
-		if (loadingtimer) clearTimeout(loadingtimer);
-		loadingtimer = setTimeout(() => {
-			if (loading) showloadingindicator = true;
-		}, LOADING_DELAY_MS);
-	}
-
-	function stoploading() {
-		loading = false;
-		showloadingindicator = false;
-		if (loadingtimer) {
-			clearTimeout(loadingtimer);
-			loadingtimer = null;
+			loadingcontrol.stop();
 		}
 	}
 
@@ -114,7 +89,7 @@
 			const zip = new JSZip();
 			const results = await Promise.allSettled(
 				resources.map(async (r) => {
-					const res = await fetch(rawurl(r));
+					const res = await fetch(rawgithuburl(r));
 					if (!res.ok) throw new Error(`failed to fetch ${r.file_path}`);
 					const blob = await res.blob();
 					zip.file(`${r.owner}-${r.repo}/${r.file_path}`, blob);
@@ -140,16 +115,16 @@
 	}
 
 	onMount(() => {
+		unbindslash = bindslashfocus(() => searchinput);
 		loadcourse();
 	});
 
 	onDestroy(() => {
-		if (loadingtimer) clearTimeout(loadingtimer);
+		loadingcontrol.destroy();
 		if (debounce) clearTimeout(debounce);
+		unbindslash?.();
 	});
 </script>
-
-<svelte:window onkeydown={handlekeydown} />
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
 	<PageHeader title="Courses" />
@@ -249,7 +224,7 @@
 								<button
 									type="button"
 									class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
-									onclick={() => window.open(rawurl(r), '_blank')}
+									onclick={() => window.open(rawgithuburl(r), '_blank')}
 								>
 									<div class="text-base font-medium text-foreground">{r.title}</div>
 									<div class="mt-1 text-xs text-muted-foreground">{r.file_path}</div>

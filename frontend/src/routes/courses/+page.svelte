@@ -6,6 +6,8 @@
 	import CourseCard from '$lib/components/courses/course-card.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import * as Pagination from '$lib/components/ui/pagination';
+	import { makeloadingstate } from '$lib/hooks/loading';
+	import { bindslashfocus } from '$lib/hooks/shortcuts';
 
 	let courses = $state<Course[]>([]);
 	let pinned = $state<Course[]>([]);
@@ -18,20 +20,19 @@
 	let searchinput = $state<HTMLInputElement | null>(null);
 
 	const PER_PAGE = 30;
-	const LOADING_DELAY_MS = 250;
-	let loadingtimer: ReturnType<typeof setTimeout> | null = null;
+	let loadingcontrol = makeloadingstate(
+		(value) => {
+			loading = value;
+		},
+		(value) => {
+			showloadingindicator = value;
+		}
+	);
+	let unbindslash: (() => void) | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
-	function handlekeydown(e: KeyboardEvent) {
-		const activetag = document.activeElement?.tagName;
-		if (e.key === '/' && activetag !== 'INPUT' && activetag !== 'TEXTAREA') {
-			e.preventDefault();
-			searchinput?.focus();
-		}
-	}
-
 	async function loadcourses() {
-		startloading();
+		loadingcontrol.start();
 		try {
 			const res = await listcourses({
 				page: currentpage,
@@ -43,25 +44,7 @@
 			total = res.total;
 			unclassifiedcount = res.unclassified_count;
 		} finally {
-			stoploading();
-		}
-	}
-
-	function startloading() {
-		loading = true;
-		showloadingindicator = false;
-		if (loadingtimer) clearTimeout(loadingtimer);
-		loadingtimer = setTimeout(() => {
-			if (loading) showloadingindicator = true;
-		}, LOADING_DELAY_MS);
-	}
-
-	function stoploading() {
-		loading = false;
-		showloadingindicator = false;
-		if (loadingtimer) {
-			clearTimeout(loadingtimer);
-			loadingtimer = null;
+			loadingcontrol.stop();
 		}
 	}
 
@@ -78,19 +61,19 @@
 	}
 
 	onDestroy(() => {
-		if (loadingtimer) clearTimeout(loadingtimer);
+		loadingcontrol.destroy();
 		if (debounce) clearTimeout(debounce);
+		unbindslash?.();
 	});
 
 	onMount(() => {
+		unbindslash = bindslashfocus(() => searchinput);
 		loadcourses();
 	});
 
 	let totalpages = $derived(Math.ceil(total / PER_PAGE));
 	let empty = $derived(!loading && courses.length === 0 && pinned.length === 0);
 </script>
-
-<svelte:window onkeydown={handlekeydown} />
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
 	<PageHeader title="Courses" />

@@ -8,8 +8,9 @@
 		TableRow
 	} from '$lib/components/ui/table';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
-	import { Folder, FileText, Home } from '@lucide/svelte';
+	import { Folder, FileText } from '@lucide/svelte';
 	import type { Resource, Source } from '$lib/api';
+	import { rawgithuburl } from '$lib/utils';
 
 	import { goto } from '$app/navigation';
 
@@ -130,10 +131,6 @@
 			goto(`${basepath}/${newPath.join('/')}`);
 		}
 	}
-	function rawUrl(r: Resource) {
-		const b = r.branch || 'main';
-		return `https://raw.githubusercontent.com/${r.owner}/${r.repo}/${b}/${encodeURI(r.file_path)}`;
-	}
 </script>
 
 <div class="space-y-3">
@@ -148,7 +145,7 @@
 						cwdb
 					</Breadcrumb.Link>
 				</Breadcrumb.Item>
-				{#each currentPath as part, i}
+				{#each currentPath as part, i (`${part}-${i}`)}
 					<Breadcrumb.Separator />
 					<Breadcrumb.Item>
 						<Breadcrumb.Link
@@ -194,12 +191,12 @@
 						</TableRow>
 					{/if}
 
-					{#each currentView as item}
+					{#each currentView as item (item.path.join('/'))}
 						<TableRow
 							class="group cursor-pointer border-border/40 transition-colors hover:bg-muted/50 dark:hover:bg-accent/40"
 							onclick={() => {
 								if (item.type === 'file' && item.resource) {
-									window.open(rawUrl(item.resource), '_blank');
+									window.open(rawgithuburl(item.resource), '_blank');
 								} else {
 									navigate(item.path);
 								}
