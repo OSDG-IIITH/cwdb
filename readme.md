@@ -8,9 +8,6 @@ cwdb is a coursework discovery platform that helps students find useful course r
 Docker, Rust, `cargo`, `sqlx-cli` and `bun`
 
 
-Before starting the server, copy the backend
-
-
 ## Setup
 
 Copy the env file:
@@ -102,7 +99,7 @@ bash backend/scripts/regclient.sh
 ```
 
 
-## Nix
+## Nix ❄️
 
 If you use Nix, enter the development shell with:
 
