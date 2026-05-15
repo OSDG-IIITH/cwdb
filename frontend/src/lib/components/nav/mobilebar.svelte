@@ -1,17 +1,20 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { base } from '$app/paths';
 	import { Search, Archive, FolderOpen, BookOpen } from '@lucide/svelte';
 
 	const links = [
-		{ href: '/', icon: Search, label: 'Search' },
-		{ href: '/resources', icon: FolderOpen, label: 'Resources' },
-		{ href: '/courses', icon: BookOpen, label: 'Courses' },
-		{ href: '/sources', icon: Archive, label: 'Sources' }
+		{ href: base || '/', icon: Search, label: 'Search' },
+		{ href: `${base}/resources`, icon: FolderOpen, label: 'Resources' },
+		{ href: `${base}/courses`, icon: BookOpen, label: 'Courses' },
+		{ href: `${base}/sources`, icon: Archive, label: 'Sources' }
 	];
 
 	const activeindex = $derived(
 		links.findIndex((link) =>
-			link.href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(link.href)
+			link.href === (base || '/')
+				? page.url.pathname === base || page.url.pathname === base + '/'
+				: page.url.pathname.startsWith(link.href)
 		)
 	);
 	const currentidx = $derived(activeindex === -1 ? 0 : activeindex);
@@ -33,8 +36,8 @@
 			<a
 				href={link.href}
 				class="relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-				class:text-foreground={link.href === '/'
-					? page.url.pathname === '/'
+				class:text-foreground={link.href === (base || '/')
+					? page.url.pathname === base || page.url.pathname === base + '/'
 					: page.url.pathname.startsWith(link.href)}
 				title={link.label}
 			>

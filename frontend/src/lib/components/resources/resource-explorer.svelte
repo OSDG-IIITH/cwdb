@@ -13,12 +13,13 @@
 	import { rawgithuburl } from '$lib/utils';
 
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	let {
 		resources,
 		sources = [],
 		path = [],
-		basepath = '/resources'
+		basepath = `${base}/resources`
 	} = $props<{ resources: Resource[]; sources?: Source[]; path?: string[]; basepath?: string }>();
 
 	let currentPath = $derived.by(() => {

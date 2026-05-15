@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { togglecoursepin, toslug, type Course } from '$lib/api';
+	import { base } from '$app/paths';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Pin, FileText } from '@lucide/svelte';
@@ -23,7 +24,7 @@
 	}
 </script>
 
-<a href="/courses/{toslug(course.name)}" class="block">
+<a href="{base}/courses/{toslug(course.name)}" class="block">
 	<Card.Root
 		class="group relative flex w-full flex-col justify-between gap-4 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-colors hover:border-border md:px-5 md:py-5"
 	>

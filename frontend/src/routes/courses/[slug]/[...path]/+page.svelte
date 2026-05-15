@@ -12,6 +12,7 @@
 	import { Loader2, Search, Download, Pin } from '@lucide/svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
 	import { page } from '$app/state';
+	import { base } from '$app/paths';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import JSZip from 'jszip';
@@ -43,7 +44,7 @@
 
 	let slug = $derived(page.params.slug ?? '');
 	let path = $derived(page.params.path ? page.params.path.split('/') : []);
-	let basepath = $derived(`/courses/${slug}`);
+	let basepath = $derived(`${base}/courses/${slug}`);
 	let abbreviation = $derived((course?.aliases ?? [])[0]?.toUpperCase() ?? '');
 
 	function capseason(s: string): string {
