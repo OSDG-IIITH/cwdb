@@ -63,7 +63,7 @@ pub async fn create_source(
             .into_response();
     }
 
-    let github = crate::github::GitHubClient::new();
+    let github = crate::github::GitHubClient::new(state.config.github_token.clone());
 
     let branch = match &payload.branch {
         Some(b) => b.clone(),
@@ -212,7 +212,7 @@ pub async fn sync_source(
         _ => vec![],
     };
 
-    let github = crate::github::GitHubClient::new();
+    let github = crate::github::GitHubClient::new(state.config.github_token.clone());
     let tree = match github
         .get_repo_tree(
             &source.owner,

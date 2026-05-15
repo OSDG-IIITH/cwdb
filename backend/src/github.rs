@@ -34,23 +34,26 @@ pub enum GitHubError {
 
 pub struct GitHubClient {
     client: Client,
+    token: Option<String>,
 }
 
 impl GitHubClient {
-    pub fn new() -> Self {
-        Self {
-            client: Client::new(),
-        }
+    pub fn new(token: Option<String>) -> Self {
+        Self { client: Client::new(), token }
     }
 
     async fn request(&self, url: &str) -> Result<reqwest::Response, GitHubError> {
-        let response = self
+        let mut req = self
             .client
             .get(url)
             .header("User-Agent", "cwdb-crawler")
-            .header("Accept", "application/vnd.github.v3+json")
-            .send()
-            .await?;
+            .header("Accept", "application/vnd.github.v3+json");
+
+        if let Some(ref t) = self.token {
+            req = req.header("Authorization", format!("Bearer {}", t));
+        }
+
+        let response = req.send().await?;
 
         match response.status().as_u16() {
             404 => Err(GitHubError::NotFound),

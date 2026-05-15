@@ -9,6 +9,7 @@ pub struct Config {
     pub admin_emails: Vec<String>,
     pub frontend_url: String,
     pub allowed_origins: Vec<String>,
+    pub github_token: Option<String>,
     #[cfg(feature = "cas")]
     pub cas_base_url: String,
     #[cfg(feature = "cas")]
@@ -34,6 +35,7 @@ impl Config {
                 .unwrap_or_default(),
             frontend_url: env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:5173".into()),
+            github_token: env::var("GITHUB_TOKEN").ok(),
             allowed_origins: env::var("ALLOWED_ORIGINS")
                 .map(|s| s.split(',').map(|s| s.trim().to_string()).collect())
                 .unwrap_or_else(|_| vec!["http://localhost:5173".to_string(), "http://127.0.0.1:5173".to_string()]),
