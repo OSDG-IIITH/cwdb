@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,\n                    false as liked\n                   FROM sources s",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "owner",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "repo",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "branch",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "source_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_synced_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_by",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "like_count",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "aliases",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 10,
+        "name": "liked",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "8c29c19d714f5fb20a593c2a81d32530a7ade9bb07d654a251210c03469e6598"
+}

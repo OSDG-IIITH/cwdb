@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code, name, aliases, instructors, semester, year FROM courses WHERE LOWER(name) = LOWER($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "aliases",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 3,
+        "name": "instructors",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "semester",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "year",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "ee5520d69268af54db730be46f6241d41a350fafce1b60a07d034880c4e9f092"
+}

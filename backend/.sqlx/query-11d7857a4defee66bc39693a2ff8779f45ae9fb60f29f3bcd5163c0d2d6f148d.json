@@ -1,0 +1,63 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT c.id, c.code, c.name, c.aliases, c.semester, COUNT(r.id) as \"resource_count!\",\n                    EXISTS(SELECT 1 FROM coursepins cp WHERE cp.course_id = c.id AND cp.user_id = $5) as \"pinned!\"\n                FROM courses c\n                LEFT JOIN resources r ON r.course_id = c.id\n                WHERE ($1 = '' OR c.name ILIKE $2 OR EXISTS (\n                    SELECT 1 FROM unnest(c.aliases) a WHERE a ILIKE $2\n                ))\n                AND c.id != ALL($6)\n                GROUP BY c.id\n                ORDER BY c.name\n                LIMIT $3 OFFSET $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "aliases",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "semester",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "resource_count!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "pinned!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int8",
+        "Int8",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "11d7857a4defee66bc39693a2ff8779f45ae9fb60f29f3bcd5163c0d2d6f148d"
+}

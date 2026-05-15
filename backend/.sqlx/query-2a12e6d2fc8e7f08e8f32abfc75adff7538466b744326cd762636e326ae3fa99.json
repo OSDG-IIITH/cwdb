@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) as \"count!\"\n        FROM courses c\n        WHERE ($1 = '' OR c.name ILIKE $2 OR EXISTS (\n            SELECT 1 FROM unnest(c.aliases) a WHERE a ILIKE $2\n        ))\n        AND c.id != ALL($3)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2a12e6d2fc8e7f08e8f32abfc75adff7538466b744326cd762636e326ae3fa99"
+}

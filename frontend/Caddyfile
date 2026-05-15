@@ -5,11 +5,11 @@
 :80 {
     encode gzip
 
-    handle /api/* {
+    handle_path {env.BASE_PATH}/api/* {
         reverse_proxy backend:3000
     }
 
-    handle {
+    handle_path {env.BASE_PATH}/* {
         root * /srv
         try_files {path} /200.html
         file_server

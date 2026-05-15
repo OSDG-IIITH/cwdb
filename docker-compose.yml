@@ -40,7 +40,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        BASE_PATH: ${BASE_PATH:-}
     restart: unless-stopped
+    environment:
+      BASE_PATH: ${BASE_PATH:-}
     ports:
       - "8000:80"
     networks:

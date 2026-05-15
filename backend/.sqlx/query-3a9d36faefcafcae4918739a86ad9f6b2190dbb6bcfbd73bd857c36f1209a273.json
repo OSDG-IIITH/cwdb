@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3a9d36faefcafcae4918739a86ad9f6b2190dbb6bcfbd73bd857c36f1209a273"
+}
