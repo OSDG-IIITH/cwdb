@@ -73,7 +73,8 @@ let resourcemap = new Map<string, Resource>();
 let courseindex = new Map<string, IndexCourse>();
 let db: IDBPDatabase | null = null;
 
-const INDEX_URL = '/data/index.json';
+import { base } from '$app/paths';
+const INDEX_URL = `${base}/data/index.json`;
 
 async function opendb() {
 	db = await openDB('cwdb', 1, {
@@ -159,29 +160,33 @@ async function loadsaved(): Promise<boolean> {
 }
 
 async function storeindex(index: Index) {
-	if (!db) return;
 	const items = denormalize(index.resources, index.courses, index.sources);
 	const search = buildms(items);
 	const synced_at = new Date();
-
-	const tx = db.transaction(['resources', 'meta'], 'readwrite');
-	await tx.objectStore('resources').clear();
-	await Promise.all(items.map((r) => tx.objectStore('resources').put(r)));
-	const meta = tx.objectStore('meta');
-	await meta.put(index.version, 'version');
-	await meta.put(synced_at, 'synced_at');
-	await meta.put(JSON.stringify(search.toJSON()), 'minisearch');
-	await meta.put(JSON.stringify(index.courses), 'courses');
-	await tx.done;
 
 	ms = search;
 	resourcemap = new Map(items.map((r) => [r.id, r]));
 	courseindex = new Map(Object.entries(index.courses));
 	allresources.set(items);
 	syncstatus.update((s) => ({ ...s, version: index.version, synced_at, empty: items.length === 0 }));
+
+	if (!db) return;
+	try {
+		const tx = db.transaction(['resources', 'meta'], 'readwrite');
+		await tx.objectStore('resources').clear();
+		await Promise.all(items.map((r) => tx.objectStore('resources').put(r)));
+		const meta = tx.objectStore('meta');
+		await meta.put(index.version, 'version');
+		await meta.put(synced_at, 'synced_at');
+		await meta.put(JSON.stringify(search.toJSON()), 'minisearch');
+		await meta.put(JSON.stringify(index.courses), 'courses');
+		await tx.done;
+	} catch (e) {
+		console.error('idb write failed:', e);
+	}
 }
 
-async function trysync() {
+export async function trysync() {
 	syncstatus.update((s) => ({ ...s, syncing: true }));
 	try {
 		const res = await fetch(INDEX_URL, { cache: 'no-cache' });
@@ -192,7 +197,8 @@ async function trysync() {
 		if (stored !== index.version) {
 			await storeindex(index);
 		}
-	} catch {
+	} catch (e) {
+		console.error('sync failed:', e);
 		syncstatus.update((s) => ({ ...s, online: false }));
 	} finally {
 		syncstatus.update((s) => ({ ...s, syncing: false }));

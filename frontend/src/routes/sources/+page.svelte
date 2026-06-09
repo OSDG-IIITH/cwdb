@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { listSources, publish, type Source } from '$lib/api';
+	import { trysync } from '$lib/sync';
 	import { onDestroy, onMount } from 'svelte';
 	import SourceCard from '$lib/components/sources/source-card.svelte';
 	import NewSourceDialog from '$lib/components/sources/new-source-dialog.svelte';
@@ -36,7 +37,7 @@
 		try {
 			const result = await publish();
 			if (result) {
-				console.log('Published:', result);
+				await trysync();
 			}
 		} finally {
 			publishing = false;
