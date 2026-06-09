@@ -1,9 +1,7 @@
 pub mod auth;
 #[cfg(feature = "cas")]
 pub mod cas;
-pub mod courses;
 pub mod health;
-pub mod likes;
+pub mod publish;
 pub mod resources;
-pub mod search;
 pub mod sources;

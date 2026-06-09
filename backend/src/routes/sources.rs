@@ -6,7 +6,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use tokio::time::{Duration, sleep};
 
 use crate::AppState;
 use crate::routes::auth::{Claims, OptionalAuth, upsertuser};
@@ -32,17 +31,6 @@ pub struct SourceRow {
     pub like_count: i32,
     pub aliases: serde_json::Value,
     pub liked: Option<bool>,
-}
-
-#[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct ResourceRow {
-    pub id: i32,
-    pub source_id: i32,
-    pub file_path: String,
-    pub title: String,
-    pub r#type: String,
-    pub like_count: i32,
-    pub course_id: Option<uuid::Uuid>,
 }
 
 pub async fn create_source(
@@ -299,7 +287,6 @@ pub async fn sync_source(
         };
 
         // FIXME: classification runs only for new rows :(
-        //  (we build CourseRegistry at startup and never update)
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
             if let Some(cid) = state.courses.resolve(&entry.path, &source.repo, &source_aliases) {
@@ -322,7 +309,7 @@ pub async fn sync_source(
         .map(|entry| compute_path_hash(&entry.path))
         .collect();
 
-    let stale_resource_ids = match sqlx::query_scalar!(
+    if let Err(e) = sqlx::query_scalar!(
         r#"DELETE FROM resources
            WHERE source_id = $1
              AND NOT (path_hash = ANY($2))
@@ -333,41 +320,9 @@ pub async fn sync_source(
     .fetch_all(&mut *tx)
     .await
     {
-        Ok(ids) => ids,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("failed to remove stale resources: {}", e) })),
-            )
-                .into_response();
-        }
-    };
-
-    let resources = match sqlx::query_as!(
-        ResourceRow,
-        r#"SELECT id, source_id, file_path, title, type, like_count, course_id FROM resources WHERE source_id = $1"#,
-        source_id
-    )
-    .fetch_all(&mut *tx)
-    .await
-    {
-        Ok(rows) => rows,
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::json!({ "error": format!("failed to load synced resources: {}", e) })),
-            )
-                .into_response();
-        }
-    };
-
-    if let Err(e) = sync_meili_index(&state, &source, &resources, &stale_resource_ids).await {
         return (
-            StatusCode::BAD_GATEWAY,
-            Json(serde_json::json!({
-                "error": "search index sync failed, rolling back",
-                "details": e
-            })),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("failed to remove stale resources: {}", e) })),
         )
             .into_response();
     }
@@ -399,93 +354,9 @@ pub async fn sync_source(
         Json(serde_json::json!({
             "inserted": inserted,
             "updated": updated,
-            "total": resources.len()
         })),
     )
         .into_response()
-}
-
-async fn sync_meili_index(
-    state: &AppState,
-    source: &SourceRow,
-    resources: &[ResourceRow],
-    stale_resource_ids: &[i32],
-) -> Result<(), String> {
-    let index = state.meili.index("resources");
-
-    let docs: Vec<_> = resources
-        .iter()
-        .map(|r| {
-            let course_name = r
-                .course_id
-                .and_then(|cid| state.courses.name(cid))
-                .map(String::from);
-            serde_json::json!({
-                "id": r.id,
-                "source_id": r.source_id,
-                "file_path": r.file_path,
-                "title": r.title,
-                "like_count": r.like_count,
-                "owner": source.owner,
-                "repo": source.repo,
-                "branch": source.branch,
-                "type": r.r#type,
-                "course_id": r.course_id,
-                "course_name": course_name
-            })
-        })
-        .collect();
-
-    const MAX_ATTEMPTS: u8 = 3;
-    let mut last_error = String::from("unknown meilisearch sync error");
-
-    for attempt in 1..=MAX_ATTEMPTS {
-        match sync_meili_index_once(state, &index, &docs, stale_resource_ids).await {
-            Ok(()) => return Ok(()),
-            Err(e) => {
-                last_error = e;
-                if attempt < MAX_ATTEMPTS {
-                    let backoff_ms = 250_u64 * u64::from(attempt);
-                    sleep(Duration::from_millis(backoff_ms)).await;
-                }
-            }
-        }
-    }
-
-    Err(last_error)
-}
-
-async fn sync_meili_index_once(
-    state: &AppState,
-    index: &meilisearch_sdk::indexes::Index,
-    docs: &[serde_json::Value],
-    stale_resource_ids: &[i32],
-) -> Result<(), String> {
-    for stale_id in stale_resource_ids {
-        let task = index
-            .delete_document(*stale_id)
-            .await
-            .map_err(|e| format!("failed to delete stale document {}: {}", stale_id, e))?;
-
-        state
-            .meili
-            .wait_for_task(task, None, None)
-            .await
-            .map_err(|e| format!("delete task failed for stale document {}: {}", stale_id, e))?;
-    }
-
-    let task = index
-        .add_documents(docs, Some("id"))
-        .await
-        .map_err(|e| format!("failed to add/update documents: {}", e))?;
-
-    state
-        .meili
-        .wait_for_task(task, None, None)
-        .await
-        .map_err(|e| format!("add/update task failed: {}", e))?;
-
-    Ok(())
 }
 
 fn compute_path_hash(path: &str) -> String {
@@ -521,21 +392,6 @@ pub async fn delete_source(
 
     if user.role != "admin" {
         return (StatusCode::FORBIDDEN).into_response();
-    }
-
-    let resource_ids = match sqlx::query_scalar!(
-        "SELECT id FROM resources WHERE source_id = $1",
-        id
-    )
-    .fetch_all(&state.db)
-    .await {
-        Ok(ids) => ids,
-        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR).into_response(),
-    };
-
-    let index = state.meili.index("resources");
-    for rid in resource_ids {
-        let _ = index.delete_document(rid).await;
     }
 
     match sqlx::query!("DELETE FROM sources WHERE id = $1", id)

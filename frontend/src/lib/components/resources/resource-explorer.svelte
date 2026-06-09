@@ -9,7 +9,8 @@
 	} from '$lib/components/ui/table';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { Folder, FileText } from '@lucide/svelte';
-	import type { Resource, Source } from '$lib/api';
+	import type { Resource } from '$lib/sync';
+	import type { Source } from '$lib/api';
 	import { rawgithuburl } from '$lib/utils';
 
 	import { goto } from '$app/navigation';

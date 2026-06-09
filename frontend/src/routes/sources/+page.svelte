@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { listSources, type Source } from '$lib/api';
+	import { listSources, publish, type Source } from '$lib/api';
 	import { onDestroy, onMount } from 'svelte';
 	import SourceCard from '$lib/components/sources/source-card.svelte';
 	import NewSourceDialog from '$lib/components/sources/new-source-dialog.svelte';
@@ -29,6 +29,19 @@
 		}
 	);
 	let unbindslash: (() => void) | null = null;
+	let publishing = $state(false);
+
+	async function handlePublish() {
+		publishing = true;
+		try {
+			const result = await publish();
+			if (result) {
+				console.log('Published:', result);
+			}
+		} finally {
+			publishing = false;
+		}
+	}
 
 	let filteredSources = $derived(
 		sources
@@ -127,7 +140,15 @@
 				</DropdownMenu.Root>
 			</div>
 
-			<NewSourceDialog on:created={loadSources} />
+			<div class="flex items-center gap-2">
+				<Button variant="outline" onclick={handlePublish} disabled={publishing}>
+					{#if publishing}
+						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					{/if}
+					Publish
+				</Button>
+				<NewSourceDialog on:created={loadSources} />
+			</div>
 		</div>
 
 		{#if loading && showLoadingIndicator}

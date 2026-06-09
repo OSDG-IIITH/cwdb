@@ -1,12 +1,6 @@
 <script lang="ts">
 	import ResourceExplorer from '$lib/components/resources/resource-explorer.svelte';
-	import {
-		getcourse,
-		searchResources,
-		togglecoursepin,
-		type Resource,
-		type CourseDetail
-	} from '$lib/api';
+	import { search, getcourse, getresourcesbycourse, getunclassified, type Resource, type CourseInfo } from '$lib/sync';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Loader2, Search, Download, Pin } from '@lucide/svelte';
@@ -16,29 +10,18 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import JSZip from 'jszip';
-	import { makeloadingstate } from '$lib/hooks/loading';
 	import { bindslashfocus } from '$lib/hooks/shortcuts';
 	import { rawgithuburl, titlecase } from '$lib/utils';
 
-	let course = $state<CourseDetail | null>(null);
+	let course = $state<CourseInfo | null>(null);
 	let resources = $state<Resource[]>([]);
 	let searchresults = $state<Resource[]>([]);
 	let pinned = $state(false);
-	let loading = $state(true);
-	let showloadingindicator = $state(false);
 	let downloading = $state(false);
 	let searchquery = $state('');
 	let searchinput = $state<HTMLInputElement | null>(null);
 	let searching = $state(false);
 
-	let loadingcontrol = makeloadingstate(
-		(value) => {
-			loading = value;
-		},
-		(value) => {
-			showloadingindicator = value;
-		}
-	);
 	let unbindslash: (() => void) | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,36 +34,56 @@
 		return s.replace(/\b(monsoon|spring|both)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1));
 	}
 
-	async function loadcourse() {
-		loadingcontrol.start();
-		try {
-			const data = await getcourse(slug);
+	function loadcourse() {
+		if (slug === 'unclassified') {
+			course = {
+				id: 'unclassified',
+				name: 'unclassified',
+				code: '',
+				aliases: [],
+				instructors: [],
+				semester: '',
+				year: null,
+				resource_count: 0
+			};
+			resources = getunclassified();
+		} else {
+			const data = getcourse(slug);
 			if (data) {
-				course = data.course;
-				resources = data.resources;
-				pinned = data.pinned;
+				course = data;
+				resources = getresourcesbycourse(data.id);
 			}
-		} finally {
-			loadingcontrol.stop();
 		}
+		pinned = ispinned();
+	}
+
+	function ispinned(): boolean {
+		if (!course || typeof localStorage === 'undefined') return false;
+		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
+		return pins.includes(course.id);
+	}
+
+	function handlepin() {
+		if (!course) return;
+		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
+		const idx = pins.indexOf(course.id);
+		if (idx >= 0) pins.splice(idx, 1);
+		else pins.push(course.id);
+		localStorage.setItem('pins', JSON.stringify(pins));
+		pinned = idx < 0;
 	}
 
 	function handlesearch() {
 		if (debounce) clearTimeout(debounce);
-		debounce = setTimeout(async () => {
+		debounce = setTimeout(() => {
 			if (!searchquery.trim()) {
 				searching = false;
 				searchresults = [];
 				return;
 			}
 			searching = true;
-			searchresults = await searchResources(searchquery, course?.name);
+			searchresults = search(searchquery, course?.id !== 'unclassified' ? course?.id : null);
 		}, 200);
-	}
-
-	async function handlepin() {
-		const result = await togglecoursepin(slug);
-		if (result) pinned = result.pinned;
 	}
 
 	async function downloadall() {
@@ -97,9 +100,7 @@
 				})
 			);
 			const failed = results.filter((r) => r.status === 'rejected').length;
-			if (failed > 0) {
-				toast.warning(`${failed} file(s) could not be downloaded`);
-			}
+			if (failed > 0) toast.warning(`${failed} file(s) could not be downloaded`);
 			const blob = await zip.generateAsync({ type: 'blob' });
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
@@ -121,7 +122,6 @@
 	});
 
 	onDestroy(() => {
-		loadingcontrol.destroy();
 		if (debounce) clearTimeout(debounce);
 		unbindslash?.();
 	});
@@ -131,13 +131,7 @@
 	<PageHeader title="Courses" />
 
 	<main class="container mx-auto max-w-6xl flex-1 p-6">
-		{#if loading && showloadingindicator}
-			<div class="flex items-center justify-center py-20">
-				<Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		{:else if loading}
-			<div class="py-20" aria-hidden="true"></div>
-		{:else if course}
+		{#if course}
 			<div class="relative mb-8">
 				<Button
 					variant="outline"
@@ -145,7 +139,9 @@
 					class="group/pin absolute top-0 right-0"
 					onclick={handlepin}
 				>
-					<Pin class={`h-4 w-4 transition-colors ${pinned ? 'fill-foreground' : 'group-hover/pin:fill-foreground/25'}`} />
+					<Pin
+						class={`h-4 w-4 transition-colors ${pinned ? 'fill-foreground' : 'group-hover/pin:fill-foreground/25'}`}
+					/>
 					{pinned ? 'Unpin' : 'Pin'}
 				</Button>
 
@@ -166,13 +162,19 @@
 					{/if}
 				</div>
 
-				<h1 class="mt-3 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl">{titlecase(course.name)}</h1>
+				<h1 class="mt-3 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl">
+					{titlecase(course.name)}
+				</h1>
 
 				<div class="mt-6 flex flex-wrap items-end justify-between gap-4">
 					<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
 						{#if course.semester || course.year}
 							<div>
-								<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Season</div>
+								<div
+									class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+								>
+									Season
+								</div>
 								<div class="text-sm text-foreground">
 									{#if course.semester}{capseason(course.semester)}{/if}{#if course.semester && course.year}{' '}{/if}{#if course.year}{course.year}{/if}
 								</div>
@@ -180,21 +182,25 @@
 						{/if}
 						{#if course.instructors.length > 0}
 							<div>
-								<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Instructors</div>
+								<div
+									class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+								>
+									Instructors
+								</div>
 								<div class="text-sm text-foreground">{course.instructors.join(', ')}</div>
 							</div>
 						{/if}
 						<div>
-							<div class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Resources</div>
+							<div
+								class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+							>
+								Resources
+							</div>
 							<div class="text-sm text-foreground">{resources.length}</div>
 						</div>
 					</div>
 
-					<Button
-						size="lg"
-						onclick={downloadall}
-						disabled={downloading || resources.length === 0}
-					>
+					<Button size="lg" onclick={downloadall} disabled={downloading || resources.length === 0}>
 						{#if downloading}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 							Downloading...

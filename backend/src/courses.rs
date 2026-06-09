@@ -411,6 +411,7 @@ mod tests {
         let peu = Uuid::from_u128(12);
         let mdl = Uuid::from_u128(13);
         let osn = Uuid::from_u128(14);
+        let ew1 = Uuid::from_u128(15);
 
         let mut aliases: HashMap<String, Vec<Uuid>> = HashMap::new();
         aliases.insert("cso".to_string(), vec![cso]);
@@ -420,6 +421,7 @@ mod tests {
         aliases.insert("inlp".to_string(), vec![inlp]);
         aliases.insert("mdl".to_string(), vec![mdl]);
         aliases.insert("osn".to_string(), vec![osn]);
+        aliases.insert("ew1".to_string(), vec![ew1]);
 
         let mut codes = HashMap::new();
         codes.insert("cs1.201".to_string(), dsa_ds);
@@ -439,6 +441,7 @@ mod tests {
             ("Physics of Early Universe", peu, "monsoon"),
             ("Machine Data Learning", mdl, "monsoon"),
             ("Operating Systems and Networks", osn, "monsoon"),
+            ("Electronics Workshop 1", ew1, "monsoon"),
         ];
 
         let mut names: Vec<(String, Vec<String>, Uuid)> = course_data
@@ -518,6 +521,7 @@ mod tests {
         assert_eq!(reg.resolve("Data-Structures-and-Algorithm/hw.pdf", "", &e), Some(Uuid::from_u128(3)));
         assert_eq!(reg.resolve("Physics-of-the-Early-Universe/notes.pdf", "", &e), Some(Uuid::from_u128(12)));
         assert_eq!(reg.resolve("Robotics-Dynamics-And-Controls/a1.pdf", "", &e), Some(Uuid::from_u128(11)));
+        assert_eq!(reg.resolve("sem1/ew-1/labs/Lab1.pdf", "", &e), Some(Uuid::from_u128(15)));
     }
 
     #[test]

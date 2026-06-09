@@ -13,7 +13,6 @@ mock = ["ocas-auth?/mock"]
 async-trait = "0.1.89"
 axum = "0.8.8"
 dotenvy = "0.15.7"
-meilisearch-sdk = { version = "0.32.0", default-features = false, features = ["reqwest", "tls", "jwt_rust_crypto"] }
 ocas-auth = { git = "https://github.com/nuxshed/ocas", optional = true }
 jsonwebtoken = { version = "9", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }

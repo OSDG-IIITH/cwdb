@@ -1,67 +1,12 @@
 use axum::{
     Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::routes::auth::{Claims, upsertuser};
-
-#[derive(Debug, Deserialize)]
-pub struct ResourceQuery {
-    pub owner: Option<String>,
-    pub repo: Option<String>,
-}
-
-#[derive(Debug, Serialize, sqlx::FromRow)]
-pub struct ResourceRow {
-    pub id: i32,
-    pub source_id: i32,
-    pub owner: String,
-    pub repo: String,
-    pub branch: String,
-    pub file_path: String,
-    pub title: String,
-    pub r#type: String,
-    pub like_count: i32,
-}
-
-pub async fn list_resources(
-    State(state): State<AppState>,
-    Query(query): Query<ResourceQuery>,
-) -> impl IntoResponse {
-    let result = if let (Some(owner), Some(repo)) = (query.owner, query.repo) {
-        sqlx::query_as!(
-            ResourceRow,
-            r#"
-            SELECT r.id, r.source_id, s.owner, s.repo, s.branch, r.file_path, r.title, r.type, r.like_count 
-            FROM resources r 
-            JOIN sources s ON r.source_id = s.id 
-            WHERE s.source_status NOT IN ('archived', 'error') AND s.owner = $1 AND s.repo = $2
-            "#,
-            owner, repo
-        )
-        .fetch_all(&state.db)
-        .await
-    } else {
-        Ok(vec![])
-    };
-
-    match result {
-        Ok(rows) => (
-            StatusCode::OK,
-            Json(serde_json::json!({ "resources": rows })),
-        )
-            .into_response(),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": e.to_string() })),
-        )
-            .into_response(),
-    }
-}
 
 pub async fn delete_resource(
     State(state): State<AppState>,
@@ -81,15 +26,12 @@ pub async fn delete_resource(
             .into_response();
     }
 
-    let resource = sqlx::query!(
-        "SELECT file_path, source_id FROM resources WHERE id = $1",
-        resource_id
-    )
-    .fetch_optional(&state.db)
-    .await;
+    let exists: Result<Option<sqlx::postgres::PgRow>, _> = sqlx::query("SELECT id FROM resources WHERE id = $1")
+        .bind(resource_id)
+        .fetch_optional(&state.db)
+        .await;
 
-    let _source_id = match resource {
-        Ok(Some(row)) => row.source_id,
+    match exists {
         Ok(None) => {
             return (
                 StatusCode::NOT_FOUND,
@@ -104,25 +46,18 @@ pub async fn delete_resource(
             )
                 .into_response();
         }
-    };
+        Ok(Some(_)) => {}
+    }
 
-    if let Err(e) = sqlx::query!("DELETE FROM resources WHERE id = $1", resource_id)
+    match sqlx::query!("DELETE FROM resources WHERE id = $1", resource_id)
         .execute(&state.db)
         .await
     {
-        return (
+        Ok(_) => (StatusCode::OK, Json(serde_json::json!({ "message": "Resource deleted" }))).into_response(),
+        Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e.to_string() })),
         )
-            .into_response();
+            .into_response(),
     }
-
-    let index = state.meili.index("resources");
-    let _ = index.delete_document(resource_id).await;
-
-    (
-        StatusCode::OK,
-        Json(serde_json::json!({ "message": "Resource deleted" })),
-    )
-        .into_response()
 }

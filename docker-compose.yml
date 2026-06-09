@@ -13,28 +13,21 @@ services:
       timeout: 5s
       retries: 5
 
-  meilisearch:
-    image: getmeili/meilisearch:v1.6
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./data/meili:/meili_data
-    networks:
-      - cwdb-network
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
+    environment:
+      - PUBLISH_PATH=/app/data
+    volumes:
+      - publish_data:/app/data
     networks:
       - cwdb-network
     depends_on:
       postgres:
         condition: service_healthy
-      meilisearch:
-        condition: service_started
 
   frontend:
     build:
@@ -45,10 +38,15 @@ services:
     restart: unless-stopped
     ports:
       - "8000:80"
+    volumes:
+      - publish_data:/data:ro
     networks:
       - cwdb-network
     depends_on:
       - backend
+
+volumes:
+  publish_data:
 
 networks:
   cwdb-network:

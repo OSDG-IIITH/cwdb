@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import type { Resource } from '$lib/api';
+import type { Resource } from '$lib/sync';
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -8,6 +8,10 @@ export function cn(...inputs: ClassValue[]) {
 
 export function titlecase(value: string): string {
 	return value.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function toslug(name: string): string {
+	return name.toLowerCase().replaceAll(' ', '-');
 }
 
 export function rawgithuburl(resource: Resource): string {

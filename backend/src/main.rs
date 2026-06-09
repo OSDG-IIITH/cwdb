@@ -3,7 +3,6 @@ mod courses;
 mod db;
 mod github;
 mod routes;
-mod search;
 
 #[cfg(all(feature = "ocas", feature = "cas"))]
 compile_error!("features `ocas` and `cas` are mutually exclusive");
@@ -15,7 +14,6 @@ use axum::{
     Router,
     routing::{delete, get, post},
 };
-use meilisearch_sdk::client::Client;
 use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -23,7 +21,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
-    pub meili: Client,
     pub config: config::Config,
     pub courses: courses::CourseRegistry,
 }
@@ -37,9 +34,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = config::Config::from_env()?;
     let db = db::init_pool(&config).await?;
-    let meili = search::init_client(&config)?;
-
-    search::init_indexes(&meili, &db).await;
 
     #[cfg(all(feature = "ocas", not(feature = "mock")))]
     let ocasclient = ocas_auth::OcasClient::new(ocas_auth::OcasConfig::fromenv()).await;
@@ -62,7 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = AppState {
         db,
-        meili,
         config: config.clone(),
         courses,
     };
@@ -75,21 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
         .route("/api/sources/{id}", delete(routes::sources::delete_source))
-        .route("/api/search", get(routes::search::search))
-        .route("/api/courses", get(routes::courses::listcourses))
-        .route("/api/courses/{slug}", get(routes::courses::getcourse))
-        .route("/api/courses/{slug}/pin", post(routes::courses::togglepin))
-        .route(
-            "/api/sources/{id}/like",
-            post(routes::likes::toggle_source_like),
-        )
-        .route("/api/resources", get(routes::resources::list_resources))
-        .route("/api/resources/{id}/like", post(routes::likes::toggle_like))
-        .route(
-            "/api/resources/{id}",
-            delete(routes::resources::delete_resource),
-        )
-        .route("/api/resources/{id}/likes", get(routes::likes::get_likes));
+        .route("/api/resources/{id}", delete(routes::resources::delete_resource))
+        .route("/api/publish", post(routes::publish::publish));
 
     #[cfg(feature = "cas")]
     let app = app

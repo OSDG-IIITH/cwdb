@@ -1,27 +1,34 @@
 <script lang="ts">
-	import { togglecoursepin, toslug, type Course } from '$lib/api';
 	import { base } from '$app/paths';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Pin, FileText } from '@lucide/svelte';
-	import { titlecase } from '$lib/utils';
+	import { titlecase, toslug } from '$lib/utils';
+	import type { CourseInfo } from '$lib/sync';
 
-	let { course, onpintoggle }: { course: Course; onpintoggle?: () => void } = $props();
+	let { course, onpintoggle }: { course: CourseInfo; onpintoggle?: () => void } = $props();
 
-	let localpinned = $state<boolean | null>(null);
-	let pinned = $derived(localpinned ?? course.pinned);
+	let pinned = $state(ispinned());
 
-	let abbreviation = $derived((course.aliases ?? [])[0]?.toUpperCase() ?? '');
+	function ispinned(): boolean {
+		if (typeof localStorage === 'undefined') return false;
+		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
+		return pins.includes(course.id);
+	}
 
-	async function handlepin(e: MouseEvent) {
+	function handlepin(e: MouseEvent) {
 		e.preventDefault();
 		e.stopPropagation();
-		const result = await togglecoursepin(toslug(course.name));
-		if (result) {
-			localpinned = result.pinned;
-			onpintoggle?.();
-		}
+		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
+		const idx = pins.indexOf(course.id);
+		if (idx >= 0) pins.splice(idx, 1);
+		else pins.push(course.id);
+		localStorage.setItem('pins', JSON.stringify(pins));
+		pinned = idx < 0;
+		onpintoggle?.();
 	}
+
+	let abbreviation = $derived((course.aliases ?? [])[0]?.toUpperCase() ?? '');
 </script>
 
 <a href="{base}/courses/{toslug(course.name)}" class="block">

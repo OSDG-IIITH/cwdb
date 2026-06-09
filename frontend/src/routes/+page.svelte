@@ -1,29 +1,28 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { searchResources, listcourses, type Resource, type Course } from '$lib/api';
+	import { onMount, onDestroy } from 'svelte';
+	import { search, getcourses, allresources, syncstatus, type Resource, type CourseInfo } from '$lib/sync';
 	import { Input } from '$lib/components/ui/input';
 	import CourseFilter from '$lib/components/coursefilter.svelte';
 	import { rawgithuburl } from '$lib/utils';
 	import { bindslashfocus } from '$lib/hooks/shortcuts';
-	import { onDestroy } from 'svelte';
 
 	let query = $state('');
 	let results = $state<Resource[]>([]);
-	let courses = $state<Course[]>([]);
+	let courses = $state<CourseInfo[]>([]);
 	let selectedcourse = $state<string | null>(null);
 
-	async function search() {
-		results = await searchResources(query, selectedcourse ?? undefined);
+	function dosearch() {
+		results = search(query, selectedcourse);
 	}
 
 	$effect(() => {
+		allresources;
 		selectedcourse;
-		search();
+		dosearch();
 	});
 
-	onMount(async () => {
-		const res = await listcourses({ per_page: 100 });
-		courses = [...res.pinned, ...res.courses];
+	$effect(() => {
+		courses = getcourses();
 	});
 
 	function repoUrl(r: Resource) {
@@ -37,6 +36,7 @@
 	let active = $derived(query.length > 0 || selectedcourse !== null);
 	let searchInput: HTMLInputElement | null = $state(null);
 	let unbindslash: (() => void) | null = null;
+	let empty = $derived($syncstatus.empty && !$syncstatus.syncing);
 
 	onMount(() => {
 		unbindslash = bindslashfocus(() => searchInput);
@@ -61,7 +61,6 @@
 					: 'flex flex-col items-center gap-4'
 			}`}
 		>
-			<!-- logo -->
 			<div
 				class={`font-mono font-bold tracking-tight text-foreground ${
 					active ? 'text-3xl' : 'text-8xl'
@@ -89,7 +88,7 @@
 						class="h-12 w-full border-border pr-4 pl-10 focus-visible:border-border focus-visible:ring-0"
 						placeholder="search"
 						bind:value={query}
-						oninput={search}
+						oninput={dosearch}
 					/>
 				</div>
 				{#if active}
@@ -100,6 +99,15 @@
 			</div>
 		</div>
 	</div>
+
+	{#if !active && empty}
+		<div class="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+			<div class="font-mono text-8xl font-bold tracking-tight text-foreground">cwdb</div>
+			<p class="max-w-sm text-sm text-muted-foreground">
+				No data loaded yet. Connect to VPN and reload to sync the index.
+			</p>
+		</div>
+	{/if}
 
 	<!-- results -->
 	{#if active}

@@ -1,78 +1,72 @@
 <script lang="ts">
-	import { listcourses, type Course } from '$lib/api';
 	import { onDestroy, onMount } from 'svelte';
 	import { Loader2, Search, FileText } from '@lucide/svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
 	import CourseCard from '$lib/components/courses/course-card.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import * as Pagination from '$lib/components/ui/pagination';
-	import { makeloadingstate } from '$lib/hooks/loading';
 	import { bindslashfocus } from '$lib/hooks/shortcuts';
-
-	let courses = $state<Course[]>([]);
-	let pinned = $state<Course[]>([]);
-	let total = $state(0);
-	let unclassifiedcount = $state(0);
-	let currentpage = $state(1);
-	let loading = $state(true);
-	let showloadingindicator = $state(false);
-	let searchquery = $state('');
-	let searchinput = $state<HTMLInputElement | null>(null);
+	import { getcourses, getunclassified, allresources, type CourseInfo } from '$lib/sync';
 
 	const PER_PAGE = 30;
-	let loadingcontrol = makeloadingstate(
-		(value) => {
-			loading = value;
-		},
-		(value) => {
-			showloadingindicator = value;
-		}
-	);
+
+	let searchquery = $state('');
+	let searchinput = $state<HTMLInputElement | null>(null);
+	let currentpage = $state(1);
 	let unbindslash: (() => void) | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
-	async function loadcourses() {
-		loadingcontrol.start();
-		try {
-			const res = await listcourses({
-				page: currentpage,
-				per_page: PER_PAGE,
-				q: searchquery || undefined
-			});
-			courses = res.courses;
-			pinned = res.pinned;
-			total = res.total;
-			unclassifiedcount = res.unclassified_count;
-		} finally {
-			loadingcontrol.stop();
-		}
+	let allcourses = $derived.by(() => {
+		allresources;
+		return getcourses();
+	});
+
+	let unclassifiedcount = $derived.by(() => {
+		allresources;
+		return getunclassified().length;
+	});
+
+	let filtered = $derived.by(() => {
+		const q = searchquery.toLowerCase();
+		if (!q) return allcourses;
+		return allcourses.filter(
+			(c) =>
+				c.name.toLowerCase().includes(q) ||
+				c.code.toLowerCase().includes(q) ||
+				c.aliases.some((a) => a.toLowerCase().includes(q))
+		);
+	});
+
+	let pinned = $derived(
+		filtered.filter((c) => ispinned(c.id)).slice(0, currentpage === 1 ? undefined : 0)
+	);
+	let unpinned = $derived(filtered.filter((c) => !ispinned(c.id)));
+	let total = $derived(unpinned.length);
+	let totalpages = $derived(Math.ceil(total / PER_PAGE));
+	let pagecourses = $derived(unpinned.slice((currentpage - 1) * PER_PAGE, currentpage * PER_PAGE));
+	let empty = $derived(filtered.length === 0);
+
+	function ispinned(id: string): boolean {
+		if (typeof localStorage === 'undefined') return false;
+		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
+		return pins.includes(id);
 	}
 
 	function handlesearch() {
 		if (debounce) clearTimeout(debounce);
 		debounce = setTimeout(() => {
 			currentpage = 1;
-			loadcourses();
 		}, 200);
 	}
 
-	function handlepageturn() {
-		loadcourses();
-	}
-
 	onDestroy(() => {
-		loadingcontrol.destroy();
 		if (debounce) clearTimeout(debounce);
 		unbindslash?.();
 	});
 
 	onMount(() => {
 		unbindslash = bindslashfocus(() => searchinput);
-		loadcourses();
 	});
-
-	let totalpages = $derived(Math.ceil(total / PER_PAGE));
-	let empty = $derived(!loading && courses.length === 0 && pinned.length === 0);
 </script>
 
 <div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
@@ -97,13 +91,7 @@
 			</p>
 		</div>
 
-		{#if loading && showloadingindicator}
-			<div class="flex items-center justify-center py-20">
-				<Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		{:else if loading}
-			<div class="py-20" aria-hidden="true"></div>
-		{:else if empty && !searchquery}
+		{#if empty && !searchquery}
 			<div class="py-20 text-center">
 				<p class="text-muted-foreground">no courses found.</p>
 			</div>
@@ -118,22 +106,22 @@
 						Pinned
 					</p>
 					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-						{#each pinned as course (course.name)}
-							<CourseCard {course} onpintoggle={loadcourses} />
+						{#each pinned as course (course.id)}
+							<CourseCard {course} onpintoggle={() => {}} />
 						{/each}
 					</div>
 				</div>
 			{/if}
 
-			{#if courses.length > 0}
+			{#if pagecourses.length > 0}
 				{#if pinned.length > 0 && currentpage === 1}
-                                        <p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
 						All Courses
 					</p>
 				{/if}
 				<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-					{#each courses as course (course.name)}
-						<CourseCard {course} onpintoggle={loadcourses} />
+					{#each pagecourses as course (course.id)}
+						<CourseCard {course} onpintoggle={() => {}} />
 					{/each}
 				</div>
 			{/if}
@@ -155,7 +143,8 @@
 								<div class="flex items-center gap-1 text-[11px] text-muted-foreground">
 									<FileText class="h-3 w-3" />
 									<span
-										>{unclassifiedcount} {unclassifiedcount === 1 ? 'resource' : 'resources'}</span
+										>{unclassifiedcount}
+										{unclassifiedcount === 1 ? 'resource' : 'resources'}</span
 									>
 								</div>
 							</div>
@@ -170,7 +159,6 @@
 						count={total}
 						perPage={PER_PAGE}
 						bind:page={currentpage}
-						onPageChange={handlepageturn}
 					>
 						{#snippet children({ pages })}
 							<Pagination.Content>

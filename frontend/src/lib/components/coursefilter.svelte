@@ -3,23 +3,23 @@
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import { type Course } from '$lib/api';
+	import { type CourseInfo } from '$lib/sync';
 	import { titlecase } from '$lib/utils';
 
 	interface Props {
-		courses: Course[];
+		courses: CourseInfo[];
 		selected: string | null;
 	}
 
 	let { courses, selected = $bindable(null) }: Props = $props();
 
 	let open = $state(false);
-	let activecourse = $derived(courses.find((course) => course.name === selected) ?? null);
+	let activecourse = $derived(courses.find((course) => course.id === selected) ?? null);
 	let orderedcourses = $derived.by(() => {
 		if (!selected) return courses;
-		const selectedcourse = courses.find((course) => course.name === selected);
+		const selectedcourse = courses.find((course) => course.id === selected);
 		if (!selectedcourse) return courses;
-		return [selectedcourse, ...courses.filter((course) => course.name !== selected)];
+		return [selectedcourse, ...courses.filter((course) => course.id !== selected)];
 	});
 </script>
 
@@ -63,11 +63,11 @@
 						<Command.Item
 							value={course.name}
 							onSelect={() => {
-								selected = selected === course.name ? null : course.name;
+								selected = selected === course.id ? null : course.id;
 								open = false;
 							}}
 						>
-							<Check class={selected === course.name ? 'opacity-100' : 'opacity-0'} />
+							<Check class={selected === course.id ? 'opacity-100' : 'opacity-0'} />
 							{titlecase(course.name)}
 							<span class="ml-auto text-muted-foreground">{course.resource_count}</span>
 						</Command.Item>
