@@ -18,7 +18,8 @@ export default defineConfig({
 			registerType: 'autoUpdate',
 			devOptions: { enabled: false },
 			kit: {
-				adapterFallback: '200.html'
+				adapterFallback: '200.html',
+				spa: true
 			},
 			manifest: {
 				name: 'cwdb',
