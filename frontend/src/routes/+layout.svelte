@@ -10,6 +10,7 @@
 	import { fetchUser } from '$lib/auth';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { init } from '$lib/sync';
+	import { pwaInfo } from 'virtual:pwa-info';
 
 	let { children } = $props();
 
@@ -19,10 +20,27 @@
 		const v = localStorage.getItem('theme-variant') || 'default';
 		if (v === 'mint') document.documentElement.classList.add('mint');
 		if (v === 'amethyst') document.documentElement.classList.add('amethyst');
+
+		if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+			import('virtual:pwa-register').then(({ registerSW }) => {
+				registerSW({
+					immediate: true,
+					onRegistered(r) {
+						console.log('SW registered:', r);
+					},
+					onRegisterError(error) {
+						console.error('SW registration error:', error);
+					}
+				});
+			});
+		}
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+	<link rel="icon" href={favicon} />
+	{@html pwaInfo?.webManifest?.linkTag ?? ''}
+</svelte:head>
 <ModeWatcher />
 <Toaster />
 <Sidebar />
