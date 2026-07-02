@@ -5,7 +5,6 @@
 	import UserMenu from '$lib/components/user-menu.svelte';
 	import Sidebar from '$lib/components/nav/sidebar.svelte';
 	import Mobilebar from '$lib/components/nav/mobilebar.svelte';
-	import SyncStatus from '$lib/components/syncstatus.svelte';
 	import { onMount } from 'svelte';
 	import { fetchUser } from '$lib/auth';
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -51,9 +50,6 @@
 	<UserMenu />
 </div>
 
-<div class="fixed bottom-2 right-4 z-40">
-	<SyncStatus />
-</div>
 
 <div class="pb-28 md:pb-0">
 	{@render children()}

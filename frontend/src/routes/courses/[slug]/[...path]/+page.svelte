@@ -233,10 +233,10 @@
 									class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
 									onclick={() => window.open(rawgithuburl(r), '_blank')}
 								>
-									<div class="text-base font-medium text-foreground">{r.title}</div>
-									<div class="mt-1 text-xs text-muted-foreground">{r.file_path}</div>
+									<div class="text-base font-medium text-foreground break-words">{r.title}</div>
+									<div class="mt-1 text-xs text-muted-foreground break-all">{r.file_path}</div>
 									<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-										<span class="rounded bg-muted px-2 py-0.5">{r.owner}/{r.repo}</span>
+										<span class="rounded bg-muted px-2 py-0.5 break-all">{r.owner}/{r.repo}</span>
 										{#if r.type}
 											<span class="rounded bg-muted px-2 py-0.5">{r.type}</span>
 										{/if}

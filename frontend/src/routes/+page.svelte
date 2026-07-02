@@ -47,7 +47,11 @@
 	});
 </script>
 
-<div class="relative mx-auto flex min-h-screen max-w-3xl flex-col justify-between px-4">
+<div
+	class={active
+		? 'relative mx-auto flex min-h-screen max-w-3xl flex-col justify-between px-4'
+		: 'relative mx-auto flex h-[calc(100dvh-7rem)] md:h-screen max-w-3xl flex-col justify-between px-4 overflow-hidden'}
+>
 	<!-- logo + searchbar -->
 	<div
 		class={active
@@ -121,15 +125,15 @@
 								class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
 								onclick={() => openRaw(r)}
 							>
-								<div class="text-base font-medium text-foreground">{r.title}</div>
-								<div class="mt-1 text-xs text-muted-foreground">{r.file_path}</div>
+								<div class="text-base font-medium text-foreground break-words">{r.title}</div>
+								<div class="mt-1 text-xs text-muted-foreground break-all">{r.file_path}</div>
 
 								<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 									<a
 										href={repoUrl(r)}
 										target="_blank"
 										rel="noopener"
-										class="rounded bg-muted px-2 py-0.5 hover:underline"
+										class="rounded bg-muted px-2 py-0.5 hover:underline break-all"
 										onclick={(e: MouseEvent) => e.stopPropagation()}
 									>
 										{r.owner}/{r.repo}
