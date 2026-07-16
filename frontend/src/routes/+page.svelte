@@ -170,7 +170,7 @@
 			target="_blank"
 			rel="noopener"
 		>
-			Advait Dintakurti
+			OSDG
 		</a>
 	</footer>
 </div>
