@@ -11,7 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import JSZip from 'jszip';
 	import { bindslashfocus } from '$lib/hooks/shortcuts';
-	import { rawgithuburl, titlecase } from '$lib/utils';
+	import { openresource, rawgithuburl, titlecase } from '$lib/utils';
 
 	let course = $state<CourseInfo | null>(null);
 	let resources = $state<Resource[]>([]);
@@ -231,7 +231,7 @@
 								<button
 									type="button"
 									class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
-									onclick={() => window.open(rawgithuburl(r), '_blank')}
+									onclick={() => openresource(r)}
 								>
 									<div class="text-base font-medium text-foreground break-words">{r.title}</div>
 									<div class="mt-1 text-xs text-muted-foreground break-all">{r.file_path}</div>

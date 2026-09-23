@@ -11,7 +11,7 @@
 	import { Folder, FileText } from '@lucide/svelte';
 	import type { Resource } from '$lib/sync';
 	import type { Source } from '$lib/api';
-	import { rawgithuburl } from '$lib/utils';
+	import { openresource } from '$lib/utils';
 
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
@@ -198,7 +198,7 @@
 							class="group cursor-pointer border-border/40 transition-colors hover:bg-muted/50 dark:hover:bg-accent/40"
 							onclick={() => {
 								if (item.type === 'file' && item.resource) {
-									window.open(rawgithuburl(item.resource), '_blank');
+									openresource(item.resource);
 								} else {
 									navigate(item.path);
 								}

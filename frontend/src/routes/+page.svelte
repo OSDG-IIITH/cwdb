@@ -3,7 +3,7 @@
 	import { search, getcourses, allresources, syncstatus, type Resource, type CourseInfo } from '$lib/sync';
 	import { Input } from '$lib/components/ui/input';
 	import CourseFilter from '$lib/components/coursefilter.svelte';
-	import { rawgithuburl } from '$lib/utils';
+	import { openresource } from '$lib/utils';
 	import { bindslashfocus } from '$lib/hooks/shortcuts';
 
 	let query = $state('');
@@ -30,7 +30,7 @@
 	}
 
 	function openRaw(r: Resource) {
-		window.open(rawgithuburl(r), '_blank');
+		openresource(r);
 	}
 
 	let active = $derived(query.length > 0 || selectedcourse !== null);
