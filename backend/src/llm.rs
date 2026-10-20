@@ -246,8 +246,10 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
 
         let mut sets = Vec::new();
         let mut add = |col: &str, value: String, changed: bool| {
-            if full || changed {
+            if full || col == "key" && changed {
                 sets.push(format!("{col} = {value}"));
+            } else if changed {
+                sets.push(format!("{col} = COALESCE({col}, {value})"));
             }
         };
         add("course", opt(course.as_ref(), true), course != was("course"));
