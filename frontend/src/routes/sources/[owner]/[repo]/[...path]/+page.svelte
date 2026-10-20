@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Filter, Loader2 } from '@lucide/svelte';
 	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
@@ -14,10 +14,12 @@
 	import Preview from '$lib/components/preview.svelte';
 	import {
 		deleteSource,
+		loadreview,
 		loadsources,
 		reclassify,
 		refreshpending,
 		refreshSource,
+		reviewqueue,
 		sourceinfo
 	} from '$lib/api';
 	import { user } from '$lib/auth';
@@ -55,6 +57,8 @@
 				: null)
 	);
 	let sid = $derived(src?.id ?? '');
+	let fresh = $derived($reviewqueue.new[sid] ?? 0);
+	let queued = $derived($reviewqueue.rows.filter((r) => String(r.source) === sid).length);
 	let home = $derived(`${base}/sources/${owner}/${repo}`);
 
 	let files = $derived(
@@ -80,6 +84,10 @@
 	});
 
 	const pct = (n: number) => (src?.count ? Math.round((n / src.count) * 100) : 0);
+
+	onMount(() => {
+		if (admin) loadreview();
+	});
 
 	$effect(() => {
 		query;
@@ -146,6 +154,13 @@
 		busy = '';
 		if (n === null) return toast.error('reclassify failed');
 		toast.success(`${n} files updated, publish to update the index`);
+	}
+
+	async function classify() {
+		await navigator.clipboard.writeText(
+			`cargo run --manifest-path backend/Cargo.toml -- classifyexport ${repo}`
+		);
+		toast.success('export command copied, run it from the repo root');
 	}
 
 	async function remove() {
@@ -231,6 +246,12 @@
 					<Button size="sm" variant="outline" disabled={!!busy} onclick={rules}>
 						{#if busy === 'rules'}<Loader2 class="animate-spin" />{/if}Reclassify
 					</Button>
+					{#if fresh}
+						<Button size="sm" variant="outline" onclick={classify}>Classify {fresh} new</Button>
+					{/if}
+					{#if queued}
+						<Button size="sm" variant="outline" href="{base}/sources/review">Review {queued}</Button>
+					{/if}
 					<Button size="sm" variant="ghost" class="text-destructive" onclick={remove}>Delete</Button
 					>
 				{/if}

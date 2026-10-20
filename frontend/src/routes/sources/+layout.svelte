@@ -12,7 +12,8 @@
 	let { children }: { children: Snippet } = $props();
 
 	let admin = $derived($user?.role === 'admin');
-	let index = $derived(!page.params.owner);
+	let review = $derived(page.route.id === '/sources/review');
+	let index = $derived(!page.params.owner && !review);
 	let synced = $derived(
 		new Map($sourceinfo.map((s) => [`${s.owner}/${s.repo}`, s.last_synced_at]))
 	);
@@ -32,8 +33,8 @@
 <div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
 	<aside
 		class={cn(
-			'w-full shrink-0 flex-col gap-px overflow-y-auto border-r px-2 py-3 text-[13px] lg:flex lg:w-80',
-			index ? 'flex' : 'hidden'
+			'w-full shrink-0 flex-col gap-px overflow-y-auto border-r px-2 py-3 text-[13px] lg:w-80',
+			index ? 'flex' : review ? 'hidden' : 'hidden lg:flex'
 		)}
 	>
 		<div class="flex justify-between px-2.5 pb-2.5 text-xs text-muted-foreground">

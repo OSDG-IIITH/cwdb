@@ -169,3 +169,35 @@ export async function createoffering(
 		return null;
 	}
 }
+
+export type ReviewRow = {
+	id: number;
+	source: number;
+	path: string;
+	course: string | null;
+	kind: string | null;
+	examtype: string | null;
+	slidetype: string | null;
+	n: number | null;
+	key: boolean;
+	season: string | null;
+	year: number | null;
+	conf: number | null;
+	rule: string;
+	why: string;
+};
+
+export const reviewqueue = writable<{ rows: ReviewRow[]; new: Record<string, number> }>({
+	rows: [],
+	new: {}
+});
+
+/** loads the review queue and the unclassified row count per source, admins only */
+export async function loadreview() {
+	try {
+		const res = await fetch(`${apibase}/api/review`, { credentials: 'include' });
+		if (res.ok) reviewqueue.set(await res.json());
+	} catch (e) {
+		console.error('Fetch review failed:', e);
+	}
+}

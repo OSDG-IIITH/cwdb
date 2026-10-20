@@ -43,6 +43,8 @@
 			if (page.params.path)
 				out.push({ label: page.params.path, href: `${root}/${page.params.path}` });
 		}
+		if (page.route.id === '/sources/review')
+			out.push({ label: 'Review', href: `${base}/sources/review` });
 		return out;
 	});
 
