@@ -2,7 +2,6 @@
 	import ResourceExplorer from '$lib/components/resources/resource-explorer.svelte';
 	import { allresources, type Resource } from '$lib/sync';
 	import { Loader2 } from '@lucide/svelte';
-	import PageHeader from '$lib/components/page-header.svelte';
 	import { page } from '$app/state';
 	import { syncstatus } from '$lib/sync';
 
@@ -11,8 +10,7 @@
 	let loading = $derived($syncstatus.syncing && resources.length === 0);
 </script>
 
-<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-	<PageHeader title="Resources" />
+<div class="flex flex-1 flex-col bg-background text-foreground">
 
 	<main class="container mx-auto max-w-6xl flex-1 p-6">
 		{#if loading}

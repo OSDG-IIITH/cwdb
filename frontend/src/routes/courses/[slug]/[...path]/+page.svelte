@@ -1,76 +1,59 @@
 <script lang="ts">
 	import ResourceExplorer from '$lib/components/resources/resource-explorer.svelte';
-	import { search, getcourse, getresourcesbycourse, getunclassified, type Resource, type CourseInfo } from '$lib/sync';
+	import {
+		search,
+		getcourse,
+		allresources,
+		courses,
+		mycourses,
+		togglepin,
+		kindtag,
+		type Resource,
+		type CourseInfo
+	} from '$lib/sync';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { Loader2, Search, Download, Pin } from '@lucide/svelte';
-	import PageHeader from '$lib/components/page-header.svelte';
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import JSZip from 'jszip';
-	import { bindslashfocus } from '$lib/hooks/shortcuts';
-	import { rawgithuburl, titlecase } from '$lib/utils';
+	import { rawgithuburl } from '$lib/utils';
 
-	let course = $state<CourseInfo | null>(null);
-	let resources = $state<Resource[]>([]);
 	let searchresults = $state<Resource[]>([]);
-	let pinned = $state(false);
 	let downloading = $state(false);
 	let searchquery = $state('');
-	let searchinput = $state<HTMLInputElement | null>(null);
 	let searching = $state(false);
 
-	let unbindslash: (() => void) | null = null;
 	let debounce: ReturnType<typeof setTimeout> | null = null;
 
 	let slug = $derived(page.params.slug ?? '');
 	let path = $derived(page.params.path ? page.params.path.split('/') : []);
 	let basepath = $derived(`${base}/courses/${slug}`);
-	let abbreviation = $derived((course?.aliases ?? [])[0]?.toUpperCase() ?? '');
+
+	let course = $derived<CourseInfo | null>(
+		slug === 'unclassified'
+			? {
+					code: '',
+					name: 'Unclassified',
+					shortnames: [],
+					alias: '',
+					semester: '',
+					count: 0,
+					kinds: []
+				}
+			: getcourse($courses, slug)
+	);
+	let resources = $derived(
+		course
+			? $allresources.filter((r) => (course.code ? r.course_id === course.code : !r.course_id))
+			: []
+	);
+	let pinned = $derived(!!course?.code && $mycourses.includes(course.code));
 
 	function capseason(s: string): string {
 		return s.replace(/\b(monsoon|spring|both)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1));
-	}
-
-	function loadcourse() {
-		if (slug === 'unclassified') {
-			course = {
-				id: 'unclassified',
-				name: 'unclassified',
-				code: '',
-				aliases: [],
-				instructors: [],
-				semester: '',
-				year: null,
-				resource_count: 0
-			};
-			resources = getunclassified();
-		} else {
-			const data = getcourse(slug);
-			if (data) {
-				course = data;
-				resources = getresourcesbycourse(data.id);
-			}
-		}
-		pinned = ispinned();
-	}
-
-	function ispinned(): boolean {
-		if (!course || typeof localStorage === 'undefined') return false;
-		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
-		return pins.includes(course.id);
-	}
-
-	function handlepin() {
-		if (!course) return;
-		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
-		const idx = pins.indexOf(course.id);
-		if (idx >= 0) pins.splice(idx, 1);
-		else pins.push(course.id);
-		localStorage.setItem('pins', JSON.stringify(pins));
-		pinned = idx < 0;
 	}
 
 	function handlesearch() {
@@ -82,7 +65,9 @@
 				return;
 			}
 			searching = true;
-			searchresults = search(searchquery, course?.id !== 'unclassified' ? course?.id : null);
+			searchresults = search(searchquery, course?.code || null)
+				.filter((e) => e.t === 'f' && (course?.code || !e.course))
+				.map((e) => e.resource!);
 		}, 200);
 	}
 
@@ -116,20 +101,12 @@
 		}
 	}
 
-	onMount(() => {
-		unbindslash = bindslashfocus(() => searchinput);
-		loadcourse();
-	});
-
 	onDestroy(() => {
 		if (debounce) clearTimeout(debounce);
-		unbindslash?.();
 	});
 </script>
 
-<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-	<PageHeader title="Courses" />
-
+<div class="flex flex-1 flex-col bg-background text-foreground">
 	<main class="container mx-auto max-w-6xl flex-1 p-6">
 		{#if course}
 			<div class="relative mb-8">
@@ -137,7 +114,8 @@
 					variant="outline"
 					size="lg"
 					class="group/pin absolute top-0 right-0"
-					onclick={handlepin}
+					onclick={() => togglepin(course!.code)}
+					disabled={!course.code}
 				>
 					<Pin
 						class={`h-4 w-4 transition-colors ${pinned ? 'fill-foreground' : 'group-hover/pin:fill-foreground/25'}`}
@@ -153,46 +131,36 @@
 							{course.code}
 						</span>
 					{/if}
-					{#if abbreviation}
+					{#if course.alias}
 						<span
 							class="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
 						>
-							{abbreviation}
+							{course.alias}
 						</span>
 					{/if}
 				</div>
 
 				<h1 class="mt-3 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl">
-					{titlecase(course.name)}
+					{course.name}
 				</h1>
 
 				<div class="mt-6 flex flex-wrap items-end justify-between gap-4">
 					<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
-						{#if course.semester || course.year}
+						{#if course.semester}
 							<div>
 								<div
-									class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+									class="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase"
 								>
 									Season
 								</div>
 								<div class="text-sm text-foreground">
-									{#if course.semester}{capseason(course.semester)}{/if}{#if course.semester && course.year}{' '}{/if}{#if course.year}{course.year}{/if}
+									{capseason(course.semester)}
 								</div>
-							</div>
-						{/if}
-						{#if course.instructors.length > 0}
-							<div>
-								<div
-									class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
-								>
-									Instructors
-								</div>
-								<div class="text-sm text-foreground">{course.instructors.join(', ')}</div>
 							</div>
 						{/if}
 						<div>
 							<div
-								class="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60"
+								class="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase"
 							>
 								Resources
 							</div>
@@ -218,7 +186,7 @@
 					placeholder="search resources"
 					class="pl-8 focus-visible:ring-0"
 					bind:value={searchquery}
-					bind:ref={searchinput}
+					data-slash
 					oninput={handlesearch}
 				/>
 			</div>
@@ -233,13 +201,11 @@
 									class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
 									onclick={() => window.open(rawgithuburl(r), '_blank')}
 								>
-									<div class="text-base font-medium text-foreground break-words">{r.title}</div>
-									<div class="mt-1 text-xs text-muted-foreground break-all">{r.file_path}</div>
+									<div class="text-base font-medium break-words text-foreground">{r.title}</div>
+									<div class="mt-1 text-xs break-all text-muted-foreground">{r.file_path}</div>
 									<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 										<span class="rounded bg-muted px-2 py-0.5 break-all">{r.owner}/{r.repo}</span>
-										{#if r.type}
-											<span class="rounded bg-muted px-2 py-0.5">{r.type}</span>
-										{/if}
+										<span class="rounded bg-muted px-2 py-0.5">{kindtag(r)}</span>
 									</div>
 								</button>
 							</li>

@@ -1,191 +1,124 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
-	import { Loader2, Search, FileText } from '@lucide/svelte';
-	import PageHeader from '$lib/components/page-header.svelte';
-	import CourseCard from '$lib/components/courses/course-card.svelte';
+	import { base } from '$app/paths';
+	import { ListFilter } from '@lucide/svelte';
 	import { Input } from '$lib/components/ui/input';
-	import * as Pagination from '$lib/components/ui/pagination';
-	import { bindslashfocus } from '$lib/hooks/shortcuts';
-	import { getcourses, getunclassified, allresources, type CourseInfo } from '$lib/sync';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { courses, mycourses, allresources, type CourseInfo } from '$lib/sync';
+	import { coursehref } from '$lib/utils';
 
-	const PER_PAGE = 30;
+	const letters = [
+		['exams', 'E'],
+		['assignments', 'A'],
+		['labs', 'L'],
+		['slides', 'S'],
+		['notes', 'N'],
+		['references', 'R'],
+		['projects', 'P']
+	];
+	const terms: Record<string, string> = { monsoon: 'Monsoon', spring: 'Spring', both: 'Both' };
+	const grid =
+		'grid grid-cols-[56px_minmax(0,1fr)_48px] items-center gap-4 px-3 sm:grid-cols-[64px_minmax(0,1fr)_110px_112px_56px]';
 
-	let searchquery = $state('');
-	let searchinput = $state<HTMLInputElement | null>(null);
-	let currentpage = $state(1);
-	let unbindslash: (() => void) | null = null;
-	let debounce: ReturnType<typeof setTimeout> | null = null;
+	let filter = $state('');
+	let term = $state('all');
 
-	let allcourses = $derived.by(() => {
-		allresources;
-		return getcourses();
-	});
-
-	let unclassifiedcount = $derived.by(() => {
-		allresources;
-		return getunclassified().length;
-	});
-
-	let filtered = $derived.by(() => {
-		const q = searchquery.toLowerCase();
-		if (!q) return allcourses;
-		return allcourses.filter(
+	let shown = $derived.by(() => {
+		const q = filter.trim().toLowerCase();
+		return $courses.filter(
 			(c) =>
-				c.name.toLowerCase().includes(q) ||
-				c.code.toLowerCase().includes(q) ||
-				c.aliases.some((a) => a.toLowerCase().includes(q))
+				(c.count > 0 || $mycourses.includes(c.code)) &&
+				(term === 'all' || c.semester === term || c.semester === 'both') &&
+				(!q || [c.name, c.code, ...c.shortnames].some((s) => s.toLowerCase().includes(q)))
 		);
 	});
-
-	let pinned = $derived(
-		filtered.filter((c) => ispinned(c.id)).slice(0, currentpage === 1 ? undefined : 0)
+	let mine = $derived(shown.filter((c) => $mycourses.includes(c.code)));
+	let rest = $derived(shown.filter((c) => !$mycourses.includes(c.code)));
+	let unclassified = $derived($allresources.filter((r) => !r.course_id).length);
+	let showunclassified = $derived(
+		term === 'all' && 'unclassified'.includes(filter.trim().toLowerCase())
 	);
-	let unpinned = $derived(filtered.filter((c) => !ispinned(c.id)));
-	let total = $derived(unpinned.length);
-	let totalpages = $derived(Math.ceil(total / PER_PAGE));
-	let pagecourses = $derived(unpinned.slice((currentpage - 1) * PER_PAGE, currentpage * PER_PAGE));
-	let empty = $derived(filtered.length === 0);
-
-	function ispinned(id: string): boolean {
-		if (typeof localStorage === 'undefined') return false;
-		const pins: string[] = JSON.parse(localStorage.getItem('pins') ?? '[]');
-		return pins.includes(id);
-	}
-
-	function handlesearch() {
-		if (debounce) clearTimeout(debounce);
-		debounce = setTimeout(() => {
-			currentpage = 1;
-		}, 200);
-	}
-
-	onDestroy(() => {
-		if (debounce) clearTimeout(debounce);
-		unbindslash?.();
-	});
-
-	onMount(() => {
-		unbindslash = bindslashfocus(() => searchinput);
-	});
 </script>
 
-<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-	<PageHeader title="Courses" />
+{#snippet row(c: CourseInfo)}
+	<a
+		href={coursehref(c.code)}
+		class="{grid} h-11 border-b border-border/50 text-sm hover:bg-muted/40"
+	>
+		<span class="truncate font-mono text-xs text-muted-foreground">{c.alias}</span>
+		<span class="truncate font-medium">{c.name}</span>
+		<span class="hidden text-[13px] text-muted-foreground sm:block">{terms[c.semester] ?? '—'}</span
+		>
+		<span class="hidden font-mono text-xs tracking-[0.25em] sm:block">
+			{#each letters as [k, l] (k)}<span class={c.kinds.includes(k) ? '' : 'text-border'}>{l}</span
+				>{/each}
+		</span>
+		<span class="text-right font-mono text-xs text-muted-foreground">{c.count}</span>
+	</a>
+{/snippet}
 
-	<main class="container mx-auto max-w-6xl flex-1 p-6">
-		<div class="mb-8 flex items-center justify-between gap-4">
-			<div class="relative w-full md:w-64">
-				<Search class="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
-				<Input
-					placeholder="search courses"
-					class="pl-8 focus-visible:ring-0"
-					bind:value={searchquery}
-					bind:ref={searchinput}
-					oninput={handlesearch}
-				/>
-			</div>
+<main class="mx-auto flex w-full max-w-260 flex-1 flex-col gap-6 px-4 pt-10 pb-16 sm:px-6">
+	<div class="flex flex-wrap items-center gap-3">
+		<label class="relative flex flex-[1_1_280px] items-center sm:max-w-90">
+			<ListFilter class="pointer-events-none absolute left-3 size-3.5 text-muted-foreground" />
+			<Input
+				data-slash
+				bind:value={filter}
+				placeholder="Filter by name, code or alias"
+				aria-label="Filter courses"
+				class="h-9 pr-9 pl-8 shadow-none"
+			/>
+			<Kbd class="pointer-events-none absolute right-2 border bg-background font-mono">/</Kbd>
+		</label>
+		<ToggleGroup.Root
+			type="single"
+			value={term}
+			onValueChange={(v) => (term = v || term)}
+			class="rounded-lg bg-muted p-0.5"
+		>
+			{#each [['all', 'All'], ['monsoon', 'Monsoon'], ['spring', 'Spring']] as [v, label] (v)}
+				<ToggleGroup.Item
+					value={v}
+					class="h-7.5 rounded-md px-3 text-[13px] text-muted-foreground data-[state=on]:bg-background data-[state=on]:font-medium data-[state=on]:text-foreground data-[state=on]:shadow-[0_0_0_1px_var(--border)]"
+				>
+					{label}
+				</ToggleGroup.Item>
+			{/each}
+		</ToggleGroup.Root>
+		<span class="flex-1"></span>
+		<span class="font-mono text-xs text-muted-foreground">{shown.length} courses</span>
+	</div>
 
-			<p class="text-sm whitespace-nowrap text-muted-foreground">
-				{total + pinned.length}
-				{total + pinned.length === 1 ? 'course' : 'courses'}
-			</p>
+	<div>
+		<div class="{grid} h-8 border-b text-xs text-muted-foreground">
+			<span>alias</span><span>course</span><span class="hidden sm:block">term</span>
+			<span class="hidden sm:block" title="kinds present">has</span><span class="text-right"
+				>files</span
+			>
 		</div>
-
-		{#if empty && !searchquery}
-			<div class="py-20 text-center">
-				<p class="text-muted-foreground">no courses found.</p>
-			</div>
-		{:else if empty}
-			<div class="py-20 text-center">
-				<p class="text-muted-foreground">no matching courses found.</p>
-			</div>
-		{:else}
-			{#if pinned.length > 0 && currentpage === 1}
-				<div class="mb-8">
-					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-						Pinned
-					</p>
-					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-						{#each pinned as course (course.id)}
-							<CourseCard {course} onpintoggle={() => {}} />
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			{#if pagecourses.length > 0}
-				{#if pinned.length > 0 && currentpage === 1}
-					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-						All Courses
-					</p>
-				{/if}
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-					{#each pagecourses as course (course.id)}
-						<CourseCard {course} onpintoggle={() => {}} />
-					{/each}
-				</div>
-			{/if}
-
-			{#if unclassifiedcount > 0 && !searchquery}
-				<div class="mt-8">
-					<p class="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-						Other
-					</p>
-					<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-						<a href="/courses/unclassified" class="block">
-							<div
-								class="group relative flex w-full flex-col justify-between gap-4 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-colors hover:border-border md:px-5 md:py-5"
-							>
-								<div class="space-y-1">
-									<span class="font-mono text-xs font-medium text-muted-foreground">N/A</span>
-									<p class="truncate text-sm font-medium tracking-tight">Unclassified</p>
-								</div>
-								<div class="flex items-center gap-1 text-[11px] text-muted-foreground">
-									<FileText class="h-3 w-3" />
-									<span
-										>{unclassifiedcount}
-										{unclassifiedcount === 1 ? 'resource' : 'resources'}</span
-									>
-								</div>
-							</div>
-						</a>
-					</div>
-				</div>
-			{/if}
-
-			{#if totalpages > 1}
-				<div class="mt-8">
-					<Pagination.Root
-						count={total}
-						perPage={PER_PAGE}
-						bind:page={currentpage}
-					>
-						{#snippet children({ pages })}
-							<Pagination.Content>
-								<Pagination.Item>
-									<Pagination.PrevButton />
-								</Pagination.Item>
-								{#each pages as p (p.key)}
-									{#if p.type === 'ellipsis'}
-										<Pagination.Item>
-											<Pagination.Ellipsis />
-										</Pagination.Item>
-									{:else}
-										<Pagination.Item>
-											<Pagination.Link page={p} isActive={currentpage === p.value}>
-												{p.value}
-											</Pagination.Link>
-										</Pagination.Item>
-									{/if}
-								{/each}
-								<Pagination.Item>
-									<Pagination.NextButton />
-								</Pagination.Item>
-							</Pagination.Content>
-						{/snippet}
-					</Pagination.Root>
-				</div>
-			{/if}
+		{#if mine.length}
+			<div class="px-3 pt-4 pb-1.5 text-xs font-semibold">My courses</div>
+			{#each mine as c (c.code)}{@render row(c)}{/each}
+			<div class="px-3 pt-6 pb-1.5 text-xs font-semibold">All courses</div>
 		{/if}
-	</main>
-</div>
+		{#each rest as c (c.code)}{@render row(c)}{/each}
+		{#if showunclassified}
+			<a
+				href="{base}/courses/unclassified"
+				class="{grid} h-11 border-b border-border/50 text-sm hover:bg-muted/40"
+			>
+				<span class="font-mono text-xs text-muted-foreground/70">—</span>
+				<span class="font-medium text-muted-foreground">Unclassified</span>
+				<span class="hidden sm:block"></span><span class="hidden sm:block"></span>
+				<span class="text-right font-mono text-xs text-muted-foreground">{unclassified}</span>
+			</a>
+		{/if}
+		{#if !shown.length && !showunclassified}
+			<p class="py-12 text-center text-sm text-muted-foreground">No courses match.</p>
+		{/if}
+	</div>
+
+	<div class="hidden flex-wrap gap-4 font-mono text-xs text-muted-foreground sm:flex">
+		{#each letters as [k, l] (k)}<span>{l} {k}</span>{/each}
+	</div>
+</main>

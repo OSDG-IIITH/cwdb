@@ -6,20 +6,17 @@
 	import NewSourceDialog from '$lib/components/sources/new-source-dialog.svelte';
 	import { Loader2 } from '@lucide/svelte';
 
-	import PageHeader from '$lib/components/page-header.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Search, ArrowUpDown, Calendar, ArrowDownAZ, ArrowUpAZ } from '@lucide/svelte';
 	import { makeloadingstate } from '$lib/hooks/loading';
-	import { bindslashfocus } from '$lib/hooks/shortcuts';
 
 	let sources = $state<Source[]>([]);
 	let loading = $state(true);
 	let showLoadingIndicator = $state(false);
 	let searchQuery = $state('');
 	let sortBy = $state<'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'>('date-desc');
-	let searchInput = $state<HTMLInputElement | null>(null);
 
 	let loadingcontrol = makeloadingstate(
 		(value) => {
@@ -29,7 +26,6 @@
 			showLoadingIndicator = value;
 		}
 	);
-	let unbindslash: (() => void) | null = null;
 	let publishing = $state(false);
 
 	async function handlePublish() {
@@ -73,17 +69,14 @@
 
 	onDestroy(() => {
 		loadingcontrol.destroy();
-		unbindslash?.();
 	});
 
 	onMount(() => {
-		unbindslash = bindslashfocus(() => searchInput);
 		loadSources();
 	});
 </script>
 
-<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-	<PageHeader title="Sources" />
+<div class="flex flex-1 flex-col bg-background text-foreground">
 
 	<main class="container mx-auto max-w-6xl flex-1 p-6">
 		<div class="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -94,7 +87,7 @@
 						placeholder="search"
 						class="pl-8 focus-visible:ring-0"
 						bind:value={searchQuery}
-						bind:ref={searchInput}
+						data-slash
 					/>
 				</div>
 

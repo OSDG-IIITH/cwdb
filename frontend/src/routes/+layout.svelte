@@ -2,9 +2,8 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { ModeWatcher } from 'mode-watcher';
-	import UserMenu from '$lib/components/user-menu.svelte';
-	import Sidebar from '$lib/components/nav/sidebar.svelte';
-	import Mobilebar from '$lib/components/nav/mobilebar.svelte';
+	import Topbar from '$lib/components/topbar.svelte';
+	import Palette from '$lib/components/palette.svelte';
 	import { onMount } from 'svelte';
 	import { fetchUser } from '$lib/auth';
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -42,15 +41,8 @@
 </svelte:head>
 <ModeWatcher />
 <Toaster />
-<Sidebar />
-<Mobilebar />
-<div
-	class="fixed top-5 right-5 z-50 md:top-auto md:right-auto md:bottom-2 md:left-4 md:rounded-md md:p-2"
->
-	<UserMenu />
-</div>
-
-
-<div class="pb-28 md:pb-0">
+<Palette />
+<div class="flex min-h-dvh flex-col font-sans">
+	<Topbar />
 	{@render children()}
 </div>

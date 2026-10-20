@@ -1,176 +1,92 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
-	import { search, getcourses, allresources, syncstatus, type Resource, type CourseInfo } from '$lib/sync';
-	import { Input } from '$lib/components/ui/input';
-	import CourseFilter from '$lib/components/coursefilter.svelte';
-	import { rawgithuburl } from '$lib/utils';
-	import { bindslashfocus } from '$lib/hooks/shortcuts';
+	import { base } from '$app/paths';
+	import { Plus, Search } from '@lucide/svelte';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import { openpalette } from '$lib/components/palette.svelte';
+	import { courses, mycourses, syncstatus } from '$lib/sync';
+	import { coursehref } from '$lib/utils';
 
-	let query = $state('');
-	let results = $state<Resource[]>([]);
-	let courses = $state<CourseInfo[]>([]);
-	let selectedcourse = $state<string | null>(null);
+	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
 
-	function dosearch() {
-		results = search(query, selectedcourse);
-	}
-
-	$effect(() => {
-		allresources;
-		selectedcourse;
-		dosearch();
-	});
-
-	$effect(() => {
-		courses = getcourses();
-	});
-
-	function repoUrl(r: Resource) {
-		return `https://github.com/${r.owner}/${r.repo}`;
-	}
-
-	function openRaw(r: Resource) {
-		window.open(rawgithuburl(r), '_blank');
-	}
-
-	let active = $derived(query.length > 0 || selectedcourse !== null);
-	let searchInput: HTMLInputElement | null = $state(null);
-	let unbindslash: (() => void) | null = null;
+	let mine = $derived($courses.filter((c) => $mycourses.includes(c.code)));
 	let empty = $derived($syncstatus.empty && !$syncstatus.syncing);
-
-	onMount(() => {
-		unbindslash = bindslashfocus(() => searchInput);
-	});
-
-	onDestroy(() => {
-		unbindslash?.();
-	});
 </script>
 
-<div
-	class={active
-		? 'relative mx-auto flex min-h-screen max-w-3xl flex-col justify-between px-4'
-		: 'relative mx-auto flex h-[calc(100dvh-7rem)] md:h-screen max-w-3xl flex-col justify-between px-4 overflow-hidden'}
->
-	<!-- logo + searchbar -->
-	<div
-		class={active
-			? 'fixed top-0 right-0 left-0 z-40 border-b border-border bg-background'
-			: 'flex flex-1 flex-col items-center justify-center text-center'}
-	>
-		<div
-			class={`w-full ${
-				active
-					? 'mx-auto flex max-w-3xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between'
-					: 'flex flex-col items-center gap-4'
-			}`}
-		>
-			<div
-				class={`font-mono font-bold tracking-tight text-foreground ${
-					active ? 'text-3xl' : 'text-8xl'
-				}`}
-			>
-				cwdb
-			</div>
-
-			<div class={`w-full ${active ? 'mt-0' : 'mt-2'} flex items-stretch gap-2`}>
-				<div class="relative flex-1">
-					<svg
-						class="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						viewBox="0 0 24 24"
-						aria-hidden="true"
-					>
-						<circle cx="11" cy="11" r="7" stroke="currentColor" />
-						<line x1="16.65" y1="16.65" x2="21" y2="21" stroke="currentColor" />
-					</svg>
-					<Input
-						bind:ref={searchInput}
-						type="text"
-						class="h-12 w-full border-border pr-4 pl-10 focus-visible:border-border focus-visible:ring-0"
-						placeholder="search"
-						bind:value={query}
-						oninput={dosearch}
-					/>
-				</div>
-				{#if active}
-					<div class="hidden md:block">
-						<CourseFilter {courses} bind:selected={selectedcourse} />
-					</div>
-				{/if}
-			</div>
+<main class="mx-auto flex w-full max-w-180 flex-1 flex-col gap-14 px-6 pt-18 pb-16">
+	<div class="flex flex-col items-center gap-7">
+		<div class="font-mono text-7xl leading-none font-bold tracking-[-0.06em] sm:text-[88px]">
+			cwdb
 		</div>
-	</div>
-
-	{#if !active && empty}
-		<div class="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-			<div class="font-mono text-8xl font-bold tracking-tight text-foreground">cwdb</div>
-			<p class="max-w-sm text-sm text-muted-foreground">
+		{#if empty}
+			<p class="max-w-sm text-center text-sm text-muted-foreground">
 				No data loaded yet. Connect to VPN and reload to sync the index.
 			</p>
-		</div>
-	{/if}
-
-	<!-- results -->
-	{#if active}
-		<div class="mt-32 flex-1 sm:mt-20">
-			<ul class="mt-4 mb-10 space-y-4">
-				{#if results.length > 0}
-					{#each results as r (r.id)}
-						<li>
-							<button
-								type="button"
-								class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
-								onclick={() => openRaw(r)}
-							>
-								<div class="text-base font-medium text-foreground break-words">{r.title}</div>
-								<div class="mt-1 text-xs text-muted-foreground break-all">{r.file_path}</div>
-
-								<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-									<a
-										href={repoUrl(r)}
-										target="_blank"
-										rel="noopener"
-										class="rounded bg-muted px-2 py-0.5 hover:underline break-all"
-										onclick={(e: MouseEvent) => e.stopPropagation()}
-									>
-										{r.owner}/{r.repo}
-									</a>
-
-									{#if r.type}
-										<span class="rounded bg-muted px-2 py-0.5">
-											{r.type}
-										</span>
-									{/if}
-
-									{#if r.course_name}
-										<span class="rounded bg-muted px-2 py-0.5">
-											{r.course_name.replace(/\b\w/g, (c) => c.toUpperCase())}
-										</span>
-									{/if}
-								</div>
-							</button>
-						</li>
+		{:else}
+			<div class="flex w-full flex-col gap-2.5">
+				<button
+					type="button"
+					class="flex h-13 w-full items-center gap-2.5 rounded-xl border border-input bg-background pr-3 pl-4 text-left text-base text-muted-foreground transition-colors hover:border-muted-foreground/50"
+					onclick={() => openpalette()}
+				>
+					<Search class="size-4.5" />
+					<span class="flex-1 truncate">Search courses, papers, slides</span>
+					<Kbd class="hidden border bg-background font-mono sm:inline-flex">Ctrl K</Kbd>
+				</button>
+				<div
+					class="flex flex-wrap justify-center gap-x-3.5 gap-y-1.5 text-[13px] text-muted-foreground"
+				>
+					<span>try</span>
+					{#each tries as q (q)}
+						<button
+							type="button"
+							class="font-mono text-xs hover:text-foreground"
+							onclick={() => openpalette(q)}>{q}</button
+						>
 					{/each}
-				{:else}
-					<li class="text-center text-sm text-muted-foreground">No results found.</li>
+				</div>
+				{#if !$syncstatus.online && !$syncstatus.syncing}
+					<p class="text-center text-xs text-muted-foreground">offline · using the saved index</p>
 				{/if}
-			</ul>
-		</div>
-	{/if}
+			</div>
+		{/if}
+	</div>
 
-	<!-- footer -->
-	<footer class="mt-10 hidden py-6 text-center text-sm text-muted-foreground md:block">
-		Made with ♥ by
-		<a
-			href="https://github.com/nuxshed"
-			class="underline hover:opacity-80"
-			target="_blank"
-			rel="noopener"
-		>
-			OSDG
-		</a>
-	</footer>
-</div>
+	{#if !empty}
+		<section class="flex flex-col gap-3">
+			<div class="flex items-baseline justify-between">
+				<h2 class="text-[13px] font-semibold">My courses</h2>
+				<a href="{base}/courses" class="text-[13px] text-muted-foreground hover:text-foreground"
+					>All courses</a
+				>
+			</div>
+			<div class="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-2">
+				{#each mine as c (c.code)}
+					<a
+						href={coursehref(c.code)}
+						class="flex flex-col gap-1 rounded-[10px] border px-4 py-3.5 transition-colors hover:border-muted-foreground/50"
+					>
+						<span class="flex justify-between font-mono text-xs text-muted-foreground">
+							<span>{c.alias}</span><span>{c.count}</span>
+						</span>
+						<span class="text-sm font-medium">{c.name}</span>
+					</a>
+				{/each}
+				<a
+					href="{base}/courses"
+					class="flex items-center justify-center gap-2 rounded-[10px] border border-dashed border-input px-4 py-3.5 text-[13px] text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:text-foreground"
+				>
+					<Plus class="size-3.5" />Add a course
+				</a>
+			</div>
+		</section>
+	{/if}
+</main>
+
+<footer class="p-6 text-center text-xs text-muted-foreground/70">
+	made by <a
+		href="https://github.com/nuxshed"
+		class="text-muted-foreground underline"
+		target="_blank"
+		rel="noopener">OSDG</a
+	>
+</footer>

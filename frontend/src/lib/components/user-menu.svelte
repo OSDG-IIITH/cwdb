@@ -25,11 +25,6 @@
 		return name.slice(0, 2).toUpperCase();
 	}
 
-	let innerWidth = $state(0);
-	let isDesktop = $derived(innerWidth >= 768);
-	let align = $derived<'start' | 'end'>(isDesktop ? 'start' : 'end');
-	let side = $derived<'top' | 'bottom'>(isDesktop ? 'top' : 'bottom');
-
 	let themeVariant = $state('default');
 
 	onMount(() => {
@@ -65,33 +60,32 @@
 	}
 </script>
 
-<svelte:window bind:innerWidth />
-
 <DropdownMenu.Root>
 	{#if $loading}
 		<DropdownMenu.Trigger
 			disabled
-			class="flex h-10 w-10 items-center justify-center rounded-full bg-muted opacity-60"
+			class="flex size-7 items-center justify-center rounded-full bg-muted opacity-60"
 		>
 			<User class="h-4 w-4 text-muted-foreground" />
 		</DropdownMenu.Trigger>
 	{:else if $user}
 		<DropdownMenu.Trigger
-			class="h-10 w-10 rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+			class="size-7 rounded-full ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
 		>
-			<Avatar.Root class="h-10 w-10 cursor-pointer">
-				<Avatar.Fallback class="text-xs font-medium">{getInitials($user.email)}</Avatar.Fallback>
+			<Avatar.Root class="size-7 cursor-pointer">
+				<Avatar.Fallback class="text-[10px] font-medium">{getInitials($user.email)}</Avatar.Fallback
+				>
 			</Avatar.Root>
 		</DropdownMenu.Trigger>
 	{:else}
 		<DropdownMenu.Trigger
-			class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'h-10 w-10')}
+			class={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'size-7 rounded-full')}
 		>
 			<User class="h-4 w-4" />
 		</DropdownMenu.Trigger>
 	{/if}
 
-	<DropdownMenu.Content {align} {side} class="w-69 bg-sidebar" sideOffset={12}>
+	<DropdownMenu.Content align="end" class="w-69 bg-sidebar" sideOffset={8}>
 		{#if $user}
 			<div class="border-b px-3 py-2.5">
 				<p class="text-sm leading-none font-medium">{getNameFromEmail($user.email)}</p>
