@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Filter, Loader2 } from '@lucide/svelte';
 	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
-	import { onMount, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { base } from '$app/paths';
@@ -18,13 +18,14 @@
 		loadsources,
 		reclassify,
 		refreshpending,
+		editresources,
 		refreshSource,
 		reviewqueue,
 		sourceinfo
 	} from '$lib/api';
 	import { user } from '$lib/auth';
 	import { buildtree, sourcelist } from '$lib/courseview';
-	import { allresources, syncstatus, trysync } from '$lib/sync';
+	import { allresources, patchresources, syncstatus, trysync } from '$lib/sync';
 	import { githuburl } from '$lib/utils';
 	import { downloadfile, downloadzip } from '$lib/zip';
 
@@ -34,6 +35,7 @@
 
 	let query = $state('');
 	let editing = $state(false);
+	let moving = $state(false);
 	let busy = $state('');
 
 	let admin = $derived($user?.role === 'admin');
@@ -85,7 +87,7 @@
 
 	const pct = (n: number) => (src?.count ? Math.round((n / src.count) * 100) : 0);
 
-	onMount(() => {
+	$effect(() => {
 		if (admin) loadreview();
 	});
 
@@ -135,6 +137,13 @@
 		busy = 'zip';
 		await downloadzip(chosen, repo ?? 'source');
 		busy = '';
+	}
+
+	async function hide() {
+		const ids = [...picked];
+		if (!(await editresources(ids, { hidden: true }))) return toast.error('could not hide');
+		patchresources(ids, { hidden: true });
+		picked.clear();
 	}
 
 	async function sync() {
@@ -221,7 +230,7 @@
 {#if src}
 	<section class="relative flex min-w-0 flex-1 flex-col">
 		<div class="flex shrink-0 flex-wrap items-start gap-3 border-b px-5 py-4 lg:px-6">
-			<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+			<div class="flex min-w-64 flex-1 flex-col gap-1.5">
 				<a
 					href="https://github.com/{owner}/{repo}"
 					target="_blank"
@@ -287,6 +296,17 @@
 			>
 				<span><span class="font-mono">{picked.size}</span> selected</span>
 				<Button size="sm" variant="secondary" disabled={!!busy} onclick={zip}>Download zip</Button>
+				{#if admin}
+					<Button
+						size="sm"
+						variant="ghost"
+						class="hover:bg-background/10"
+						onclick={() => (moving = true)}>Move to…</Button
+					>
+					<Button size="sm" variant="ghost" class="hover:bg-background/10" onclick={hide}
+						>Hide</Button
+					>
+				{/if}
 				<Button
 					size="sm"
 					variant="ghost"
@@ -318,6 +338,10 @@
 
 	{#if editing && cur}
 		<EditPanel ids={[cur.id]} initial={cur} oncancel={() => (editing = false)} />
+	{/if}
+
+	{#if moving}
+		<EditPanel ids={[...picked]} oncancel={() => (moving = false)} />
 	{/if}
 {:else if $syncstatus.syncing && !$allresources.length}
 	<div class="flex flex-1 items-center justify-center">

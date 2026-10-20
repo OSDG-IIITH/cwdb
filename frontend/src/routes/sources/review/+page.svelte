@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
@@ -35,7 +34,9 @@
 	let key = $state(false);
 	let busy = $state(false);
 
-	onMount(loadreview);
+	$effect(() => {
+		if (admin) loadreview();
+	});
 
 	const suggestion = (r: ReviewRow) =>
 		[r.course ?? 'Unclassified', r.kind ?? 'unclassified', r.examtype ?? r.slidetype, r.year, r.key && 'key']

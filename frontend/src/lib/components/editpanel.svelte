@@ -7,7 +7,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Choice from '$lib/components/choice.svelte';
-	import { createoffering, editresources } from '$lib/api';
+	import { createoffering, editresources, refreshpending } from '$lib/api';
 	import {
 		addoffering,
 		allresources,
@@ -55,6 +55,41 @@
 			.filter((r) => r.course_id === course && !r.key && r.id !== was?.id)
 			.map((r) => ({ value: r.id, label: r.title }))
 	);
+
+	/** empties every classification field and locks the rows */
+	async function clear() {
+		const blank = {
+			course: null,
+			offering: null,
+			kind: null,
+			examtype: null,
+			slidetype: null,
+			n: null,
+			key: false,
+			keyfor: null
+		};
+		if (!(await editresources(ids, blank))) return toast.error('could not clear');
+		patchresources(ids, {
+			course_id: null,
+			offering: null,
+			kind: null,
+			examtype: null,
+			slidetype: null,
+			n: null,
+			key: false,
+			keyfor: null
+		});
+		toast.success('cleared');
+		oncancel();
+	}
+
+	/** unlocks the rows and reruns the rules on them */
+	async function reset() {
+		if (!(await editresources(ids, { reset: true }))) return toast.error('could not reset');
+		refreshpending();
+		toast.success('reset to rules, publish to update the index');
+		oncancel();
+	}
 
 	/** sends the changed fields and mirrors them in the local index */
 	async function save() {
@@ -191,6 +226,10 @@
 				</div>
 			{/if}
 			<Button type="submit" disabled={saving}>Save</Button>
+			<div class="flex gap-2">
+				<Button type="button" variant="outline" class="flex-1" onclick={clear}>Clear metadata</Button>
+				<Button type="button" variant="outline" class="flex-1" onclick={reset}>Reset to rules</Button>
+			</div>
 		</form>
 	</Sheet.Content>
 </Sheet.Root>

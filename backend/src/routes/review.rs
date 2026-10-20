@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::AppState;
 use crate::classify;
+use crate::llm;
 use crate::routes::auth::{Claims, adminonly};
 
 /// GET /api/review — rows flagged for review, and unclassified row counts per source
@@ -22,10 +23,11 @@ pub async fn review(State(state): State<AppState>, claims: Claims) -> impl IntoR
         )
         .fetch_all(&state.db)
         .await?;
-        let new: Vec<(i32, i64)> = sqlx::query_as(
-            "SELECT source_id, count(*) FROM resources WHERE NOT hidden \
-             AND classifiedby IS DISTINCT FROM 'manual' AND classifiedby IS DISTINCT FROM 'llm' GROUP BY source_id",
-        )
+        let new: Vec<(i32, i64)> = sqlx::query_as(&format!(
+            "SELECT r.source_id, count(*) FROM resources r WHERE NOT r.hidden \
+             AND r.classifiedby IS DISTINCT FROM 'manual' AND r.classifiedby IS DISTINCT FROM 'llm' {} GROUP BY r.source_id",
+            llm::GAPS
+        ))
         .fetch_all(&state.db)
         .await?;
 

@@ -98,6 +98,7 @@ pub struct Edit {
     pub title: Option<Option<String>>,
     pub key: Option<bool>,
     pub hidden: Option<bool>,
+    pub reset: Option<bool>,
 }
 
 fn set<'a, T>(q: &mut QueryBuilder<'a, Postgres>, column: &str, value: Option<T>)
@@ -111,6 +112,22 @@ where
 
 /// applies an edit to rows and locks them as manual
 async fn save(state: &AppState, ids: Vec<i32>, mut edit: Edit) -> axum::response::Response {
+    if edit.reset == Some(true) {
+        let run = async {
+            sqlx::query(
+                "UPDATE resources SET classifiedby = NULL, needsreview = false, confidence = NULL, updated_at = NOW() \
+                 WHERE id = ANY($1)",
+            )
+            .bind(&ids)
+            .execute(&state.db)
+            .await?;
+            rerun(state, Some(&ids)).await
+        };
+        return match run.await {
+            Ok(n) => (StatusCode::OK, Json(json!({ "updated": n }))).into_response(),
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))).into_response(),
+        };
+    }
     if let Some(kind) = &edit.kind {
         if kind.as_deref() != Some("exams") {
             edit.examtype = Some(None);
@@ -168,29 +185,31 @@ pub async fn editmany(State(state): State<AppState>, claims: Claims, Json(mut ed
     save(&state, ids, edit).await
 }
 
+/// reruns the rules on the sources holding `ids`, or on every active source, returns rows changed
+async fn rerun(state: &AppState, ids: Option<&[i32]>) -> Result<u64, sqlx::Error> {
+    let sources: Vec<(i32, String, serde_json::Value)> = sqlx::query_as(
+        "SELECT id, repo, aliases FROM sources WHERE source_status NOT IN ('archived', 'error') \
+         AND ($1::int[] IS NULL OR id IN (SELECT source_id FROM resources WHERE id = ANY($1)))",
+    )
+    .bind(ids)
+    .fetch_all(&state.db)
+    .await?;
+    let mut changed = 0;
+    for (id, repo, aliases) in sources {
+        let aliases: HashMap<String, String> = serde_json::from_value(aliases).unwrap_or_default();
+        let mut tx = state.db.begin().await?;
+        changed += classify::apply(&mut tx, &state.courses, id, &repo, &aliases).await?;
+        tx.commit().await?;
+    }
+    Ok(changed)
+}
+
 /// POST /api/reclassify — rerun rules on every active source without syncing
 pub async fn reclassify(State(state): State<AppState>, claims: Claims) -> impl IntoResponse {
     if let Err(e) = adminonly(&state, &claims).await {
         return e;
     }
-
-    let run = async {
-        let sources: Vec<(i32, String, serde_json::Value)> = sqlx::query_as(
-            "SELECT id, repo, aliases FROM sources WHERE source_status NOT IN ('archived', 'error')",
-        )
-        .fetch_all(&state.db)
-        .await?;
-        let mut changed = 0;
-        for (id, repo, aliases) in sources {
-            let aliases: HashMap<String, String> = serde_json::from_value(aliases).unwrap_or_default();
-            let mut tx = state.db.begin().await?;
-            changed += classify::apply(&mut tx, &state.courses, id, &repo, &aliases).await?;
-            tx.commit().await?;
-        }
-        Ok::<_, sqlx::Error>(changed)
-    };
-
-    match run.await {
+    match rerun(&state, None).await {
         Ok(n) => (StatusCode::OK, Json(json!({ "updated": n }))).into_response(),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": e.to_string() }))).into_response(),
     }
