@@ -78,15 +78,15 @@
 			slidetype: kind === 'slides' ? sub || null : null,
 			key
 		};
-		const dated = course && year && Number(year) !== r.year;
-		if (dated) {
-			const id = await createoffering(course, r.season ?? 'M', Number(year));
-			if (!id) {
+		if (course !== (r.course ?? '') || year !== (r.year?.toString() ?? '')) {
+			const id =
+				course && year ? await createoffering(course, r.season ?? 'M', Number(year)) : null;
+			if (course && year && !id) {
 				busy = false;
 				return toast.error('could not create the offering');
 			}
-			edit.offering = Number(id);
-		} else if (!year) edit.offering = null;
+			edit.offering = id ? Number(id) : null;
+		}
 		const ok = await editresources([String(r.id)], edit);
 		busy = false;
 		if (!ok) return toast.error('could not save');

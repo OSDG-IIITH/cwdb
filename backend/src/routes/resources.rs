@@ -115,7 +115,7 @@ async fn save(state: &AppState, ids: Vec<i32>, mut edit: Edit) -> axum::response
     if edit.reset == Some(true) {
         let run = async {
             sqlx::query(
-                "UPDATE resources SET classifiedby = NULL, needsreview = false, confidence = NULL, updated_at = NOW() \
+                "UPDATE resources SET classifiedby = NULL, needsreview = false, confidence = NULL, keyfor = NULL, updated_at = NOW() \
                  WHERE id = ANY($1)",
             )
             .bind(&ids)

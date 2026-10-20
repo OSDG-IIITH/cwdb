@@ -87,7 +87,7 @@ async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool) -> Result
     let gaps = if full { "" } else { GAPS };
     let rows = sqlx::query(&format!(
         "{ROWS} WHERE NOT r.hidden AND r.classifiedby IS DISTINCT FROM 'manual' AND r.classifiedby IS DISTINCT FROM 'llm' {gaps} \
-         AND (cardinality($1::text[]) = 0 OR s.repo = ANY($1)) ORDER BY s.repo, r.file_path"
+         AND (cardinality($1::text[]) = 0 OR s.repo = ANY($1) OR s.owner || '/' || s.repo = ANY($1)) ORDER BY s.repo, r.file_path"
     ))
     .bind(repos)
     .fetch_all(db)
@@ -214,7 +214,7 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
         let examtype = pick(was("examtype"), o.examtype.clone()).filter(|_| kind.as_deref() == Some("exams"));
         let slidetype = pick(was("slidetype"), o.slidetype.clone()).filter(|_| kind.as_deref() == Some("slides"));
         let n = if full { o.n } else { cur.get::<Option<i32>, _>("n").or(o.n) };
-        let key = o.key || (!full && cur.get::<bool, _>("key"));
+        let key = if full { o.key } else { cur.get::<bool, _>("key") };
         let found = match &o.keyfor {
             Some(p) if key => match paths.get(&(source, p.clone())) {
                 Some(&t) if t != o.id => Some(t),
@@ -226,6 +226,10 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
             _ => None,
         };
         let keyfor = if full { found } else { cur.get::<Option<i32>, _>("keyfor").or(found) }.filter(|_| key);
+        let keyforsql = match (&o.keyfor, found) {
+            (Some(p), Some(_)) => format!("(SELECT id FROM resources WHERE source_id = {source} AND file_path = {})", quote(p)),
+            _ => "NULL".into(),
+        };
 
         let year = o.year.filter(|y| (2000..=2100).contains(y));
         let season = o.season.clone().filter(|s| s == "M" || s == "S").or_else(|| match course.as_ref().and_then(|c| terms.get(c)?.as_deref()) {
@@ -236,7 +240,7 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
         let derived = match (&course, &season, year) {
             (Some(c), Some(s), Some(y)) => {
                 if made.insert((c.clone(), s.clone(), y)) {
-                    writeln!(offerings, "INSERT INTO offerings (course, season, year) VALUES ({}, {}, {y}) ON CONFLICT DO NOTHING;", quote(c), quote(s))?;
+                    writeln!(offerings, "INSERT INTO offerings (course, season, year) SELECT {0}, {1}, {y} WHERE EXISTS (SELECT 1 FROM courses WHERE code = {0}) ON CONFLICT DO NOTHING;", quote(c), quote(s))?;
                 }
                 Some(format!("(SELECT id FROM offerings WHERE course = {} AND season = {} AND year = {y})", quote(c), quote(s)))
             }
@@ -246,19 +250,19 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
 
         let mut sets = Vec::new();
         let mut add = |col: &str, value: String, changed: bool| {
-            if full || col == "key" && changed {
+            if full {
                 sets.push(format!("{col} = {value}"));
             } else if changed {
                 sets.push(format!("{col} = COALESCE({col}, {value})"));
             }
         };
-        add("course", opt(course.as_ref(), true), course != was("course"));
+        add("course", course.as_ref().map_or("NULL".into(), |c| format!("(SELECT code FROM courses WHERE code = {})", quote(c))), course != was("course"));
         add("kind", opt(kind.as_ref(), true), kind != was("kind"));
         add("examtype", opt(examtype.as_ref(), true), examtype != was("examtype"));
         add("slidetype", opt(slidetype.as_ref(), true), slidetype != was("slidetype"));
         add("n", opt(n, false), n != cur.get::<Option<i32>, _>("n"));
         add("key", key.to_string(), key != cur.get::<bool, _>("key"));
-        add("keyfor", opt(keyfor, false), keyfor != cur.get::<Option<i32>, _>("keyfor"));
+        add("keyfor", keyforsql, keyfor != cur.get::<Option<i32>, _>("keyfor"));
         if full || (!hadoffering && derived.is_some()) {
             add("offering", derived.unwrap_or_else(|| "NULL".into()), true);
         }
@@ -281,10 +285,15 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
             });
         let review = o.confidence < 0.8 || disagree || odd;
 
+        let same = if full {
+            String::new()
+        } else {
+            format!(" AND kind IS NOT DISTINCT FROM {} AND course IS NOT DISTINCT FROM {}", opt(was("kind").as_ref(), true), opt(was("course").as_ref(), true))
+        };
         writeln!(
             updates,
             "UPDATE resources SET {}, confidence = {}, needsreview = {review}, classifiedby = 'llm', classifiedat = NOW(), updated_at = NOW() \
-             WHERE id = {} AND classifiedby IS DISTINCT FROM 'manual';",
+             WHERE id = {} AND classifiedby IS DISTINCT FROM 'manual'{same};",
             sets.join(", "),
             o.confidence,
             o.id
@@ -304,6 +313,8 @@ async fn import(db: &PgPool, dir: &Path, sql: Option<&str>, full: bool) -> Resul
             outs.extend(serde_json::from_str::<Vec<Out>>(&std::fs::read_to_string(&path)?)?);
         }
     }
+    let mut seen = HashSet::new();
+    outs.retain(|o| seen.insert(o.id));
     let (script, count, errors) = render(db, outs, full).await?;
     for e in &errors {
         eprintln!("skipped {e}");

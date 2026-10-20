@@ -167,7 +167,7 @@
 
 	async function classify() {
 		await navigator.clipboard.writeText(
-			`cargo run --manifest-path backend/Cargo.toml -- classifyexport ${repo}`
+			`cargo run --manifest-path backend/Cargo.toml -- classifyexport ${owner}/${repo}`
 		);
 		toast.success('export command copied, run it from the repo root');
 	}
