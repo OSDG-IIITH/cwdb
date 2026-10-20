@@ -159,49 +159,6 @@ pub async fn me(
     })))
 }
 
-/// optional auth extractor — returns None when no token, 401 on bad token
-pub enum OptionalAuth {
-    Authenticated(CwdbUser),
-    Anonymous,
-}
-
-impl FromRequestParts<AppState> for OptionalAuth {
-    type Rejection = AuthError;
-
-    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
-        let cookie_str = parts
-            .headers
-            .get("cookie")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-
-        #[cfg(feature = "ocas")]
-        let has_token = parts
-            .headers
-            .get("authorization")
-            .map(|v| v.to_str().ok().is_some_and(|s| s.starts_with("Bearer ")))
-            .unwrap_or(false)
-            || cookie_str.contains("ocas_access=");
-
-        #[cfg(feature = "cas")]
-        let has_token = cookie_str.contains("cwdb_session=");
-
-        if !has_token {
-            return Ok(OptionalAuth::Anonymous);
-        }
-
-        let claims = match Claims::from_request_parts(parts, state).await {
-            Ok(c) => c,
-            Err(_) => return Ok(OptionalAuth::Anonymous),
-        };
-        let user = match upsertuser(state, &claims).await {
-            Ok(u) => u,
-            Err(_) => return Ok(OptionalAuth::Anonymous),
-        };
-        Ok(OptionalAuth::Authenticated(user))
-    }
-}
-
 /// GET /api/auth/mock/login?email=foo@bar.com
 #[cfg(all(feature = "mock", feature = "ocas"))]
 pub async fn mock_login(

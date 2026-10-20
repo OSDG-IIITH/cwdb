@@ -10,9 +10,7 @@ export const SourceSchema = z.object({
 	last_synced_at: z.string().nullable(),
 	created_at: z.string().nullable(),
 	created_by: z.string(),
-	like_count: z.number(),
-	aliases: z.record(z.string(), z.string()).optional().default({}),
-	liked: z.boolean()
+	aliases: z.record(z.string(), z.string()).optional().default({})
 });
 
 export type Source = z.infer<typeof SourceSchema>;

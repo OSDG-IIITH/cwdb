@@ -27,11 +27,14 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     };
 
+    let started = chrono::Utc::now();
+
     let resource_rows = sqlx::query(
-        "SELECT r.id, r.source_id, r.file_path, r.type as rtype, r.course_id \
+        "SELECT r.id, r.source_id, r.file_path, r.course, r.offering, r.kind, r.examtype, r.slidetype, \
+         r.n, r.key, r.keyfor, r.title, r.unit, r.size, r.needsreview \
          FROM resources r \
          JOIN sources s ON r.source_id = s.id \
-         WHERE s.source_status NOT IN ('archived', 'error')"
+         WHERE s.source_status NOT IN ('archived', 'error') AND NOT r.hidden"
     )
     .fetch_all(&state.db)
     .await;
@@ -41,13 +44,32 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     };
 
-    let course_rows = sqlx::query(
-        "SELECT id, code, name, aliases, instructors, semester, year FROM courses"
+    let course_rows = sqlx::query("SELECT code, name, shortnames, semester FROM courses")
+        .fetch_all(&state.db)
+        .await;
+
+    let course_rows = match course_rows {
+        Ok(r) => r,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    };
+
+    let offering_rows = sqlx::query(
+        "SELECT o.id, o.course, o.season, o.year, array_remove(array_agg(f.name ORDER BY f.name), NULL) AS faculty \
+         FROM offerings o LEFT JOIN offeringfaculty f ON f.offering = o.id GROUP BY o.id"
     )
     .fetch_all(&state.db)
     .await;
 
-    let course_rows = match course_rows {
+    let offering_rows = match offering_rows {
+        Ok(r) => r,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    };
+
+    let succession = sqlx::query_as::<_, (String, String)>("SELECT predecessor, successor FROM coursesuccession")
+        .fetch_all(&state.db)
+        .await;
+
+    let succession = match succession {
         Ok(r) => r,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     };
@@ -74,21 +96,31 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
 
     let mut courses: HashMap<String, serde_json::Value> = HashMap::new();
     for row in &course_rows {
-        let id: uuid::Uuid = row.get("id");
         let code: String = row.get("code");
         let name: String = row.get("name");
-        let aliases: Vec<String> = row.get("aliases");
-        let instructors: Vec<String> = row.get("instructors");
+        let shortnames: Vec<String> = row.get("shortnames");
         let semester: String = row.get("semester");
-        let year: Option<i32> = row.get("year");
-        courses.insert(id.to_string(), json!({
+        courses.insert(code.clone(), json!({
             "name": name,
             "code": code,
-            "aliases": aliases,
-            "instructors": instructors,
+            "shortnames": shortnames,
+            "aliases": shortnames,
             "semester": semester,
-            "year": year,
         }));
+    }
+
+    let mut offerings: HashMap<String, serde_json::Value> = HashMap::new();
+    let mut faculty: HashMap<String, Vec<String>> = HashMap::new();
+    for row in &offering_rows {
+        let id: i32 = row.get("id");
+        let course: String = row.get("course");
+        let season: String = row.get("season");
+        let year: i16 = row.get("year");
+        let names: Vec<String> = row.get("faculty");
+        offerings.insert(id.to_string(), json!({ "course": course, "season": season, "year": year }));
+        if !names.is_empty() {
+            faculty.insert(id.to_string(), names);
+        }
     }
 
     let mut resources = Vec::new();
@@ -96,15 +128,39 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         let id: i32 = row.get("id");
         let source_id: i32 = row.get("source_id");
         let file_path: String = row.get("file_path");
-        let rtype: String = row.get("rtype");
-        let course_id: Option<uuid::Uuid> = row.get("course_id");
-        resources.push(json!({
+        let course: Option<String> = row.get("course");
+        let kind: Option<String> = row.get("kind");
+        let legacy = match kind.as_deref() {
+            Some("exams") => json!("exam"),
+            Some("slides") => json!("slides"),
+            _ => json!(null),
+        };
+        let mut r = json!({
             "id": id.to_string(),
             "path": file_path,
             "source_id": source_id.to_string(),
-            "course_id": course_id.map(|c| c.to_string()),
-            "type": if rtype.is_empty() { json!(null) } else { json!(rtype) },
-        }));
+            "course_id": course,
+            "type": legacy,
+        });
+        let fields = [
+            ("kind", json!(kind)),
+            ("examtype", json!(row.get::<Option<String>, _>("examtype"))),
+            ("slidetype", json!(row.get::<Option<String>, _>("slidetype"))),
+            ("n", json!(row.get::<Option<i32>, _>("n"))),
+            ("offering", json!(row.get::<Option<i32>, _>("offering").map(|o| o.to_string()))),
+            ("keyfor", json!(row.get::<Option<i32>, _>("keyfor").map(|k| k.to_string()))),
+            ("title", json!(row.get::<Option<String>, _>("title"))),
+            ("unit", json!(row.get::<Option<String>, _>("unit"))),
+            ("size", json!(row.get::<Option<i64>, _>("size"))),
+            ("key", json!(row.get::<bool, _>("key"))),
+            ("review", json!(row.get::<bool, _>("needsreview"))),
+        ];
+        for (k, v) in fields {
+            if !v.is_null() && v != json!(false) {
+                r[k] = v;
+            }
+        }
+        resources.push(r);
     }
 
     let index = json!({
@@ -112,6 +168,9 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         "resources": resources,
         "courses": courses,
         "sources": sources,
+        "offerings": offerings,
+        "faculty": faculty,
+        "succession": succession,
     });
 
     let path = std::path::Path::new(&state.config.publish_path).join("index.json");
@@ -121,13 +180,27 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         }
     }
 
-    match std::fs::write(&path, index.to_string()) {
+    if let Err(e) = std::fs::write(&path, index.to_string()) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("write: {}", e)}))).into_response();
+    }
+
+    let saved = sqlx::query(
+        "INSERT INTO settings (key, value) VALUES ('lastpublish', to_jsonb($1::timestamptz)) \
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
+    )
+    .bind(started)
+    .execute(&state.db)
+    .await;
+
+    match saved {
         Ok(_) => (StatusCode::OK, Json(json!({
             "version": version,
             "resources": resources.len(),
             "courses": courses.len(),
             "sources": sources.len(),
+            "offerings": offerings.len(),
         }))).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("write: {}", e)}))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     }
 }
+

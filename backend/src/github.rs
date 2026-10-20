@@ -8,6 +8,7 @@ pub struct GitHubTreeEntry {
     #[serde(rename = "type")]
     pub entry_type: String,
     pub sha: String,
+    pub size: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]

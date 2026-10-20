@@ -2,7 +2,6 @@ use regex::Regex;
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::LazyLock;
-use uuid::Uuid;
 
 const SOFT_WORDS: &[&str] = &["and", "of", "in", "for", "to"];
 
@@ -15,38 +14,35 @@ static RE_CODE: LazyLock<Regex> =
 /// in-memory course registry for path-to-course matching
 #[derive(Clone, Debug)]
 pub struct CourseRegistry {
-    aliases: HashMap<String, Vec<Uuid>>,
-    codes: HashMap<String, Uuid>,
-    names: Vec<(String, Vec<String>, Uuid)>, // (normalized name, content words, id)
-    seasons: HashMap<Uuid, String>,
+    aliases: HashMap<String, Vec<String>>,
+    codes: HashMap<String, String>,
+    names: Vec<(String, Vec<String>, String)>, // (normalized name, content words, code)
+    seasons: HashMap<String, String>,
 }
 
 impl CourseRegistry {
     pub async fn load(db: &PgPool) -> Result<Self, sqlx::Error> {
-        let rows = sqlx::query_as::<_, (Uuid, String, String, Vec<String>, String)>(
-            "SELECT id, code, name, aliases, semester FROM courses",
+        let rows = sqlx::query_as::<_, (String, String, Vec<String>, String)>(
+            "SELECT code, name, shortnames, semester FROM courses",
         )
         .fetch_all(db)
         .await?;
 
-        let mut aliases: HashMap<String, Vec<Uuid>> = HashMap::new();
-        let mut codes: HashMap<String, Uuid> = HashMap::new();
+        let mut aliases: HashMap<String, Vec<String>> = HashMap::new();
+        let mut codes: HashMap<String, String> = HashMap::new();
         let mut names = Vec::new();
         let mut seasons = HashMap::new();
 
-        for (id, code, name, course_aliases, semester) in &rows {
+        for (code, name, shortnames, semester) in &rows {
             let norm = normalize(name);
             let words = contentwords(&norm).into_iter().map(String::from).collect();
-            names.push((norm, words, *id));
-            seasons.insert(*id, semester.clone());
+            names.push((norm, words, code.clone()));
+            seasons.insert(code.clone(), semester.clone());
+            codes.insert(code.to_lowercase(), code.clone());
 
-            if !code.is_empty() {
-                codes.insert(code.to_lowercase(), *id);
-            }
-
-            for alias in course_aliases {
+            for alias in shortnames {
                 let key = alias.to_lowercase();
-                aliases.entry(key).or_default().push(*id);
+                aliases.entry(key).or_default().push(code.clone());
             }
         }
 
@@ -95,14 +91,14 @@ impl CourseRegistry {
     }
 
     /// look up course id by normalized name
-    fn resolvebyname(&self, name: &str) -> Option<Uuid> {
+    fn resolvebyname(&self, name: &str) -> Option<String> {
         let norm = normalize(name);
-        self.names.iter().find(|(n, _, _)| *n == norm).map(|(_, _, id)| *id)
+        self.names.iter().find(|(n, _, _)| *n == norm).map(|(_, _, id)| id.clone())
     }
 
-    pub fn resolve(&self, path: &str, repo: &str, source_aliases: &HashMap<String, String>) -> Option<Uuid> {
+    pub fn resolve(&self, path: &str, repo: &str, source_aliases: &HashMap<String, String>) -> Option<String> {
         let season = Self::extractseason(path);
-        let mut candidates: Vec<(Uuid, f32)> = Vec::new();
+        let mut candidates: Vec<(String, f32)> = Vec::new();
         let mut has_exact = false;
 
         for seg in path.split('/') {
@@ -114,7 +110,7 @@ impl CourseRegistry {
             // full name exact match & early exit
             for (name, _, id) in &self.names {
                 if norm.contains(name.as_str()) {
-                    candidates.push((*id, 1.0));
+                    candidates.push((id.clone(), 1.0));
                     has_exact = true;
                     break;
                 }
@@ -127,7 +123,7 @@ impl CourseRegistry {
             // word level fuzzy match
             let path_words: Vec<&str> = contentwords(&norm);
             if path_words.len() >= 2 {
-                let mut best_fuzzy: Option<(Uuid, f32)> = None;
+                let mut best_fuzzy: Option<(String, f32)> = None;
                 for (_, course_words, id) in &self.names {
                     if course_words.len() < 2 {
                         continue;
@@ -141,8 +137,8 @@ impl CourseRegistry {
                     let score = wordscore(&path_words, &cw_refs);
                     if score >= 0.7 {
                         let weighted = score * 0.9;
-                        if best_fuzzy.map_or(true, |(_, s)| weighted > s) {
-                            best_fuzzy = Some((*id, weighted));
+                        if best_fuzzy.as_ref().is_none_or(|(_, s)| weighted > *s) {
+                            best_fuzzy = Some((id.clone(), weighted));
                         }
                     }
                 }
@@ -154,23 +150,24 @@ impl CourseRegistry {
             // course code match
             for m in RE_CODE.find_iter(seg) {
                 let code = m.as_str().to_lowercase();
-                if let Some(&id) = self.codes.get(&code) {
-                    candidates.push((id, 0.95));
+                if let Some(id) = self.codes.get(&code) {
+                    candidates.push((id.clone(), 0.95));
                 }
             }
         }
 
         // alias match per segment
         if !has_exact {
-            for seg in path.split(&['/', '-', '_'][..]) {
+            let joined = path.split('/').map(|s| s.replace(['-', '_', ' '], ""));
+            for seg in path.split(&['/', '-', '_'][..]).map(String::from).chain(joined) {
                 let key = seg.to_lowercase();
                 if key.is_empty() {
                     continue;
                 }
                 if let Some(ids) = self.aliases.get(&key) {
                     let score = if ids.len() == 1 { 0.9 } else { 0.5 };
-                    for &id in ids {
-                        candidates.push((id, score));
+                    for id in ids {
+                        candidates.push((id.clone(), score));
                     }
                 }
             }
@@ -189,8 +186,8 @@ impl CourseRegistry {
                     }
                     if let Some(ids) = self.aliases.get(&key) {
                         let score = if ids.len() == 1 { 0.9 } else { 0.5 };
-                        for &id in ids {
-                            candidates.push((id, score));
+                        for id in ids {
+                            candidates.push((id.clone(), score));
                         }
                     }
                 }
@@ -204,16 +201,16 @@ impl CourseRegistry {
                 }
                 if let Some(ids) = self.aliases.get(&key) {
                     let score = if ids.len() == 1 { 0.9 } else { 0.5 };
-                    for &id in ids {
-                        candidates.push((id, score));
+                    for id in ids {
+                        candidates.push((id.clone(), score));
                     }
                 }
             }
         }
 
-        let mut best: HashMap<Uuid, f32> = HashMap::new();
+        let mut best: HashMap<String, f32> = HashMap::new();
         for (id, score) in &candidates {
-            let entry = best.entry(*id).or_insert(0.0);
+            let entry = best.entry(id.clone()).or_insert(0.0);
             if *score > *entry {
                 *entry = *score;
             }
@@ -231,7 +228,7 @@ impl CourseRegistry {
         }
 
         // filter and sort
-        let mut results: Vec<(Uuid, f32)> = best
+        let mut results: Vec<(String, f32)> = best
             .into_iter()
             .filter(|(_, s)| *s >= 0.5)
             .collect();
@@ -239,8 +236,8 @@ impl CourseRegistry {
 
         match results.as_slice() {
             [] => None,
-            [(id, _)] => Some(*id),
-            [(id1, s1), (_, s2), ..] if (s1 - s2).abs() > f32::EPSILON => Some(*id1),
+            [(id, _)] => Some(id.clone()),
+            [(id1, s1), (_, s2), ..] if (s1 - s2).abs() > f32::EPSILON => Some(id1.clone()),
             _ => {
                 if source_aliases.is_empty() {
                     return None;
@@ -254,13 +251,13 @@ impl CourseRegistry {
     fn tiebreak(
         &self,
         path: &str,
-        tied: &[(Uuid, f32)],
+        tied: &[(String, f32)],
         source_aliases: &HashMap<String, String>,
-    ) -> Option<Uuid> {
+    ) -> Option<String> {
         let top = tied[0].1;
-        let tied_ids: Vec<Uuid> = tied.iter()
+        let tied_ids: Vec<String> = tied.iter()
             .take_while(|(_, s)| (s - top).abs() <= f32::EPSILON)
-            .map(|(id, _)| *id)
+            .map(|(id, _)| id.clone())
             .collect();
 
         let path_tokens: Vec<String> = path
@@ -299,11 +296,9 @@ impl CourseRegistry {
         None
     }
 
-    pub fn name(&self, id: Uuid) -> Option<&str> {
-        self.names
-            .iter()
-            .find(|(_, _, cid)| *cid == id)
-            .map(|(name, _, _)| name.as_str())
+    /// course term (monsoon, spring, both) by code
+    pub fn term(&self, code: &str) -> Option<&str> {
+        self.seasons.get(code).map(|s| s.as_str())
     }
 }
 
@@ -396,35 +391,39 @@ fn wordscore(path_words: &[&str], course_words: &[&str]) -> f32 {
 mod tests {
     use super::*;
 
-    fn registry() -> CourseRegistry {
-        let cso = Uuid::from_u128(1);
-        let dsa_digital = Uuid::from_u128(2);
-        let dsa_ds = Uuid::from_u128(3);
-        let sci2 = Uuid::from_u128(4);
-        let dna = Uuid::from_u128(5);
-        let cn = Uuid::from_u128(6);
-        let acn = Uuid::from_u128(7);
-        let disc = Uuid::from_u128(8);
-        let distsys = Uuid::from_u128(9);
-        let inlp = Uuid::from_u128(10);
-        let robotics = Uuid::from_u128(11);
-        let peu = Uuid::from_u128(12);
-        let mdl = Uuid::from_u128(13);
-        let osn = Uuid::from_u128(14);
-        let ew1 = Uuid::from_u128(15);
+    fn id(n: u128) -> String {
+        format!("C{n}")
+    }
 
-        let mut aliases: HashMap<String, Vec<Uuid>> = HashMap::new();
-        aliases.insert("cso".to_string(), vec![cso]);
-        aliases.insert("dsa".to_string(), vec![dsa_digital, dsa_ds]);
-        aliases.insert("ds".to_string(), vec![disc, distsys]);
-        aliases.insert("acn".to_string(), vec![acn]);
-        aliases.insert("inlp".to_string(), vec![inlp]);
-        aliases.insert("mdl".to_string(), vec![mdl]);
-        aliases.insert("osn".to_string(), vec![osn]);
-        aliases.insert("ew1".to_string(), vec![ew1]);
+    fn registry() -> CourseRegistry {
+        let cso = id(1);
+        let dsa_digital = id(2);
+        let dsa_ds = id(3);
+        let sci2 = id(4);
+        let dna = id(5);
+        let cn = id(6);
+        let acn = id(7);
+        let disc = id(8);
+        let distsys = id(9);
+        let inlp = id(10);
+        let robotics = id(11);
+        let peu = id(12);
+        let mdl = id(13);
+        let osn = id(14);
+        let ew1 = id(15);
+
+        let mut aliases: HashMap<String, Vec<String>> = HashMap::new();
+        aliases.insert("cso".to_string(), vec![cso.clone()]);
+        aliases.insert("dsa".to_string(), vec![dsa_digital.clone(), dsa_ds.clone()]);
+        aliases.insert("ds".to_string(), vec![disc.clone(), distsys.clone()]);
+        aliases.insert("acn".to_string(), vec![acn.clone()]);
+        aliases.insert("inlp".to_string(), vec![inlp.clone()]);
+        aliases.insert("mdl".to_string(), vec![mdl.clone()]);
+        aliases.insert("osn".to_string(), vec![osn.clone()]);
+        aliases.insert("ew1".to_string(), vec![ew1.clone()]);
 
         let mut codes = HashMap::new();
-        codes.insert("cs1.201".to_string(), dsa_ds);
+        codes.insert("cs1.201".to_string(), dsa_ds.clone());
 
         let course_data = vec![
             ("Computer Systems Organisation", cso, "spring"),
@@ -444,19 +443,19 @@ mod tests {
             ("Electronics Workshop 1", ew1, "monsoon"),
         ];
 
-        let mut names: Vec<(String, Vec<String>, Uuid)> = course_data
+        let mut names: Vec<(String, Vec<String>, String)> = course_data
             .iter()
             .map(|(raw, id, _)| {
                 let norm = normalize(raw);
                 let words = contentwords(&norm).into_iter().map(String::from).collect();
-                (norm, words, *id)
+                (norm, words, id.clone())
             })
             .collect();
         names.sort_by(|a, b| b.0.len().cmp(&a.0.len()));
 
         let seasons = course_data
             .iter()
-            .map(|(_, id, sem)| (*id, sem.to_string()))
+            .map(|(_, id, sem)| (id.clone(), sem.to_string()))
             .collect();
 
         CourseRegistry { aliases, codes, names, seasons }
@@ -488,21 +487,21 @@ mod tests {
     fn name_match() {
         let reg = registry();
         let e = noaliases();
-        assert_eq!(reg.resolve("Computer-Systems-Organisation/end.pdf", "", &e), Some(Uuid::from_u128(1)));
+        assert_eq!(reg.resolve("Computer-Systems-Organisation/end.pdf", "", &e), Some(id(1)));
         assert_ne!(
             reg.resolve("Advanced-Computer-Networks/notes.pdf", "", &e),
             reg.resolve("Computer-Networks/notes.pdf", "", &e),
         );
-        assert_eq!(reg.resolve("DA-Data & Applications/end.pdf", "", &e), Some(Uuid::from_u128(5)));
-        assert_eq!(reg.resolve("SCI2-Science-II/end.pdf", "", &e), Some(Uuid::from_u128(4)));
+        assert_eq!(reg.resolve("DA-Data & Applications/end.pdf", "", &e), Some(id(5)));
+        assert_eq!(reg.resolve("SCI2-Science-II/end.pdf", "", &e), Some(id(4)));
     }
 
     #[test]
     fn alias_and_collision() {
         let reg = registry();
         let e = noaliases();
-        assert_eq!(reg.resolve("sem2/CSO/A1.pdf", "", &e), Some(Uuid::from_u128(1)));
-        assert_eq!(reg.resolve("sem-1/ds/notes.pdf", "", &e), Some(Uuid::from_u128(8)));
+        assert_eq!(reg.resolve("sem2/CSO/A1.pdf", "", &e), Some(id(1)));
+        assert_eq!(reg.resolve("sem-1/ds/notes.pdf", "", &e), Some(id(8)));
         assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", "", &e), None);
         assert_eq!(reg.resolve("random/file.pdf", "", &e), None);
     }
@@ -510,32 +509,32 @@ mod tests {
     #[test]
     fn code_match() {
         let reg = registry();
-        assert_eq!(reg.resolve("CS1.201 Data Structures/end.pdf", "", &noaliases()), Some(Uuid::from_u128(3)));
+        assert_eq!(reg.resolve("CS1.201 Data Structures/end.pdf", "", &noaliases()), Some(id(3)));
     }
 
     #[test]
     fn fuzzy_match() {
         let reg = registry();
         let e = noaliases();
-        assert_eq!(reg.resolve("Intro-to-NLP/notes.pdf", "", &e), Some(Uuid::from_u128(10)));
-        assert_eq!(reg.resolve("Data-Structures-and-Algorithm/hw.pdf", "", &e), Some(Uuid::from_u128(3)));
-        assert_eq!(reg.resolve("Physics-of-the-Early-Universe/notes.pdf", "", &e), Some(Uuid::from_u128(12)));
-        assert_eq!(reg.resolve("Robotics-Dynamics-And-Controls/a1.pdf", "", &e), Some(Uuid::from_u128(11)));
-        assert_eq!(reg.resolve("sem1/ew-1/labs/Lab1.pdf", "", &e), Some(Uuid::from_u128(15)));
+        assert_eq!(reg.resolve("Intro-to-NLP/notes.pdf", "", &e), Some(id(10)));
+        assert_eq!(reg.resolve("Data-Structures-and-Algorithm/hw.pdf", "", &e), Some(id(3)));
+        assert_eq!(reg.resolve("Physics-of-the-Early-Universe/notes.pdf", "", &e), Some(id(12)));
+        assert_eq!(reg.resolve("Robotics-Dynamics-And-Controls/a1.pdf", "", &e), Some(id(11)));
+        assert_eq!(reg.resolve("sem1/ew-1/labs/Lab1.pdf", "", &e), Some(id(15)));
     }
 
     #[test]
     fn filename_token_match() {
         let reg = registry();
-        assert_eq!(reg.resolve("user/repo/sem-1/OSN Sep 24.pdf", "", &noaliases()), Some(Uuid::from_u128(14)));
+        assert_eq!(reg.resolve("user/repo/sem-1/OSN Sep 24.pdf", "", &noaliases()), Some(id(14)));
     }
 
     #[test]
     fn repo_name_match() {
         let reg = registry();
         let e = noaliases();
-        assert_eq!(reg.resolve("sem-1/lecture.pdf", "MDL-lecs", &e), Some(Uuid::from_u128(13)));
-        assert_eq!(reg.resolve("lecture1.pdf", "MDL-lecs", &e), Some(Uuid::from_u128(13)));
+        assert_eq!(reg.resolve("sem-1/lecture.pdf", "MDL-lecs", &e), Some(id(13)));
+        assert_eq!(reg.resolve("lecture1.pdf", "MDL-lecs", &e), Some(id(13)));
     }
 
     #[test]
@@ -543,11 +542,11 @@ mod tests {
         let reg = registry();
         let mut sa = HashMap::new();
         sa.insert("dsa".to_string(), "Data Structures and Algorithms".to_string());
-        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", "", &sa), Some(Uuid::from_u128(3)));
+        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", "", &sa), Some(id(3)));
 
         let mut sa2 = HashMap::new();
         sa2.insert("dsa".to_string(), "Digital Signal Analysis".to_string());
-        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", "", &sa2), Some(Uuid::from_u128(2)));
+        assert_eq!(reg.resolve("sem-2/dsa/a1.pdf", "", &sa2), Some(id(2)));
     }
 
     #[test]
@@ -557,8 +556,8 @@ mod tests {
         sa.insert("sem2/dsa".to_string(), "Data Structures and Algorithms".to_string());
         sa.insert("sem4/dsa".to_string(), "Digital Signal Analysis".to_string());
 
-        assert_eq!(reg.resolve("stuff/sem2/dsa/notes.pdf", "", &sa), Some(Uuid::from_u128(3)));
-        assert_eq!(reg.resolve("stuff/sem4/dsa/notes.pdf", "", &sa), Some(Uuid::from_u128(2)));
+        assert_eq!(reg.resolve("stuff/sem2/dsa/notes.pdf", "", &sa), Some(id(3)));
+        assert_eq!(reg.resolve("stuff/sem4/dsa/notes.pdf", "", &sa), Some(id(2)));
     }
 
     #[test]

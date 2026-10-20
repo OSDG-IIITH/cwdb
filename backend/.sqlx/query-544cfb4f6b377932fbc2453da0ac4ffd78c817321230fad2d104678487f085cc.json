@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO resources (source_id, file_path, path_hash, download_url, sha, size, ext)\n               VALUES ($1, $2, $3, $4, $5, $6, $7)\n               ON CONFLICT (source_id, path_hash) DO UPDATE\n               SET file_path = EXCLUDED.file_path,\n                   download_url = EXCLUDED.download_url,\n                   sha = EXCLUDED.sha,\n                   size = EXCLUDED.size,\n                   ext = EXCLUDED.ext,\n                   updated_at = CASE WHEN resources.sha = EXCLUDED.sha THEN resources.updated_at ELSE NOW() END\n               RETURNING (xmax = 0) as is_insert",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_insert",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "544cfb4f6b377932fbc2453da0ac4ffd78c817321230fad2d104678487f085cc"
+}

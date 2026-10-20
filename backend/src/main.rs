@@ -1,3 +1,4 @@
+mod classify;
 mod config;
 mod courses;
 mod db;

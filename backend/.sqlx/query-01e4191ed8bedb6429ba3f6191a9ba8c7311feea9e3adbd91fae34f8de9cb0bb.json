@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO sources (owner, repo, branch, created_by, aliases)\n           VALUES ($1, $2, $3, $4, $5)\n           ON CONFLICT (owner, repo, branch) DO UPDATE\n           SET aliases = EXCLUDED.aliases\n           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count, aliases, false as liked",
+  "query": "SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, aliases\n           FROM sources",
   "describe": {
     "columns": [
       {
@@ -45,28 +45,12 @@
       },
       {
         "ordinal": 8,
-        "name": "like_count",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 9,
         "name": "aliases",
         "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 10,
-        "name": "liked",
-        "type_info": "Bool"
       }
     ],
     "parameters": {
-      "Left": [
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Uuid",
-        "Jsonb"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -77,10 +61,8 @@
       true,
       true,
       false,
-      false,
-      false,
-      null
+      false
     ]
   },
-  "hash": "5439e66c315897e35ee7de2f615472b114cd3616effa0b61e15184c44969648e"
+  "hash": "01e4191ed8bedb6429ba3f6191a9ba8c7311feea9e3adbd91fae34f8de9cb0bb"
 }

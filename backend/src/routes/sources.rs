@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::AppState;
-use crate::routes::auth::{Claims, OptionalAuth, upsertuser};
+use crate::routes::auth::{Claims, upsertuser};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateSource {
@@ -28,9 +28,7 @@ pub struct SourceRow {
     pub last_synced_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub created_by: uuid::Uuid,
-    pub like_count: i32,
     pub aliases: serde_json::Value,
-    pub liked: Option<bool>,
 }
 
 pub async fn create_source(
@@ -78,7 +76,7 @@ pub async fn create_source(
            VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (owner, repo, branch) DO UPDATE
            SET aliases = EXCLUDED.aliases
-           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, like_count, aliases, false as liked"#,
+           RETURNING id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, aliases"#,
         payload.owner,
         payload.repo,
         branch,
@@ -98,40 +96,14 @@ pub async fn create_source(
     }
 }
 
-pub async fn list_sources(
-    State(state): State<AppState>,
-    auth: OptionalAuth,
-) -> impl IntoResponse {
-    let current_user_id = match auth {
-        OptionalAuth::Authenticated(u) => Some(u.id),
-        OptionalAuth::Anonymous => None,
-    };
-
-    let result = match current_user_id {
-        Some(uid) => {
-             sqlx::query_as!(
-                SourceRow,
-                r#"SELECT
-                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
-                    EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $1) as liked
-                   FROM sources s"#,
-                uid
-            )
-            .fetch_all(&state.db)
-            .await
-        },
-        None => {
-             sqlx::query_as!(
-                SourceRow,
-                r#"SELECT
-                    s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
-                    false as liked
-                   FROM sources s"#
-            )
-            .fetch_all(&state.db)
-            .await
-        }
-    };
+pub async fn list_sources(State(state): State<AppState>) -> impl IntoResponse {
+    let result = sqlx::query_as!(
+        SourceRow,
+        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, aliases
+           FROM sources"#
+    )
+    .fetch_all(&state.db)
+    .await;
 
     match result {
         Ok(rows) => (StatusCode::OK, Json(serde_json::json!({ "sources": rows }))).into_response(),
@@ -155,12 +127,9 @@ pub async fn sync_source(
 
     let source = sqlx::query_as!(
         SourceRow,
-        r#"SELECT
-            s.id, s.owner, s.repo, s.branch, s.source_status, s.last_synced_at, s.created_at, s.created_by, s.like_count, s.aliases,
-            EXISTS(SELECT 1 FROM source_likes sl WHERE sl.source_id = s.id AND sl.user_id = $2) as liked
-           FROM sources s WHERE s.id = $1"#,
-        source_id,
-        user.id
+        r#"SELECT id, owner, repo, branch, source_status, last_synced_at, created_at, created_by, aliases
+           FROM sources WHERE id = $1"#,
+        source_id
     )
     .fetch_optional(&state.db)
     .await;
@@ -247,31 +216,29 @@ pub async fn sync_source(
 
     for entry in &tree {
         let path_hash = compute_path_hash(&entry.path);
-        let title = extract_title(&entry.path);
-        let resource_type = determine_resource_type(&entry.path);
         let download_url = format!(
             "https://raw.githubusercontent.com/{}/{}/{}/{}",
             source.owner, source.repo, source.branch, entry.path
         );
 
         let row = match sqlx::query!(
-            r#"INSERT INTO resources (source_id, file_path, path_hash, title, download_url, type, sha)
+            r#"INSERT INTO resources (source_id, file_path, path_hash, download_url, sha, size, ext)
                VALUES ($1, $2, $3, $4, $5, $6, $7)
                ON CONFLICT (source_id, path_hash) DO UPDATE
                SET file_path = EXCLUDED.file_path,
-                   title = EXCLUDED.title,
                    download_url = EXCLUDED.download_url,
-                   type = EXCLUDED.type,
                    sha = EXCLUDED.sha,
-                   updated_at = NOW()
+                   size = EXCLUDED.size,
+                   ext = EXCLUDED.ext,
+                   updated_at = CASE WHEN resources.sha = EXCLUDED.sha THEN resources.updated_at ELSE NOW() END
                RETURNING (xmax = 0) as is_insert"#,
             source_id,
             entry.path,
             path_hash,
-            title,
             download_url,
-            resource_type,
-            entry.sha
+            entry.sha,
+            entry.size,
+            crate::classify::ext(&entry.path)
         )
         .fetch_one(&mut *tx)
         .await
@@ -286,19 +253,8 @@ pub async fn sync_source(
             }
         };
 
-        // FIXME: classification runs only for new rows :(
         if row.is_insert.unwrap_or(false) {
             inserted += 1;
-            if let Some(cid) = state.courses.resolve(&entry.path, &source.repo, &source_aliases) {
-                let _ = sqlx::query!(
-                    "UPDATE resources SET course_id = $1 WHERE source_id = $2 AND path_hash = $3",
-                    cid,
-                    source_id,
-                    path_hash
-                )
-                .execute(&mut *tx)
-                .await;
-            }
         } else {
             updated += 1;
         }
@@ -327,6 +283,17 @@ pub async fn sync_source(
             .into_response();
     }
 
+    let classified = match crate::classify::apply(&mut tx, &state.courses, source_id, &source.repo, &source_aliases).await {
+        Ok(n) => n,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": format!("failed to classify resources: {}", e) })),
+            )
+                .into_response();
+        }
+    };
+
     if let Err(e) = sqlx::query!(
         r#"UPDATE sources SET last_synced_at = NOW(), source_status = 'active' WHERE id = $1"#,
         source_id
@@ -354,6 +321,7 @@ pub async fn sync_source(
         Json(serde_json::json!({
             "inserted": inserted,
             "updated": updated,
+            "classified": classified,
         })),
     )
         .into_response()
@@ -363,21 +331,6 @@ fn compute_path_hash(path: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(path.as_bytes());
     format!("{:x}", hasher.finalize())
-}
-
-fn extract_title(path: &str) -> String {
-    path.rsplit('/').next().unwrap_or(path).to_string()
-}
-
-fn determine_resource_type(path: &str) -> String {
-    let filename = path.split('/').next_back().unwrap_or(path).to_lowercase();
-    if filename.contains("end") || filename.contains("mid") || filename.contains("quiz") {
-        return "exam".to_string();
-    }
-    if filename.contains("lecture") {
-        return "slides".to_string();
-    }
-    "".to_string()
 }
 
 pub async fn delete_source(
