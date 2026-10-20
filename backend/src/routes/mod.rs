@@ -5,4 +5,5 @@ pub mod health;
 pub mod offerings;
 pub mod publish;
 pub mod resources;
+pub mod review;
 pub mod sources;

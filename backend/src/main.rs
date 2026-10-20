@@ -3,6 +3,7 @@ mod config;
 mod courses;
 mod db;
 mod github;
+mod llm;
 mod routes;
 
 #[cfg(all(feature = "ocas", feature = "cas"))]
@@ -32,6 +33,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with(tracing_subscriber::fmt::layer())
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
+
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(cmd) = args.get(1).filter(|a| a.starts_with("classify")) {
+        dotenvy::dotenv().ok();
+        return llm::run(cmd, &args[2..]).await;
+    }
 
     let config = config::Config::from_env()?;
     let db = db::init_pool(&config).await?;
@@ -76,6 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route("/api/offerings", post(routes::offerings::create))
         .route("/api/reclassify", post(routes::resources::reclassify))
+        .route("/api/review", get(routes::review::review))
         .route("/api/publish", post(routes::publish::publish))
         .route("/api/publish/pending", get(routes::publish::pending));
 
