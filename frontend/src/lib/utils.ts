@@ -20,6 +20,15 @@ export function coursehref(code: string): string {
 	return `${base}/courses/${encodeURIComponent(code.toLowerCase())}`;
 }
 
+/** relative time like "5m ago" */
+export function ago(d: Date | string): string {
+	const diff = Date.now() - new Date(d).getTime();
+	if (diff < 60000) return 'just now';
+	if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+	if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+	return new Date(d).toLocaleDateString();
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

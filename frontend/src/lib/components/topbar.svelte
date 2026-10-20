@@ -12,12 +12,11 @@
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
 	import { syncstatus, allresources, courses, getcourse, trysync } from '$lib/sync';
 	import { toast } from 'svelte-sonner';
-	import { cn } from '$lib/utils';
+	import { ago, cn } from '$lib/utils';
 
 	const titles: Record<string, string> = {
 		courses: 'Courses',
-		sources: 'Sources',
-		resources: 'Resources'
+		sources: 'Sources'
 	};
 	const jumps: Record<string, string> = { h: '', c: '/courses', s: '/sources' };
 
@@ -37,6 +36,12 @@
 					slug === 'unclassified' ? 'Unclassified' : (getcourse($courses, slug)?.alias ?? slug),
 				href: `${base}/courses/${encodeURIComponent(slug)}`
 			});
+		}
+		if (section === 'sources' && page.params.owner) {
+			const root = `${base}/sources/${page.params.owner}/${page.params.repo}`;
+			out.push({ label: `${page.params.owner}/${page.params.repo}`, href: root });
+			if (page.params.path)
+				out.push({ label: page.params.path, href: `${root}/${page.params.path}` });
 		}
 		return out;
 	});
@@ -62,15 +67,6 @@
 	let tip = $derived(
 		`${status}${$syncstatus.synced_at ? ` · ${ago($syncstatus.synced_at)}` : ''} · ${$allresources.length} files`
 	);
-
-	/** relative time like "5m ago" */
-	function ago(d: Date): string {
-		const diff = Date.now() - new Date(d).getTime();
-		if (diff < 60000) return 'just now';
-		if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-		if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-		return new Date(d).toLocaleDateString();
-	}
 
 	/** global keys: ctrl k and / for search, g h, g c, g s to jump */
 	function onkeydown(e: KeyboardEvent) {

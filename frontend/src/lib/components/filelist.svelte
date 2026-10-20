@@ -2,9 +2,9 @@
 	import { ChevronRight, File, Folder } from '@lucide/svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { kindtag, type Resource } from '$lib/sync';
+	import { courses, kindtag, type Resource } from '$lib/sync';
 	import type { Group, TreeRow } from '$lib/courseview';
-	import { cn } from '$lib/utils';
+	import { cn, coursehref } from '$lib/utils';
 
 	let {
 		groups,
@@ -13,6 +13,7 @@
 		picked,
 		admin,
 		showkind,
+		courselinks = false,
 		ontoggle,
 		onopen,
 		onfold
@@ -23,12 +24,14 @@
 		picked: Set<string>;
 		admin: boolean;
 		showkind: boolean;
+		courselinks?: boolean;
 		ontoggle: (r: Resource) => void;
 		onopen: (r: Resource) => void;
 		onfold: (id: string) => void;
 	} = $props();
 
 	let unfolded = new SvelteSet<string>();
+	let aliases = $derived(new Map($courses.map((c) => [c.code, c.alias || c.code])));
 
 	const fold = (id: string) => (unfolded.has(id) ? unfolded.delete(id) : unfolded.add(id));
 
@@ -91,19 +94,35 @@
 		<div class="pt-2">
 			{#each tree as t (t.id)}
 				{#if t.dir}
-					<button
-						type="button"
-						class="flex h-[34px] w-full items-center gap-2 rounded-md px-3 text-left text-[13px] hover:bg-accent/50"
+					<div
+						class="flex h-[34px] items-center gap-2 rounded-md px-3 text-[13px] hover:bg-accent/50"
 						style="padding-left: {t.depth * 18 + 12}px"
-						onclick={() => onfold(t.id)}
 					>
-						<ChevronRight
-							class={cn('size-3 text-muted-foreground transition-transform', t.open && 'rotate-90')}
-						/>
-						<Folder class="size-3.5 text-muted-foreground/70" />
-						<span class="flex-1 truncate font-medium">{t.name}</span>
+						<button
+							type="button"
+							class="flex h-full min-w-0 flex-1 items-center gap-2 text-left"
+							onclick={() => onfold(t.id)}
+						>
+							<ChevronRight
+								class={cn(
+									'size-3 text-muted-foreground transition-transform',
+									t.open && 'rotate-90'
+								)}
+							/>
+							<Folder class="size-3.5 text-muted-foreground/70" />
+							<span class="flex-1 truncate font-medium">{t.name}</span>
+						</button>
+						{#if courselinks && t.course}
+							<a
+								href={coursehref(t.course)}
+								class="font-mono text-xs underline decoration-border underline-offset-2"
+								>{aliases.get(t.course) ?? t.course}</a
+							>
+						{:else if courselinks && t.course === null}
+							<span class="text-xs text-muted-foreground/70">unclassified</span>
+						{/if}
 						<span class="font-mono text-[11px] text-muted-foreground/70">{t.count}</span>
-					</button>
+					</div>
 				{:else if t.r}
 					{@render file(t.r, t.depth + 1, false, kindtag(t.r))}
 				{/if}

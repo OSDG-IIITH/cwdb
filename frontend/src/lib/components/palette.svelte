@@ -83,7 +83,7 @@
 		if (e.t === 'd')
 			return e.course
 				? `${coursehref(e.course)}/${encodeURI(e.path)}`
-				: `${base}/resources/${encodeURI(e.path)}`;
+				: `${base}/sources/${encodeURI(e.path)}`;
 		return `${e.course ? coursehref(e.course) : `${base}/courses/unclassified`}?f=${e.id}`;
 	}
 

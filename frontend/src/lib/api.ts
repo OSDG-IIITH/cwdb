@@ -33,6 +33,12 @@ export async function listSources(filter?: string): Promise<Source[]> {
 	}
 }
 
+export const sourceinfo = writable<Source[]>([]);
+
+export async function loadsources() {
+	sourceinfo.set(await listSources());
+}
+
 export async function createSource(
 	owner: string,
 	repo: string,
@@ -92,6 +98,22 @@ export async function publish(): Promise<{ version: number; resources: number } 
 		return await res.json();
 	} catch (e) {
 		console.error('Publish failed:', e);
+		return null;
+	}
+}
+
+/** re-runs the rules on rule-classified rows, returns how many changed */
+export async function reclassify(): Promise<number | null> {
+	try {
+		const res = await fetch(`${apibase}/api/reclassify`, {
+			method: 'POST',
+			credentials: 'include'
+		});
+		if (!res.ok) return null;
+		refreshpending();
+		return (await res.json()).updated;
+	} catch (e) {
+		console.error('Reclassify failed:', e);
 		return null;
 	}
 }

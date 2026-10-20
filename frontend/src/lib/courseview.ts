@@ -9,6 +9,7 @@ export type TreeRow = {
 	dir: boolean;
 	count: number;
 	open: boolean;
+	course?: string | null;
 	r?: Resource;
 };
 
@@ -103,16 +104,36 @@ export function buildgroups(
 	return groups;
 }
 
-/** a folder tree of a course's files in one source, cropped to the course root */
-export function buildtree(files: Resource[], root: string, closed: Set<string>): TreeRow[] {
-	type Node = { name: string; kids: Map<string, Node>; r?: Resource; count: number };
-	const top: Node = { name: '', kids: new Map(), count: 0 };
+/** a folder tree of files in one source, cropped to a root; folders are open unless toggled, or the reverse when openall is false */
+export function buildtree(
+	files: Resource[],
+	root: string,
+	toggled: Set<string>,
+	openall = true
+): TreeRow[] {
+	type Node = {
+		name: string;
+		kids: Map<string, Node>;
+		r?: Resource;
+		count: number;
+		codes: Set<string>;
+		bare: boolean;
+	};
+	const top: Node = { name: '', kids: new Map(), count: 0, codes: new Set(), bare: false };
 	for (const r of files) {
 		const parts = r.file_path.slice(root ? root.length + 1 : 0).split('/');
 		let node = top;
 		for (const [i, p] of parts.entries()) {
 			node.count++;
-			const next = node.kids.get(p) ?? { name: p, kids: new Map(), count: 0 };
+			if (r.course_id) node.codes.add(r.course_id);
+			else node.bare = true;
+			const next = node.kids.get(p) ?? {
+				name: p,
+				kids: new Map(),
+				count: 0,
+				codes: new Set(),
+				bare: false
+			};
 			node.kids.set(p, next);
 			node = next;
 			if (i === parts.length - 1) node.r = r;
@@ -129,11 +150,52 @@ export function buildtree(files: Resource[], root: string, closed: Set<string>):
 				out.push({ id: k.r.id, name: k.name, depth, dir: false, count: 1, open: false, r: k.r });
 				continue;
 			}
-			const open = !closed.has(id);
-			out.push({ id, name: k.name, depth, dir: true, count: k.count, open });
+			const open = openall !== toggled.has(id);
+			const course =
+				k.codes.size === 1 && !k.bare ? [...k.codes][0] : k.codes.size ? undefined : null;
+			out.push({ id, name: k.name, depth, dir: true, count: k.count, open, course });
 			if (open) walk(k, depth + 1, id);
 		}
 	};
 	walk(top, 0, '');
 	return out;
+}
+
+export type SourceRow = {
+	id: string;
+	owner: string;
+	repo: string;
+	branch: string;
+	count: number;
+	courses: number;
+	mapped: number;
+	kinded: number;
+};
+
+/** one row per source with its file, course and kind counts */
+export function sourcelist(files: Resource[]): SourceRow[] {
+	const found = new Map<string, SourceRow & { codes: Set<string> }>();
+	for (const r of files) {
+		const s = found.get(r.source_id) ?? {
+			id: r.source_id,
+			owner: r.owner,
+			repo: r.repo,
+			branch: r.branch,
+			count: 0,
+			courses: 0,
+			mapped: 0,
+			kinded: 0,
+			codes: new Set<string>()
+		};
+		s.count++;
+		if (r.course_id) {
+			s.mapped++;
+			s.codes.add(r.course_id);
+		}
+		if (r.kind) s.kinded++;
+		found.set(r.source_id, s);
+	}
+	return [...found.values()]
+		.map((s) => ({ ...s, courses: s.codes.size }))
+		.sort((a, b) => b.count - a.count);
 }
