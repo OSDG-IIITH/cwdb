@@ -110,7 +110,15 @@ where
 }
 
 /// applies an edit to rows and locks them as manual
-async fn save(state: &AppState, ids: Vec<i32>, edit: Edit) -> axum::response::Response {
+async fn save(state: &AppState, ids: Vec<i32>, mut edit: Edit) -> axum::response::Response {
+    if let Some(kind) = &edit.kind {
+        if kind.as_deref() != Some("exams") {
+            edit.examtype = Some(None);
+        }
+        if kind.as_deref() != Some("slides") {
+            edit.slidetype = Some(None);
+        }
+    }
     let mut q = QueryBuilder::new(
         "UPDATE resources SET classifiedby = 'manual', needsreview = false, classifiedat = NOW(), updated_at = NOW()",
     );
