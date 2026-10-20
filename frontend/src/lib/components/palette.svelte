@@ -5,12 +5,12 @@
 
 	export const palette = writable({ open: false, query: '', scope: null as string | null });
 
-	/** opens search with an optional query, scoped to the current course */
-	export function openpalette(query = '') {
+	/** opens search with an optional query, scoped to the given or current course */
+	export function openpalette(query = '', scope?: string) {
 		palette.set({
 			open: true,
 			query,
-			scope: getcourse(get(courses), page.params.slug)?.code ?? null
+			scope: scope ?? getcourse(get(courses), page.params.slug)?.code ?? null
 		});
 	}
 
@@ -31,6 +31,8 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { search, getentry, mycourses, togglepin, kindtag, type Entry } from '$lib/sync';
 	import { coursehref } from '$lib/utils';
+
+	const detail = false;
 
 	let active = $state('');
 	let input = $state<HTMLInputElement | null>(null);
@@ -135,7 +137,11 @@
 >
 	<Dialog.Content
 		showCloseButton={false}
-		class="top-6 translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:top-24 sm:max-w-[860px]"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			input?.focus();
+		}}
+		class="gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-[640px]"
 	>
 		<Dialog.Title class="sr-only">Search</Dialog.Title>
 		<Command.Root
@@ -166,7 +172,7 @@
 				<Kbd class="border bg-background font-mono">esc</Kbd>
 			</div>
 			<div class="flex h-[min(440px,60dvh)]">
-				<Command.List class="max-h-none flex-1 p-2 md:border-r">
+				<Command.List class="max-h-none flex-1 p-2">
 					{#each groups as group (group.name)}
 						<Command.Group
 							heading={group.name}
@@ -200,7 +206,7 @@
 						</div>
 					{/if}
 				</Command.List>
-				{#if sel}
+				{#if detail && sel}
 					<div class="hidden w-[38%] shrink-0 flex-col gap-3 bg-muted/40 p-6 md:flex">
 						<div class="font-mono text-xs text-muted-foreground">
 							{alias(sel)} · {sel.t === 'c' ? 'course' : sel.t === 'd' ? 'folder' : tag(sel)}
@@ -234,17 +240,19 @@
 					</div>
 				{/if}
 			</div>
-			<div
-				class="hidden h-10 items-center gap-4 border-t px-4 text-xs text-muted-foreground sm:flex"
-			>
-				<span
-					><Kbd class="border bg-background font-mono">↑</Kbd>
-					<Kbd class="border bg-background font-mono">↓</Kbd> move</span
+			{#if detail}
+				<div
+					class="hidden h-10 items-center gap-4 border-t px-4 text-xs text-muted-foreground sm:flex"
 				>
-				<span><Kbd class="border bg-background font-mono">backspace</Kbd> drop scope</span>
-				<span class="flex-1"></span>
-				<span>ranked: this course, my courses, everything</span>
-			</div>
+					<span
+						><Kbd class="border bg-background font-mono">↑</Kbd>
+						<Kbd class="border bg-background font-mono">↓</Kbd> move</span
+					>
+					<span><Kbd class="border bg-background font-mono">backspace</Kbd> drop scope</span>
+					<span class="flex-1"></span>
+					<span>ranked: this course, my courses, everything</span>
+				</div>
+			{/if}
 		</Command.Root>
 	</Dialog.Content>
 </Dialog.Root>
