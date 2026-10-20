@@ -16,6 +16,8 @@ export default defineConfig({
 		sveltekit(),
 		SvelteKitPWA({
 			registerType: 'autoUpdate',
+			base: `${base}/`,
+			scope: `${base}/`,
 			devOptions: { enabled: false },
 			kit: {
 				adapterFallback: '200.html',
