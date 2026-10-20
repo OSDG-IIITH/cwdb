@@ -7,6 +7,8 @@ use std::path::Path;
 const KINDS: &[&str] = &["exams", "assignments", "labs", "slides", "notes", "references", "projects", "other"];
 const EXAMTYPES: &[&str] = &["quiz", "mid", "end", "lab"];
 const SLIDETYPES: &[&str] = &["lec", "tut"];
+/// only these go to the review queue; code, data and images take the model's answer
+const DOCS: &[&str] = &["pdf", "ppt", "pptx", "doc", "docx", "odt", "md"];
 const BATCH: usize = 200;
 /// rows the rules left with an empty field
 pub const GAPS: &str = "AND (r.kind IS NULL OR r.course IS NULL OR (r.kind = 'exams' AND r.examtype IS NULL) \
@@ -283,7 +285,8 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
                 let other = stem(p);
                 !other.contains(&own) && !own.contains(&other)
             });
-        let review = o.confidence < 0.8 || disagree || odd;
+        let doc = crate::classify::ext(&cur.get::<String, _>("file_path")).is_some_and(|e| DOCS.contains(&e.as_str()));
+        let review = doc && (o.confidence < 0.8 || disagree || odd);
 
         let same = if full {
             String::new()
