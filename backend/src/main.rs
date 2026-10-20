@@ -13,7 +13,7 @@ compile_error!("one of `ocas` or `cas` must be enabled");
 
 use axum::{
     Router,
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
@@ -69,8 +69,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/sources", get(routes::sources::list_sources))
         .route("/api/sources/{id}/sync", post(routes::sources::sync_source))
         .route("/api/sources/{id}", delete(routes::sources::delete_source))
-        .route("/api/resources/{id}", delete(routes::resources::delete_resource))
-        .route("/api/publish", post(routes::publish::publish));
+        .route("/api/resources", patch(routes::resources::editmany))
+        .route(
+            "/api/resources/{id}",
+            delete(routes::resources::delete_resource).patch(routes::resources::edit),
+        )
+        .route("/api/offerings", post(routes::offerings::create))
+        .route("/api/reclassify", post(routes::resources::reclassify))
+        .route("/api/publish", post(routes::publish::publish))
+        .route("/api/publish/pending", get(routes::publish::pending));
 
     #[cfg(feature = "cas")]
     let app = app
@@ -100,6 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .allow_methods([
                     axum::http::Method::GET,
                     axum::http::Method::POST,
+                    axum::http::Method::PATCH,
                     axum::http::Method::DELETE,
                 ])
                 .allow_headers([axum::http::header::CONTENT_TYPE]),

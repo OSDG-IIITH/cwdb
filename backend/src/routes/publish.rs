@@ -4,7 +4,7 @@ use sqlx::Row;
 use std::collections::HashMap;
 
 use crate::AppState;
-use crate::routes::auth::{Claims, upsertuser};
+use crate::routes::auth::{Claims, adminonly, upsertuser};
 
 pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl IntoResponse {
     let user = match upsertuser(&state, &claims).await {
@@ -204,3 +204,21 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
     }
 }
 
+/// GET /api/publish/pending — resources changed since the last publish
+pub async fn pending(State(state): State<AppState>, claims: Claims) -> impl IntoResponse {
+    if let Err(e) = adminonly(&state, &claims).await {
+        return e;
+    }
+
+    let count = sqlx::query_scalar::<_, i64>(
+        "SELECT count(*) FROM resources WHERE updated_at > COALESCE( \
+         (SELECT (value #>> '{}')::timestamptz FROM settings WHERE key = 'lastpublish'), '-infinity')"
+    )
+    .fetch_one(&state.db)
+    .await;
+
+    match count {
+        Ok(n) => (StatusCode::OK, Json(json!({ "pending": n }))).into_response(),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    }
+}

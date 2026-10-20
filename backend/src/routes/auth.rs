@@ -146,6 +146,15 @@ pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, A
     Ok(user)
 }
 
+/// upserts the user and rejects anyone but admins
+pub async fn adminonly(state: &AppState, claims: &Claims) -> Result<CwdbUser, axum::response::Response> {
+    let user = upsertuser(state, claims).await.map_err(|e| e.into_response())?;
+    if user.role != "admin" {
+        return Err((StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": "admin only" }))).into_response());
+    }
+    Ok(user)
+}
+
 /// GET /api/auth/me — returns current user info
 pub async fn me(
     claims: Claims,
