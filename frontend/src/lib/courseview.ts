@@ -1,0 +1,139 @@
+import { kinds, type Offering, type Resource } from '$lib/sync';
+
+export type Row = { r: Resource; kids: Resource[] };
+export type Group = { name: string; note: string; rows: Row[] };
+export type TreeRow = {
+	id: string;
+	name: string;
+	depth: number;
+	dir: boolean;
+	count: number;
+	open: boolean;
+	r?: Resource;
+};
+
+const examorder = ['quiz', 'mid', 'end', 'lab'];
+
+/** hides files inside unit folders and maps each unit's primary file to them */
+function splitunits(files: Resource[]) {
+	const units = new Map<string, Resource>();
+	for (const r of files) if (r.unit) units.set(`${r.source_id}:${r.unit}`, r);
+	const kids = new Map<string, Resource[]>();
+	const top: Resource[] = [];
+	for (const r of files) {
+		const dirs = r.file_path.split('/').slice(0, -1);
+		let owner: Resource | undefined;
+		for (let i = dirs.length; i > 0 && !owner; i--) {
+			owner = units.get(`${r.source_id}:${dirs.slice(0, i).join('/')}`);
+		}
+		if (owner && owner.id !== r.id) kids.set(owner.id, [...(kids.get(owner.id) ?? []), r]);
+		else top.push(r);
+	}
+	return { top, kids };
+}
+
+/** counts rows per nav key: all, kind and exam type */
+export function navcounts(files: Resource[]): Record<string, number> {
+	const out: Record<string, number> = { all: 0 };
+	for (const r of splitunits(files).top) {
+		const keys = ['all', r.kind ?? 'other'];
+		if (r.examtype) keys.push(`exams:${r.examtype}`);
+		for (const k of keys) out[k] = (out[k] ?? 0) + 1;
+	}
+	return out;
+}
+
+/** rows for a kind view grouped by offering, then undated, then earlier courses */
+export function buildgroups(
+	own: Resource[],
+	earlier: [string, Resource[]][],
+	nav: string,
+	query: string,
+	offs: Map<string, Offering>
+): Group[] {
+	const [kind, sub] = nav.split(':');
+	const q = query.trim().toLowerCase();
+	const year = (r: Resource) => offs.get(r.offering ?? '')?.year ?? 0;
+	const rank = (r: Resource) => [
+		kinds.indexOf(r.kind ?? 'other'),
+		examorder.indexOf(r.examtype ?? ''),
+		r.n ?? 0,
+		r.key ? 1 : 0
+	];
+	const cmp = (a: Resource, b: Resource) => {
+		const [x, y] = [rank(a), rank(b)];
+		const i = x.findIndex((v, j) => v !== y[j]);
+		return year(b) - year(a) || (i < 0 ? a.title.localeCompare(b.title) : x[i] - y[i]);
+	};
+	const rows = (list: Resource[]): Row[] => {
+		const { top, kids } = splitunits(list);
+		return top
+			.filter(
+				(r) =>
+					(kind === 'all' || (r.kind ?? 'other') === kind) &&
+					(!sub || r.examtype === sub) &&
+					(!q || `${r.title} ${r.file_path}`.toLowerCase().includes(q))
+			)
+			.sort(cmp)
+			.map((r) => ({ r, kids: kids.get(r.id) ?? [] }));
+	};
+
+	const byoffering = new Map<string, Row[]>();
+	for (const row of rows(own)) {
+		const key = offs.has(row.r.offering ?? '') ? row.r.offering! : '';
+		byoffering.set(key, [...(byoffering.get(key) ?? []), row]);
+	}
+	const groups = [...byoffering]
+		.map(([id, list]) => {
+			const o = offs.get(id);
+			return {
+				name: o?.label ?? 'Undated',
+				note: o?.faculty.join(', ') ?? '',
+				rows: list,
+				year: o?.year ?? 0
+			};
+		})
+		.sort(
+			(a, b) => b.year - a.year || (a.name === 'Undated' ? 1 : 0) - (b.name === 'Undated' ? 1 : 0)
+		);
+	for (const [code, list] of earlier) {
+		const found = rows(list);
+		if (found.length) groups.push({ name: `Earlier, as ${code}`, note: '', rows: found, year: 0 });
+	}
+	return groups;
+}
+
+/** a folder tree of a course's files in one source, cropped to the course root */
+export function buildtree(files: Resource[], root: string, closed: Set<string>): TreeRow[] {
+	type Node = { name: string; kids: Map<string, Node>; r?: Resource; count: number };
+	const top: Node = { name: '', kids: new Map(), count: 0 };
+	for (const r of files) {
+		const parts = r.file_path.slice(root ? root.length + 1 : 0).split('/');
+		let node = top;
+		for (const [i, p] of parts.entries()) {
+			node.count++;
+			const next = node.kids.get(p) ?? { name: p, kids: new Map(), count: 0 };
+			node.kids.set(p, next);
+			node = next;
+			if (i === parts.length - 1) node.r = r;
+		}
+	}
+	const out: TreeRow[] = [];
+	const walk = (node: Node, depth: number, path: string) => {
+		const sorted = [...node.kids.values()].sort(
+			(a, b) => Number(!!a.r) - Number(!!b.r) || a.name.localeCompare(b.name)
+		);
+		for (const k of sorted) {
+			const id = `${path}/${k.name}`;
+			if (k.r) {
+				out.push({ id: k.r.id, name: k.name, depth, dir: false, count: 1, open: false, r: k.r });
+				continue;
+			}
+			const open = !closed.has(id);
+			out.push({ id, name: k.name, depth, dir: true, count: k.count, open });
+			if (open) walk(k, depth + 1, id);
+		}
+	};
+	walk(top, 0, '');
+	return out;
+}

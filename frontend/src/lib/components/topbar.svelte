@@ -7,8 +7,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import UserMenu from '$lib/components/user-menu.svelte';
+	import { pending as unpublished, publish, refreshpending } from '$lib/api';
+	import { user } from '$lib/auth';
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
-	import { syncstatus, allresources, courses, getcourse } from '$lib/sync';
+	import { syncstatus, allresources, courses, getcourse, trysync } from '$lib/sync';
+	import { toast } from 'svelte-sonner';
 	import { cn } from '$lib/utils';
 
 	const titles: Record<string, string> = {
@@ -37,6 +40,20 @@
 		}
 		return out;
 	});
+
+	let admin = $derived($user?.role === 'admin');
+
+	$effect(() => {
+		if (admin) refreshpending();
+	});
+
+	async function publishnow() {
+		const done = await publish();
+		if (!done) return toast.error('publish failed');
+		toast.success('published');
+		refreshpending();
+		trysync();
+	}
 
 	let status = $derived(
 		$syncstatus.syncing ? 'syncing' : $syncstatus.online ? 'synced' : 'offline'
@@ -135,6 +152,11 @@
 			<Search class="size-3.5" />
 			<span class="hidden flex-1 text-left text-[13px] sm:inline">Search</span>
 			<Kbd class="hidden border bg-background font-mono sm:inline-flex">Ctrl K</Kbd>
+		</Button>
+	{/if}
+	{#if admin && $unpublished}
+		<Button size="sm" variant="outline" class="h-7 font-normal" onclick={publishnow}>
+			<span class="font-mono">{$unpublished}</span> unpublished · Publish
 		</Button>
 	{/if}
 	<span class="flex items-center gap-1.5 text-xs text-muted-foreground" title={tip} role="status">

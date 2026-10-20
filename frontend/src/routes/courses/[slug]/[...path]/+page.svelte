@@ -1,39 +1,50 @@
 <script lang="ts">
-	import ResourceExplorer from '$lib/components/resources/resource-explorer.svelte';
+	import { Filter, Pin } from '@lucide/svelte';
+	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { toast } from 'svelte-sonner';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import * as Sheet from '$lib/components/ui/sheet';
+	import CourseSidebar from '$lib/components/coursesidebar.svelte';
+	import EditPanel from '$lib/components/editpanel.svelte';
+	import FileList from '$lib/components/filelist.svelte';
+	import Preview from '$lib/components/preview.svelte';
+	import { editresources } from '$lib/api';
+	import { openpalette } from '$lib/components/palette.svelte';
+	import { user } from '$lib/auth';
+	import { buildgroups, buildtree, navcounts } from '$lib/courseview';
 	import {
-		search,
-		getcourse,
 		allresources,
 		courses,
+		coursefolders,
+		getcourse,
 		mycourses,
+		offeringsfor,
+		patchresources,
+		predecessors,
 		togglepin,
-		kindtag,
-		type Resource,
-		type CourseInfo
+		kinds,
+		type CourseInfo,
+		type Resource
 	} from '$lib/sync';
-	import { Input } from '$lib/components/ui/input';
-	import { Button } from '$lib/components/ui/button';
-	import { Loader2, Search, Download, Pin } from '@lucide/svelte';
-	import { page } from '$app/state';
-	import { base } from '$app/paths';
-	import { onDestroy } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import JSZip from 'jszip';
-	import { rawgithuburl } from '$lib/utils';
+	import { githuburl } from '$lib/utils';
+	import { downloadfile, downloadzip } from '$lib/zip';
 
-	let searchresults = $state<Resource[]>([]);
-	let downloading = $state(false);
-	let searchquery = $state('');
-	let searching = $state(false);
+	const phone = new MediaQuery('max-width: 1023px');
+	const picked = new SvelteSet<string>();
+	const closed = new SvelteSet<string>();
 
-	let debounce: ReturnType<typeof setTimeout> | null = null;
+	let query = $state('');
+	let sidebar = $state(true);
+	let editing = $state<'one' | 'many' | null>(null);
+	let busy = $state(false);
 
-	let slug = $derived(page.params.slug ?? '');
-	let path = $derived(page.params.path ? page.params.path.split('/') : []);
-	let basepath = $derived(`${base}/courses/${slug}`);
-
+	let admin = $derived($user?.role === 'admin');
 	let course = $derived<CourseInfo | null>(
-		slug === 'unclassified'
+		page.params.slug === 'unclassified'
 			? {
 					code: '',
 					name: 'Unclassified',
@@ -43,184 +54,356 @@
 					count: 0,
 					kinds: []
 				}
-			: getcourse($courses, slug)
+			: getcourse($courses, page.params.slug)
 	);
-	let resources = $derived(
+	let code = $derived(course?.code ?? '');
+	let pinned = $derived(!!code && $mycourses.includes(code));
+
+	const shown = (r: Resource) => admin || !r.hidden;
+
+	let own = $derived(
 		course
-			? $allresources.filter((r) => (course.code ? r.course_id === course.code : !r.course_id))
+			? $allresources.filter((r) => (code ? r.course_id === code : !r.course_id) && shown(r))
 			: []
 	);
-	let pinned = $derived(!!course?.code && $mycourses.includes(course.code));
+	let earlier = $derived<[string, Resource[]][]>(
+		predecessors(code).map((p) => [p, $allresources.filter((r) => r.course_id === p && shown(r))])
+	);
+	let offs = $derived(
+		new Map(
+			[code, ...earlier.map(([p]) => p)].flatMap((c) => offeringsfor(c)).map((o) => [o.id, o])
+		)
+	);
+	let counts = $derived(navcounts([...own, ...earlier.flatMap(([, list]) => list)]));
+	let sources = $derived.by(() => {
+		void $allresources;
+		return code ? coursefolders(code) : [];
+	});
 
-	function capseason(s: string): string {
-		return s.replace(/\b(monsoon|spring|both)\b/gi, (w) => w.charAt(0).toUpperCase() + w.slice(1));
+	let nav = $derived(
+		page.url.searchParams.get('in') ??
+			(sources.length && own.filter((r) => !r.kind).length > own.length / 2
+				? `src:${sources[0].source_id}`
+				: 'all')
+	);
+	let fid = $derived(page.url.searchParams.get('f'));
+	let insource = $derived(nav.startsWith('src:'));
+
+	let groups = $derived(insource ? [] : buildgroups(own, earlier, nav, query, offs));
+	let tree = $derived(
+		insource
+			? buildtree(
+					own.filter(
+						(r) =>
+							r.source_id === nav.slice(4) &&
+							`${r.title} ${r.file_path}`.toLowerCase().includes(query.trim().toLowerCase())
+					),
+					sources.find((s) => s.source_id === nav.slice(4))?.path ?? '',
+					closed
+				)
+			: null
+	);
+	let order = $derived(
+		tree ? tree.flatMap((t) => (t.r ? [t.r] : [])) : groups.flatMap((g) => g.rows.map((x) => x.r))
+	);
+
+	let byid = $derived(new Map($allresources.map((r) => [r.id, r])));
+	let cur = $derived(fid ? (byid.get(fid) ?? null) : null);
+	let pair = $derived.by(() => {
+		if (!cur) return null;
+		if (cur.key) return cur.keyfor ? (byid.get(cur.keyfor) ?? null) : null;
+		return $allresources.find((r) => r.keyfor === cur!.id) ?? null;
+	});
+
+	let title = $derived(
+		insource
+			? (sources.find((s) => s.source_id === nav.slice(4))?.repo ?? '')
+			: nav === 'all'
+				? 'All files'
+				: nav.includes(':')
+					? `Exams · ${nav.split(':')[1]}`
+					: nav.charAt(0).toUpperCase() + nav.slice(1)
+	);
+	let total = $derived(tree ? order.length : groups.reduce((n, g) => n + g.rows.length, 0));
+
+	$effect(() => {
+		if (fid) document.querySelector(`[data-row="${fid}"]`)?.scrollIntoView({ block: 'nearest' });
+	});
+
+	/** updates query params in place */
+	function go(params: Record<string, string | null>) {
+		const url = new URL(page.url);
+		for (const [k, v] of Object.entries(params)) {
+			if (v === null) url.searchParams.delete(k);
+			else url.searchParams.set(k, v);
+		}
+		goto(url, { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
-	function handlesearch() {
-		if (debounce) clearTimeout(debounce);
-		debounce = setTimeout(() => {
-			if (!searchquery.trim()) {
-				searching = false;
-				searchresults = [];
-				return;
+	function open(r: Resource) {
+		go({ f: r.id });
+	}
+
+	function toggle(r: Resource) {
+		if (!picked.delete(r.id)) picked.add(r.id);
+	}
+
+	function fold(id: string) {
+		if (!closed.delete(id)) closed.add(id);
+	}
+
+	function step(by: number) {
+		if (!order.length) return;
+		const i = order.findIndex((r) => r.id === fid);
+		open(order[Math.min(order.length - 1, Math.max(0, i < 0 ? 0 : i + by))]);
+	}
+
+	/** expands units to every file inside their folder */
+	function withunits(list: Resource[]): Resource[] {
+		const out = new Map<string, Resource>();
+		for (const r of list) {
+			out.set(r.id, r);
+			if (r.unit) {
+				for (const x of own) {
+					if (x.source_id === r.source_id && x.file_path.startsWith(`${r.unit}/`)) out.set(x.id, x);
+				}
 			}
-			searching = true;
-			searchresults = search(searchquery, course?.code || null)
-				.filter((e) => e.t === 'f' && (course?.code || !e.course))
-				.map((e) => e.resource!);
-		}, 200);
+		}
+		return [...out.values()];
 	}
 
-	async function downloadall() {
-		if (downloading || resources.length === 0) return;
-		downloading = true;
-		try {
-			const zip = new JSZip();
-			const results = await Promise.allSettled(
-				resources.map(async (r) => {
-					const res = await fetch(rawgithuburl(r));
-					if (!res.ok) throw new Error(`failed to fetch ${r.file_path}`);
-					const blob = await res.blob();
-					zip.file(`${r.owner}-${r.repo}/${r.file_path}`, blob);
-				})
-			);
-			const failed = results.filter((r) => r.status === 'rejected').length;
-			if (failed > 0) toast.warning(`${failed} file(s) could not be downloaded`);
-			const blob = await zip.generateAsync({ type: 'blob' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `${course?.name ?? 'course'}.zip`;
-			a.click();
-			URL.revokeObjectURL(url);
-		} catch (e) {
-			toast.error('download failed');
-			console.error(e);
-		} finally {
-			downloading = false;
+	async function zip(list: Resource[]) {
+		if (busy || !list.length) return;
+		busy = true;
+		await downloadzip(withunits(list), course?.alias || 'course');
+		busy = false;
+	}
+
+	let chosen = $derived([...picked].map((id) => byid.get(id)).filter((r) => !!r));
+
+	async function hide() {
+		const ids = [...picked];
+		if (!(await editresources(ids, { hidden: true }))) return toast.error('could not hide');
+		patchresources(ids, { hidden: true });
+		picked.clear();
+	}
+
+	function onkeydown(e: KeyboardEvent) {
+		const el = e.target as HTMLElement;
+		if (
+			!course ||
+			e.ctrlKey ||
+			e.metaKey ||
+			e.altKey ||
+			el.closest('input, textarea, select, [contenteditable]') ||
+			document.querySelector('[role="dialog"]')
+		)
+			return;
+		const keys: Record<string, () => void> = {
+			j: () => step(1),
+			k: () => step(-1),
+			' ': () => (cur ? go({ f: null }) : step(0)),
+			Escape: () => go({ f: null }),
+			x: () => cur && toggle(cur),
+			d: () => (picked.size ? zip(chosen) : cur && downloadfile(cur)),
+			'[': () => (sidebar = false),
+			']': () => (sidebar = true),
+			o: () => cur && window.open(githuburl(cur), '_blank'),
+			p: () => code && togglepin(code),
+			e: () => admin && cur && (editing = 'one')
+		};
+		if (e.key in keys) {
+			e.preventDefault();
+			keys[e.key]();
 		}
 	}
-
-	onDestroy(() => {
-		if (debounce) clearTimeout(debounce);
-	});
 </script>
 
-<div class="flex flex-1 flex-col bg-background text-foreground">
-	<main class="container mx-auto max-w-6xl flex-1 p-6">
-		{#if course}
-			<div class="relative mb-8">
-				<Button
-					variant="outline"
-					size="lg"
-					class="group/pin absolute top-0 right-0"
-					onclick={() => togglepin(course!.code)}
-					disabled={!course.code}
-				>
-					<Pin
-						class={`h-4 w-4 transition-colors ${pinned ? 'fill-foreground' : 'group-hover/pin:fill-foreground/25'}`}
-					/>
-					{pinned ? 'Unpin' : 'Pin'}
-				</Button>
+<svelte:window {onkeydown} />
 
-				<div class="flex flex-wrap items-center gap-2">
-					{#if course.code}
-						<span
-							class="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
+{#if course}
+	<div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
+		{#if !phone.current && sidebar && code}
+			<CourseSidebar
+				{course}
+				{nav}
+				{counts}
+				{sources}
+				{pinned}
+				{busy}
+				onnav={(n) => go({ in: n, f: null })}
+				onpin={() => togglepin(code)}
+				ondownload={() => zip(own)}
+			/>
+		{/if}
+
+		<section class="relative flex min-w-0 flex-1 flex-col">
+			<div class="shrink-0 lg:hidden">
+				<div class="flex items-start gap-2 px-5 pt-3 pb-4">
+					<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+						<div class="font-mono text-xs text-muted-foreground">
+							{course.alias} · {course.code}
+						</div>
+						<div class="text-2xl leading-tight font-semibold tracking-tight">{course.name}</div>
+					</div>
+					{#if code}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-11"
+							aria-label="Pin course"
+							onclick={() => togglepin(code)}
 						>
-							{course.code}
-						</span>
-					{/if}
-					{#if course.alias}
-						<span
-							class="rounded-md bg-muted/60 px-2 py-0.5 font-mono text-xs font-medium text-muted-foreground"
-						>
-							{course.alias}
-						</span>
+							<Pin class={pinned ? 'fill-foreground' : ''} />
+						</Button>
 					{/if}
 				</div>
-
-				<h1 class="mt-3 text-4xl leading-tight font-extrabold tracking-tight md:text-5xl">
-					{course.name}
-				</h1>
-
-				<div class="mt-6 flex flex-wrap items-end justify-between gap-4">
-					<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
-						{#if course.semester}
-							<div>
-								<div
-									class="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase"
-								>
-									Season
-								</div>
-								<div class="text-sm text-foreground">
-									{capseason(course.semester)}
-								</div>
-							</div>
-						{/if}
-						<div>
-							<div
-								class="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground/60 uppercase"
-							>
-								Resources
-							</div>
-							<div class="text-sm text-foreground">{resources.length}</div>
-						</div>
-					</div>
-
-					<Button size="lg" onclick={downloadall} disabled={downloading || resources.length === 0}>
-						{#if downloading}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-							Downloading...
-						{:else}
-							<Download class="mr-2 h-4 w-4" />
-							Download
-						{/if}
-					</Button>
+				<div class="flex gap-2 overflow-x-auto border-b px-5 pb-3.5 [scrollbar-width:none]">
+					{#each ['all', ...kinds.filter((k) => counts[k])] as k (k)}
+						<Button
+							variant={nav === k ? 'default' : 'outline'}
+							class="h-8 shrink-0 rounded-full px-3 text-[13px] capitalize"
+							onclick={() => go({ in: k, f: null })}
+						>
+							{k}
+							{counts[k] ?? 0}
+						</Button>
+					{/each}
 				</div>
 			</div>
 
-			<div class="relative mb-6">
-				<Search class="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
+			<div class="hidden h-[52px] shrink-0 items-center gap-3 border-b pr-4 pl-6 lg:flex">
+				<span class="text-[15px] font-semibold whitespace-nowrap">{title}</span>
+				<span class="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground/70"
+					>{total} files</span
+				>
+				<div class="relative">
+					<Filter class="absolute top-2.5 left-2 size-3.5 text-muted-foreground" />
+					<Input
+						class="h-[30px] w-40 pl-7"
+						placeholder="Filter"
+						aria-label="Filter this list"
+						data-slash
+						bind:value={query}
+					/>
+				</div>
+			</div>
+
+			<FileList
+				{groups}
+				{tree}
+				active={fid}
+				{picked}
+				{admin}
+				showkind={nav === 'all'}
+				ontoggle={toggle}
+				onopen={open}
+				onfold={fold}
+			/>
+
+			<div
+				class="hidden h-9 shrink-0 items-center gap-4 border-t px-6 text-xs whitespace-nowrap text-muted-foreground lg:flex"
+			>
+				<span><Kbd>j</Kbd> <Kbd>k</Kbd> move</span>
+				<span><Kbd>space</Kbd> preview</span>
+				<span><Kbd>x</Kbd> select</span>
+				<span><Kbd>[</Kbd> <Kbd>]</Kbd> sidebar</span>
+			</div>
+
+			{#if picked.size}
+				<div
+					class="absolute bottom-14 left-6 hidden h-11 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background lg:flex"
+				>
+					<span><span class="font-mono">{picked.size}</span> selected</span>
+					<span class="h-4 w-px bg-background/30"></span>
+					<Button size="sm" variant="secondary" disabled={busy} onclick={() => zip(chosen)}>
+						Download zip <span class="font-mono text-[11px] text-muted-foreground">d</span>
+					</Button>
+					{#if admin}
+						<Button
+							size="sm"
+							variant="ghost"
+							class="hover:bg-background/10"
+							onclick={() => (editing = 'many')}>Move to…</Button
+						>
+						<Button size="sm" variant="ghost" class="hover:bg-background/10" onclick={hide}
+							>Hide</Button
+						>
+					{/if}
+					<Button
+						size="sm"
+						variant="ghost"
+						class="text-background/60 hover:bg-background/10"
+						onclick={() => picked.clear()}>Clear</Button
+					>
+				</div>
+			{/if}
+
+			<div
+				class="absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-background to-30% px-4 pt-3 pb-8 lg:hidden"
+			>
 				<Input
-					placeholder="search resources"
-					class="pl-8 focus-visible:ring-0"
-					bind:value={searchquery}
-					data-slash
-					oninput={handlesearch}
+					class="h-12 rounded-full px-5 text-[15px]"
+					placeholder="Search in {course.alias || 'course'}"
+					aria-label="Search in this course"
+					bind:value={query}
 				/>
 			</div>
+		</section>
 
-			{#if searching && searchquery.trim()}
-				<ul class="space-y-4">
-					{#if searchresults.length > 0}
-						{#each searchresults as r (r.id)}
-							<li>
-								<button
-									type="button"
-									class="w-full cursor-pointer rounded-md border border-border bg-background p-4 text-left transition-colors hover:bg-muted/30"
-									onclick={() => window.open(rawgithuburl(r), '_blank')}
-								>
-									<div class="text-base font-medium break-words text-foreground">{r.title}</div>
-									<div class="mt-1 text-xs break-all text-muted-foreground">{r.file_path}</div>
-									<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-										<span class="rounded bg-muted px-2 py-0.5 break-all">{r.owner}/{r.repo}</span>
-										<span class="rounded bg-muted px-2 py-0.5">{kindtag(r)}</span>
-									</div>
-								</button>
-							</li>
-						{/each}
-					{:else}
-						<li class="py-10 text-center text-sm text-muted-foreground">no results found.</li>
-					{/if}
-				</ul>
-			{:else}
-				<ResourceExplorer {resources} {path} {basepath} />
-			{/if}
-		{:else}
-			<div class="py-20 text-center">
-				<p class="text-muted-foreground">course not found.</p>
-			</div>
+		{#if cur && !phone.current}
+			<aside class="flex w-[40%] max-w-[560px] min-w-[440px] shrink flex-col border-l bg-muted/50">
+				<Preview
+					r={cur}
+					{pair}
+					{admin}
+					onclose={() => go({ f: null })}
+					onpick={(id) => go({ f: id })}
+					onedit={() => (editing = 'one')}
+					onprev={() => step(-1)}
+					onnext={() => step(1)}
+					ongosrc={() => go({ in: `src:${cur!.source_id}` })}
+				/>
+			</aside>
 		{/if}
-	</main>
-</div>
+	</div>
+
+	{#if phone.current}
+		<Sheet.Root open={!!cur} onOpenChange={(o) => !o && go({ f: null })}>
+			<Sheet.Content
+				side="bottom"
+				showCloseButton={false}
+				class="gap-0 rounded-t-2xl data-[side=bottom]:h-[92dvh]"
+			>
+				<Sheet.Title class="sr-only">{cur?.title}</Sheet.Title>
+				{#if cur}
+					<Preview
+						r={cur}
+						{pair}
+						{admin}
+						mobile
+						onclose={() => go({ f: null })}
+						onpick={(id) => go({ f: id })}
+						onedit={() => (editing = 'one')}
+						onprev={() => step(-1)}
+						onnext={() => step(1)}
+						ongosrc={() => go({ in: `src:${cur!.source_id}`, f: null })}
+					/>
+				{/if}
+			</Sheet.Content>
+		</Sheet.Root>
+	{/if}
+
+	{#if editing}
+		<EditPanel
+			ids={editing === 'one' && cur ? [cur.id] : [...picked]}
+			initial={editing === 'one' ? cur : null}
+			oncancel={() => (editing = null)}
+		/>
+	{/if}
+{:else if $courses.length}
+	<div class="py-20 text-center text-muted-foreground">
+		course not found.
+		<Button variant="link" onclick={() => openpalette(page.params.slug)}>search for it</Button>
+	</div>
+{/if}

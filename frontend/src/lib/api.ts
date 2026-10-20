@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { writable } from 'svelte/store';
 import { apibase } from '$lib/config';
 
 export const SourceSchema = z.object({
@@ -91,6 +92,58 @@ export async function publish(): Promise<{ version: number; resources: number } 
 		return await res.json();
 	} catch (e) {
 		console.error('Publish failed:', e);
+		return null;
+	}
+}
+
+export const pending = writable(0);
+
+/** counts changes since the last publish, admins only */
+export async function refreshpending() {
+	try {
+		const res = await fetch(`${apibase}/api/publish/pending`, { credentials: 'include' });
+		if (res.ok) pending.set((await res.json()).pending);
+	} catch (e) {
+		console.error('Fetch pending failed:', e);
+	}
+}
+
+/** applies one edit to every id, locking the rows as manual */
+export async function editresources(
+	ids: string[],
+	edit: Record<string, unknown>
+): Promise<boolean> {
+	try {
+		const res = await fetch(`${apibase}/api/resources`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ids: ids.map(Number), ...edit }),
+			credentials: 'include'
+		});
+		if (res.ok) refreshpending();
+		return res.ok;
+	} catch (e) {
+		console.error('Edit failed:', e);
+		return false;
+	}
+}
+
+/** creates a local offering, or returns the existing one */
+export async function createoffering(
+	course: string,
+	season: string,
+	year: number
+): Promise<string | null> {
+	try {
+		const res = await fetch(`${apibase}/api/offerings`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ course, season, year }),
+			credentials: 'include'
+		});
+		return res.ok ? String((await res.json()).id) : null;
+	} catch (e) {
+		console.error('Create offering failed:', e);
 		return null;
 	}
 }

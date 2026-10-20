@@ -47,10 +47,13 @@
 	"dependencies": {
 		"@fontsource-variable/geist": "^5.3.0",
 		"@fontsource-variable/geist-mono": "^5.3.0",
+		"dompurify": "^3.4.17",
 		"idb": "^8.0.2",
 		"jszip": "^3.10.1",
+		"marked": "^18.1.1",
 		"minisearch": "^7.1.0",
 		"mode-watcher": "^1.1.0",
+		"pdfjs-dist": "^6.4.299",
 		"zod": "^4.3.6"
 	}
 }

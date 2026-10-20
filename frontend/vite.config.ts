@@ -32,6 +32,17 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
+				runtimeCaching: [
+					{
+						urlPattern: /^https:\/\/raw\.githubusercontent\.com\//,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'files',
+							expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+							cacheableResponse: { statuses: [200] }
+						}
+					}
+				],
 				navigateFallback: `${base}/200.html`,
 				navigateFallbackDenylist: [
 					new RegExp(`^${base}/api`),

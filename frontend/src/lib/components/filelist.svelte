@@ -1,0 +1,139 @@
+<script lang="ts">
+	import { ChevronRight, File, Folder } from '@lucide/svelte';
+	import { SvelteSet } from 'svelte/reactivity';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { kindtag, type Resource } from '$lib/sync';
+	import type { Group, TreeRow } from '$lib/courseview';
+	import { cn } from '$lib/utils';
+
+	let {
+		groups,
+		tree,
+		active,
+		picked,
+		admin,
+		showkind,
+		ontoggle,
+		onopen,
+		onfold
+	}: {
+		groups: Group[];
+		tree: TreeRow[] | null;
+		active: string | null;
+		picked: Set<string>;
+		admin: boolean;
+		showkind: boolean;
+		ontoggle: (r: Resource) => void;
+		onopen: (r: Resource) => void;
+		onfold: (id: string) => void;
+	} = $props();
+
+	let unfolded = new SvelteSet<string>();
+
+	const fold = (id: string) => (unfolded.has(id) ? unfolded.delete(id) : unfolded.add(id));
+
+	/** marks needing review or hidden, shown to admins only */
+	const mark = (r: Resource) => (r.hidden ? 'hidden' : r.review ? 'review' : '');
+</script>
+
+{#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void)}
+	<div
+		class={cn(
+			'flex items-center gap-3 rounded-md px-3 hover:bg-accent/50',
+			tall ? 'h-[52px] border-b lg:h-[38px] lg:border-b-0' : 'h-[34px]',
+			active === r.id && 'bg-accent',
+			admin && r.hidden && 'opacity-50'
+		)}
+		data-row={r.id}
+	>
+		<Checkbox
+			class="hidden lg:flex"
+			checked={picked.has(r.id)}
+			onCheckedChange={() => ontoggle(r)}
+			aria-label="Select file"
+		/>
+		<button
+			type="button"
+			class="flex h-full min-w-0 flex-1 items-center gap-3 text-left"
+			style="padding-left: {depth * 18}px"
+			onclick={() => onopen(r)}
+		>
+			{#if !tall}<File class="size-3.5 shrink-0 text-muted-foreground/70" />{/if}
+			<span class={cn('min-w-0 flex-1 truncate', tall ? 'text-[15px] lg:text-sm' : 'text-[13px]')}>
+				{tall ? r.title : r.name}
+			</span>
+			{#if admin && mark(r)}
+				<span class="rounded border px-1 font-mono text-[10px] text-muted-foreground"
+					>{mark(r)}</span
+				>
+			{/if}
+			<span class="font-mono text-[11px] text-foreground/70">{tag}</span>
+			{#if tall}
+				<span class="hidden w-24 truncate text-right text-xs text-muted-foreground/70 lg:block"
+					>{r.repo}</span
+				>
+			{/if}
+		</button>
+		{#if more}
+			<button
+				type="button"
+				class="text-xs text-muted-foreground hover:text-foreground"
+				onclick={more}
+			>
+				{unfolded.has(r.id) ? 'hide' : 'files'}
+			</button>
+		{/if}
+	</div>
+{/snippet}
+
+<div class="flex-1 overflow-y-auto px-3 pb-24" data-list>
+	{#if tree}
+		<div class="pt-2">
+			{#each tree as t (t.id)}
+				{#if t.dir}
+					<button
+						type="button"
+						class="flex h-[34px] w-full items-center gap-2 rounded-md px-3 text-left text-[13px] hover:bg-accent/50"
+						style="padding-left: {t.depth * 18 + 12}px"
+						onclick={() => onfold(t.id)}
+					>
+						<ChevronRight
+							class={cn('size-3 text-muted-foreground transition-transform', t.open && 'rotate-90')}
+						/>
+						<Folder class="size-3.5 text-muted-foreground/70" />
+						<span class="flex-1 truncate font-medium">{t.name}</span>
+						<span class="font-mono text-[11px] text-muted-foreground/70">{t.count}</span>
+					</button>
+				{:else if t.r}
+					{@render file(t.r, t.depth + 1, false, kindtag(t.r))}
+				{/if}
+			{/each}
+		</div>
+	{:else}
+		{#each groups as g (g.name)}
+			<div class="pt-3.5">
+				<div class="flex items-baseline gap-2 px-3 pb-1">
+					<span class="text-xs font-semibold">{g.name}</span>
+					{#if g.note}<span class="truncate text-xs text-muted-foreground">{g.note}</span>{/if}
+					<span class="font-mono text-[11px] text-muted-foreground/70">{g.rows.length}</span>
+				</div>
+				{#each g.rows as row (row.r.id)}
+					{@render file(
+						row.r,
+						0,
+						true,
+						showkind ? kindtag(row.r) : row.r.key ? 'key' : '',
+						row.kids.length ? () => fold(row.r.id) : undefined
+					)}
+					{#if unfolded.has(row.r.id)}
+						{#each row.kids as kid (kid.id)}
+							{@render file(kid, 1, false, '')}
+						{/each}
+					{/if}
+				{/each}
+			</div>
+		{:else}
+			<div class="py-16 text-center text-sm text-muted-foreground">no files</div>
+		{/each}
+	{/if}
+</div>

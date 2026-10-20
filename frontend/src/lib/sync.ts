@@ -26,6 +26,8 @@ export type Resource = {
 	unit: string | null;
 	size: number | null;
 	review: boolean;
+	hidden: boolean;
+	custom: string | null;
 };
 
 export type CourseInfo = {
@@ -175,6 +177,7 @@ let resourcemap = new Map<string, Resource>();
 let entrymap = new Map<string, Entry>();
 let coursemap = new Map<string, CourseInfo>();
 let offeringmap = new Map<string, Offering>();
+let catalogdata: Catalog = { courses: {}, sources: {} };
 let db: IDBPDatabase | null = null;
 
 const INDEX_URL = `${base}/data/index.json`;
@@ -224,8 +227,12 @@ function offeringlabel(o: IndexOffering): string {
 }
 
 /** builds a display title like "Quiz 1 · M24", else the file name without extension */
-function displaytitle(r: IndexResource, name: string, offerings: Map<string, Offering>): string {
-	if (r.title) return r.title;
+function displaytitle(
+	r: Pick<Resource, 'custom' | 'kind' | 'examtype' | 'slidetype' | 'n' | 'key' | 'offering'>,
+	name: string,
+	offerings: Map<string, Offering>
+): string {
+	if (r.custom) return r.custom;
 	let label = '';
 	if (r.kind === 'exams' && r.examtype) label = examnames[r.examtype] + (r.n ? ` ${r.n}` : '');
 	else if (r.kind === 'slides' && r.slidetype && r.n) label = `${slidenames[r.slidetype]} ${r.n}`;
@@ -251,7 +258,7 @@ function denormalize(
 	return raw.map((r) => {
 		const src = catalog.sources[r.source_id];
 		const name = r.path.split('/').at(-1) ?? r.path;
-		return {
+		const res: Resource = {
 			id: r.id,
 			source_id: r.source_id,
 			owner: src?.owner ?? '',
@@ -259,7 +266,7 @@ function denormalize(
 			branch: src?.branch ?? 'main',
 			file_path: r.path,
 			name,
-			title: displaytitle(r, name, offerings),
+			title: '',
 			type: r.type,
 			course_id: r.course_id,
 			offering: r.offering ?? null,
@@ -271,8 +278,12 @@ function denormalize(
 			keyfor: r.keyfor ?? null,
 			unit: r.unit ?? null,
 			size: r.size ?? null,
-			review: r.review ?? false
+			review: r.review ?? false,
+			hidden: false,
+			custom: r.title ?? null
 		};
+		res.title = displaytitle(res, name, offerings);
+		return res;
 	});
 }
 
@@ -394,6 +405,7 @@ function makeentries(items: Resource[]): Entry[] {
 
 /** loads items and catalog into memory and returns the search index */
 function apply(items: Resource[], catalog: Catalog, serialized?: string): MiniSearch<Entry> {
+	catalogdata = catalog;
 	resourcemap = new Map(items.map((r) => [r.id, r]));
 	offeringmap = makeofferings(catalog);
 	coursemap = makecourses(catalog, items);
@@ -566,4 +578,36 @@ export function offeringsfor(code: string): Offering[] {
 	return [...offeringmap.values()]
 		.filter((o) => o.course === code)
 		.sort((a, b) => b.year - a.year || a.season.localeCompare(b.season));
+}
+
+/** a course's predecessors, nearest first */
+export function predecessors(code: string): string[] {
+	const out: string[] = [];
+	for (let next = [code]; next.length; ) {
+		next = (catalogdata.succession ?? [])
+			.filter(([from, to]) => next.includes(to) && !out.includes(from))
+			.map(([from]) => from);
+		out.push(...next);
+	}
+	return out;
+}
+
+/** adds a freshly created local offering */
+export function addoffering(id: string, course: string, season: string, year: number) {
+	const o = { course, season, year };
+	catalogdata.offerings = { ...catalogdata.offerings, [id]: o };
+	offeringmap.set(id, { id, ...o, label: offeringlabel(o), faculty: [] });
+}
+
+/** applies an admin edit to the local index and stores the changed rows */
+export function patchresources(ids: string[], patch: Partial<Resource>) {
+	for (const id of ids) {
+		const old = resourcemap.get(id);
+		if (!old) continue;
+		const r = { ...old, ...patch };
+		r.title = displaytitle(r, r.name, offeringmap);
+		resourcemap.set(id, r);
+		db?.put('resources', r);
+	}
+	apply([...resourcemap.values()], catalogdata);
 }
