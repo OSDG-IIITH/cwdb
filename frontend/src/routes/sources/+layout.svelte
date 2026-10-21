@@ -14,6 +14,7 @@
 	let admin = $derived($user?.role === 'admin');
 	let review = $derived(page.route.id === '/sources/review');
 	let index = $derived(!page.params.owner && !review);
+	let open = $derived(page.url.searchParams.get('f'));
 	let synced = $derived(
 		new Map($sourceinfo.map((s) => [`${s.owner}/${s.repo}`, s.last_synced_at]))
 	);
@@ -44,7 +45,7 @@
 		{#each rows as s (s.id)}
 			{@const last = synced.get(`${s.owner}/${s.repo}`)}
 			<a
-				href="{base}/sources/{s.owner}/{s.repo}"
+				href="{base}/sources/{s.owner}/{s.repo}{open ? `?f=${open}` : ''}"
 				class={cn(
 					'flex h-11 flex-col justify-center rounded-md px-2.5 hover:bg-accent/50',
 					page.params.owner === s.owner && page.params.repo === s.repo && 'bg-accent'
