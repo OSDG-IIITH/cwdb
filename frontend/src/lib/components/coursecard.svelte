@@ -12,7 +12,7 @@
 <a
 	href={coursehref(c.code)}
 	data-code={c.code}
-	class="group flex flex-col gap-1 rounded-xl border bg-card px-4 py-3.5 shadow-xs transition-all hover:border-foreground/20 hover:shadow-sm"
+	class="group flex min-h-28 flex-col gap-1.5 rounded-xl border bg-card p-5 shadow-xs transition-all hover:border-foreground/20 hover:shadow-sm"
 >
 	<span class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
 		<span class="truncate font-mono">{c.alias}</span>
@@ -21,8 +21,8 @@
 			aria-hidden="true"
 		/>
 	</span>
-	<span class="truncate text-sm font-medium">{c.name}</span>
-	<span class="mt-1.5 truncate text-xs text-muted-foreground">
+	<span class="line-clamp-2 text-[15px] leading-snug font-medium">{c.name}</span>
+	<span class="mt-auto truncate pt-2 text-xs text-muted-foreground">
 		{[terms[c.semester], `${c.count} files`, has.slice(0, 3).join(', ')]
 			.filter(Boolean)
 			.join(' · ')}

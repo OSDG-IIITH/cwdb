@@ -44,7 +44,7 @@
 		class={cn(
 			'group flex items-center gap-3 rounded-md px-3 transition-colors hover:bg-accent/60',
 			tall ? 'h-[52px] border-b max-lg:rounded-none lg:h-[38px] lg:border-b-0' : 'h-[34px]',
-			active === r.id && 'bg-accent',
+			active === r.id && !(alts && unfolded.has(r.id)) && 'bg-accent',
 			admin && r.hidden && 'opacity-50'
 		)}
 		data-row={r.id}
@@ -115,7 +115,7 @@
 
 <div class="flex-1 overflow-y-auto px-3 pb-24" data-list>
 	{#if tree}
-		<div class="pt-2">
+		<div class="flex flex-col gap-0.5 pt-2">
 			{#each tree as t (t.id)}
 				{#if t.dir}
 					<div
@@ -154,7 +154,7 @@
 		</div>
 	{:else}
 		{#each groups as g (g.name)}
-			<div class="pt-2">
+			<div class="flex flex-col gap-0.5 pt-2">
 				<div class="sticky top-0 z-10 flex items-baseline gap-2 bg-background px-3 pt-2 pb-1.5">
 					<span class="text-xs font-medium">{g.name}</span>
 					<span class="text-[11px] text-muted-foreground/70">{g.rows.length}</span>

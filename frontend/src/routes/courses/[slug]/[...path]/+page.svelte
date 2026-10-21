@@ -341,28 +341,28 @@
 
 			{#if picked.size}
 				<div
-					class="absolute bottom-12 left-1/2 hidden h-11 -translate-x-1/2 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background shadow-lg lg:flex"
+					class="absolute bottom-12 left-1/2 hidden h-11 -translate-x-1/2 items-center gap-3 rounded-xl border bg-popover pr-2 pl-4 text-[13px] whitespace-nowrap text-popover-foreground shadow-lg lg:flex"
 				>
 					<span><span class="font-mono">{picked.size}</span> selected</span>
-					<span class="h-4 w-px bg-background/30"></span>
-					<Button size="sm" variant="secondary" disabled={busy} onclick={() => zip(chosen)}>
-						Download zip <span class="font-mono text-[11px] text-muted-foreground">d</span>
+					<span class="h-4 w-px bg-border"></span>
+					<Button size="sm" disabled={busy} onclick={() => zip(chosen)}>
+						Download zip <span class="font-mono text-[11px] opacity-60">d</span>
 					</Button>
 					{#if admin}
 						<Button
 							size="sm"
 							variant="ghost"
-							class="hover:bg-background/10"
+							
 							onclick={() => (editing = 'many')}>Move to…</Button
 						>
-						<Button size="sm" variant="ghost" class="hover:bg-background/10" onclick={hide}
+						<Button size="sm" variant="ghost" onclick={hide}
 							>Hide</Button
 						>
 					{/if}
 					<Button
 						size="sm"
 						variant="ghost"
-						class="text-background/60 hover:bg-background/10"
+						class="text-muted-foreground"
 						onclick={() => picked.clear()}>Clear</Button
 					>
 				</div>

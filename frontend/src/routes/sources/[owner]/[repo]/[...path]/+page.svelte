@@ -300,25 +300,25 @@
 
 		{#if picked.size}
 			<div
-				class="absolute bottom-4 left-1/2 flex h-11 -translate-x-1/2 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background shadow-lg"
+				class="absolute bottom-4 left-1/2 flex h-11 -translate-x-1/2 items-center gap-3 rounded-xl border bg-popover pr-2 pl-4 text-[13px] whitespace-nowrap text-popover-foreground shadow-lg"
 			>
 				<span><span class="font-mono">{picked.size}</span> selected</span>
-				<Button size="sm" variant="secondary" disabled={!!busy} onclick={zip}>Download zip</Button>
+				<Button size="sm" disabled={!!busy} onclick={zip}>Download zip</Button>
 				{#if admin}
 					<Button
 						size="sm"
 						variant="ghost"
-						class="hover:bg-background/10"
+						
 						onclick={() => (moving = true)}>Move to…</Button
 					>
-					<Button size="sm" variant="ghost" class="hover:bg-background/10" onclick={hide}
+					<Button size="sm" variant="ghost" onclick={hide}
 						>Hide</Button
 					>
 				{/if}
 				<Button
 					size="sm"
 					variant="ghost"
-					class="text-background/60 hover:bg-background/10"
+					class="text-muted-foreground"
 					onclick={() => picked.clear()}>Clear</Button
 				>
 			</div>

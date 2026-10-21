@@ -110,32 +110,31 @@
 		home ? 'justify-end gap-2' : 'gap-2.5 border-b'
 	)}
 >
-	{#snippet links()}
-		<nav class="hidden items-center gap-0.5 sm:flex">
+	{#snippet links(always = false)}
+		<nav class={cn('items-center gap-0.5 sm:flex', always ? 'flex' : 'hidden')}>
 			{#each Object.entries(titles) as [key, label] (key)}
 				<a
 					href="{base}/{key}"
 					class={cn(
-						'rounded-md px-2.5 py-1 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-						section === key && 'text-foreground'
+						'rounded-md px-2.5 py-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
+						section === key && 'bg-accent font-medium text-foreground'
 					)}>{label}</a
 				>
 			{/each}
 		</nav>
 	{/snippet}
 	{#if home}
-		{@render links()}
+		{@render links(true)}
 	{:else}
+		<a href={base || '/'} class="pr-2 font-mono font-semibold">cwdb</a>
+		{@render links()}
 		<Breadcrumb.Root class="min-w-0">
 			<Breadcrumb.List class="flex-nowrap text-sm">
-				<Breadcrumb.Item>
-					<Breadcrumb.Link href={base || '/'} class="font-mono font-semibold text-foreground"
-						>cwdb</Breadcrumb.Link
-					>
-				</Breadcrumb.Item>
 				{#each crumbs as crumb, i (crumb.href)}
-					<Breadcrumb.Separator class="text-border">/</Breadcrumb.Separator>
-					<Breadcrumb.Item class="min-w-0">
+					<Breadcrumb.Separator class={cn('text-border', i === 0 && 'sm:hidden')}
+						>/</Breadcrumb.Separator
+					>
+					<Breadcrumb.Item class={cn('min-w-0', i === 0 && 'sm:hidden')}>
 						{#if i === crumbs.length - 1}
 							<Breadcrumb.Page class="truncate font-medium">{crumb.label}</Breadcrumb.Page>
 						{:else}
@@ -146,7 +145,6 @@
 			</Breadcrumb.List>
 		</Breadcrumb.Root>
 		<span class="flex-1"></span>
-		{@render links()}
 		<Button
 			variant="outline"
 			class="h-8 w-8 justify-start gap-2 bg-muted/60 px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:w-56"

@@ -65,7 +65,7 @@
 {/snippet}
 
 {#snippet cards(list: CourseInfo[])}
-	<div class="grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-2">
+	<div class="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3">
 		{#each list as c (c.code)}<CourseCard {c} />{/each}
 	</div>
 {/snippet}
