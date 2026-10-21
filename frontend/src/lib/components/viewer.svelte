@@ -123,7 +123,7 @@
 	<div class="flex min-h-0 flex-1 items-start justify-center overflow-auto bg-muted/50 p-4 md:p-5">
 		{#if type === 'other' || (big && !force) || failed}
 			<div
-				class="flex w-full max-w-sm flex-col items-start gap-3.5 rounded-xl border bg-background p-7"
+				class="flex w-full max-w-sm flex-col items-start gap-3.5 rounded-xl border bg-background p-7 shadow-xs"
 			>
 				<FileText class="size-7 text-muted-foreground/60" />
 				<div class="text-[15px] font-semibold break-all">{r.name}</div>
@@ -152,7 +152,7 @@
 		{:else if type === 'pdf'}
 			<div class="flex w-full max-w-2xl flex-col gap-3">
 				{#each { length: pages } as _, i (i)}
-					<canvas use:draw={i + 1} class="w-full border bg-white" style="aspect-ratio: 1 / {ratio}"
+					<canvas use:draw={i + 1} class="w-full rounded-sm bg-white shadow-sm ring-1 ring-black/5" style="aspect-ratio: 1 / {ratio}"
 					></canvas>
 				{/each}
 			</div>
@@ -168,7 +168,7 @@
 		{/if}
 	</div>
 	<div
-		class="flex h-9 shrink-0 items-center justify-center border-t bg-background font-mono text-xs text-muted-foreground"
+		class="flex h-8 shrink-0 items-center justify-center border-t bg-background text-[11px] text-muted-foreground"
 	>
 		{foot}
 	</div>

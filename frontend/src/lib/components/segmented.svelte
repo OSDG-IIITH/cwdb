@@ -21,7 +21,7 @@
 	class="relative grid h-8 auto-cols-fr grid-flow-col rounded-lg bg-muted p-0.5"
 >
 	<span
-		class="absolute inset-y-0.5 left-0.5 rounded-md bg-background shadow-sm transition-transform duration-200 ease-out"
+		class="absolute inset-y-0.5 left-0.5 rounded-md bg-background shadow-xs ring-1 ring-border transition-transform duration-200 ease-out dark:bg-accent"
 		style="width: calc((100% - 4px) / {options.length}); transform: translateX({index * 100}%)"
 	></span>
 	{#each options as o (o.value)}

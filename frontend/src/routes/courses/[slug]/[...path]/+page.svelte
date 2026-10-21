@@ -277,25 +277,35 @@
 					{#each ['all', ...kinds.filter((k) => counts[k])] as k (k)}
 						<Button
 							variant={nav === k ? 'default' : 'outline'}
-							class="h-8 shrink-0 rounded-full px-3 text-[13px] capitalize"
+							class="h-8 shrink-0 rounded-full px-3 text-[13px] capitalize shadow-none"
 							onclick={() => go({ in: k })}
 						>
 							{k}
-							{counts[k] ?? 0}
+							<span class="opacity-60">{counts[k] ?? 0}</span>
 						</Button>
 					{/each}
 				</div>
 			</div>
 
+			{#snippet grouping()}
+				<Segmented
+					bind:value={by}
+					label="Group files"
+					options={[
+						{ value: 'sem', label: 'By Semester' },
+						{ value: 'kind', label: 'By Kind' }
+					]}
+				/>
+			{/snippet}
+
 			<div class="hidden h-[52px] shrink-0 items-center gap-3 border-b pr-4 pl-6 lg:flex">
 				<span class="text-[15px] font-semibold whitespace-nowrap">{title}</span>
-				<span class="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground/70"
-					>{total} files</span
-				>
+				<span class="min-w-0 flex-1 truncate text-xs text-muted-foreground">{total} files</span>
+				{#if nav === 'all'}{@render grouping()}{/if}
 				<div class="relative">
-					<Filter class="absolute top-2.5 left-2 size-3.5 text-muted-foreground" />
+					<Filter class="absolute top-2 left-2.5 size-3.5 text-muted-foreground" />
 					<Input
-						class="h-[30px] w-40 pl-7"
+						class="h-8 w-44 bg-muted/60 pl-8 shadow-none"
 						placeholder="Filter"
 						aria-label="Filter this list"
 						data-slash
@@ -305,16 +315,7 @@
 			</div>
 
 			{#if nav === 'all'}
-				<div class="shrink-0 px-5 pt-3 lg:px-6">
-					<Segmented
-						bind:value={by}
-						label="Group files"
-						options={[
-							{ value: 'sem', label: 'By Semester' },
-							{ value: 'kind', label: 'By Kind' }
-						]}
-					/>
-				</div>
+				<div class="shrink-0 px-5 pt-3 lg:hidden">{@render grouping()}</div>
 			{/if}
 
 			<FileList
@@ -330,7 +331,7 @@
 			/>
 
 			<div
-				class="hidden h-9 shrink-0 items-center gap-4 border-t px-6 text-xs whitespace-nowrap text-muted-foreground lg:flex"
+				class="hidden h-8 shrink-0 items-center gap-4 border-t px-6 text-[11px] whitespace-nowrap text-muted-foreground/80 lg:flex"
 			>
 				<span><Kbd>j</Kbd> <Kbd>k</Kbd> move</span>
 				<span><Kbd>space</Kbd> preview</span>
@@ -340,7 +341,7 @@
 
 			{#if picked.size}
 				<div
-					class="absolute bottom-14 left-6 hidden h-11 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background lg:flex"
+					class="absolute bottom-12 left-1/2 hidden h-11 -translate-x-1/2 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background shadow-lg lg:flex"
 				>
 					<span><span class="font-mono">{picked.size}</span> selected</span>
 					<span class="h-4 w-px bg-background/30"></span>
@@ -381,7 +382,7 @@
 
 		{#if cur && !phone.current}
 			<aside
-				class="relative flex w-(--w) shrink-0 flex-col border-l bg-muted/50"
+				class="relative flex w-(--w) shrink-0 flex-col border-l"
 				style="--w: {previewwidth}px"
 			>
 				<Resize

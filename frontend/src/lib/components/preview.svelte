@@ -48,8 +48,10 @@
 		<div class="flex min-w-0 flex-1 flex-col gap-px">
 			<span class="truncate text-sm font-semibold">{r.title}</span>
 			<span class="truncate text-[11px] text-muted-foreground">
-				<button type="button" class="hover:underline" onclick={ongosrc}>{r.owner}/{r.repo}</button>
-				<span class="font-mono">/{r.file_path}{size ? ` · ${size}` : ''}</span>
+				<button type="button" class="hover:text-foreground hover:underline" onclick={ongosrc}
+					>{r.owner}/{r.repo}</button
+				>
+				<span class="text-muted-foreground/70">/{r.file_path}{size ? ` · ${size}` : ''}</span>
 			</span>
 		</div>
 		{#if pair && keyed}

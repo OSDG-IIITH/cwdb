@@ -322,7 +322,7 @@
 
 	{#if cur && !phone.current}
 		<aside
-			class="relative flex w-(--w) shrink-0 flex-col border-l bg-muted/50"
+			class="relative flex w-(--w) shrink-0 flex-col border-l"
 			style="--w: {previewwidth}px"
 		>
 			<Resize
