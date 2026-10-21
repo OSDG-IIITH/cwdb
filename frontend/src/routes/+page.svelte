@@ -66,7 +66,7 @@
 								aria-label="Search"
 								autocomplete="off"
 								spellcheck="false"
-								class="h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
+								class="h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-muted-foreground/50"
 							/>
 							<Kbd class="pointer-events-none absolute right-3 border bg-background font-mono"
 								>/</Kbd

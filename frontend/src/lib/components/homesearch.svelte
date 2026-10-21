@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { ArrowRight, FileText, Folder, Github, Pin, Search, X } from '@lucide/svelte';
+	import { FileText, Folder, Search, X } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import Segmented from '$lib/components/segmented.svelte';
-	import Preview from '$lib/components/preview.svelte';
-	import { courses, mycourses, search, togglepin, type Entry } from '$lib/sync';
+	import { courses, mycourses, search, type Entry } from '$lib/sync';
 	import { entryhref, entrysub, entrytag } from '$lib/entries';
 	import { cn } from '$lib/utils';
 
@@ -58,15 +57,14 @@
 </script>
 
 {#snippet hit(e: Entry)}
-	<button
-		type="button"
+	<a
+		href={entryhref(e)}
 		data-hit={e.id}
 		class={cn(
 			'flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent/60',
 			sel?.id === e.id && 'bg-accent hover:bg-accent'
 		)}
-		onclick={() => (picked = e.id)}
-		ondblclick={() => goto(entryhref(e))}
+		onmouseenter={() => (picked = e.id)}
 	>
 		<span
 			class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-card font-mono text-[10px] text-muted-foreground shadow-xs"
@@ -84,12 +82,12 @@
 		{#if e.t !== 'c'}
 			<span class="shrink-0 text-xs text-muted-foreground/70">{entrytag(e)}</span>
 		{/if}
-	</button>
+	</a>
 {/snippet}
 
 <div class="flex h-[calc(100dvh-3.75rem)] flex-col">
 	<div class="shrink-0 border-b px-6 pt-2 pb-4">
-		<div class="mx-auto flex max-w-7xl items-center gap-4">
+		<div class="mx-auto flex max-w-3xl items-center gap-4">
 			<label class="relative flex min-w-0 flex-1 items-center">
 				<Search class="pointer-events-none absolute left-4 size-4.5 text-muted-foreground" />
 				<input
@@ -107,7 +105,7 @@
 					aria-label="Search"
 					autocomplete="off"
 					spellcheck="false"
-					class="h-12 w-full rounded-xl border bg-card pr-24 pl-11 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20"
+					class="h-12 w-full rounded-xl border bg-card pr-24 pl-11 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-muted-foreground/50"
 				/>
 				<Button
 					variant="ghost"
@@ -131,8 +129,8 @@
 		</div>
 	</div>
 
-	<div class="mx-auto flex min-h-0 w-full max-w-7xl flex-1">
-		<div class="flex w-[46%] min-w-80 shrink-0 flex-col overflow-y-auto border-r px-3 py-3 lg:pl-6">
+	<div class="min-h-0 flex-1 overflow-y-auto">
+		<div class="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 py-3">
 			{#each groups as g (g.t)}
 				<div class="px-3 pt-3 pb-1.5 text-xs font-medium text-muted-foreground">
 					{names[g.t]}
@@ -154,53 +152,6 @@
 					<span><Kbd>↑</Kbd> <Kbd>↓</Kbd> move</span>
 					<span><Kbd>↵</Kbd> open</span>
 					<span><Kbd>esc</Kbd> clear</span>
-				</div>
-			{/if}
-		</div>
-
-		<div class="flex min-w-0 flex-1 flex-col">
-			{#if sel?.t === 'f' && sel.resource}
-				<Preview
-					r={sel.resource}
-					onclose={() => onquery('')}
-					onpick={() => {}}
-					onedit={() => {}}
-					onprev={() => move(-1)}
-					onnext={() => move(1)}
-					ongosrc={() => goto(entryhref(sel!))}
-				/>
-			{:else if sel}
-				{@const c = sel.course ? info.get(sel.course) : null}
-				<div class="flex flex-1 flex-col justify-center gap-6 px-12 py-10">
-					<div class="flex flex-col gap-2">
-						<div class="font-mono text-xs text-muted-foreground">
-							{sel.t === 'c' ? `${c?.alias} · ${c?.code}` : `${alias(sel)} · folder`}
-						</div>
-						<div class="text-2xl leading-tight font-semibold tracking-tight">
-							{sel.t === 'c' ? c?.name : sel.title}
-						</div>
-						<div class="text-sm break-all text-muted-foreground">
-							{sel.t === 'c'
-								? `${sel.count} files${c?.kinds.length ? ` · ${c.kinds.join(', ')}` : ''}`
-								: `${sel.path} · ${sel.count} files`}
-						</div>
-					</div>
-					<div class="flex flex-wrap gap-2">
-						<Button href={entryhref(sel)}>
-							{sel.t === 'c' ? 'Open course' : 'Open folder'}<ArrowRight />
-						</Button>
-						{#if sel.t === 'c' && sel.course}
-							{@const code = sel.course}
-							<Button variant="outline" onclick={() => togglepin(code)}>
-								<Pin class={$mycourses.includes(code) ? 'fill-foreground' : ''} />
-								{$mycourses.includes(code) ? 'In my courses' : 'Add to my courses'}
-							</Button>
-						{:else if sel.github}
-							<Button variant="outline" href={sel.github} target="_blank" rel="noreferrer">
-								<Github />GitHub
-							</Button>
-						{/if}
-					</div>
 				</div>
 			{/if}
 		</div>
