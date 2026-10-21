@@ -33,7 +33,7 @@
 	onMount(loadsources);
 </script>
 
-<div class="flex h-[calc(100dvh-3.5rem)] overflow-hidden bg-background text-foreground">
+<div class="flex h-[calc(100dvh-3.75rem)] overflow-hidden bg-background text-foreground">
 	<aside
 		class={cn(
 			'relative w-full shrink-0 flex-col border-r bg-sidebar lg:w-(--w)',

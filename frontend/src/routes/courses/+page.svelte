@@ -132,7 +132,7 @@
 		{:else}
 			<div>
 				<div
-					class="{grid} sticky top-14 z-10 h-9 border-b bg-background text-xs font-medium text-muted-foreground"
+					class="{grid} sticky top-15 z-10 h-9 border-b bg-background text-xs font-medium text-muted-foreground"
 				>
 					<span>Alias</span><span>Course</span><span class="hidden sm:block">Term</span>
 					<span class="hidden sm:block">Has</span>

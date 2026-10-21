@@ -24,6 +24,7 @@
 	let timer: ReturnType<typeof setTimeout>;
 
 	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0] ?? '');
+	let index = $derived(tabs.findIndex((t) => t.key === section));
 
 	let admin = $derived($user?.role === 'admin');
 
@@ -81,19 +82,33 @@
 <svelte:window {onkeydown} />
 
 <header
-	class="sticky top-0 z-40 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b bg-background/85 px-4 text-sm backdrop-blur"
+	class={cn(
+		'sticky top-0 z-40 grid h-15 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 bg-background/85 px-4 pt-1 text-sm backdrop-blur sm:px-8 lg:px-12',
+		section && 'border-b'
+	)}
 >
-	<a href={base || '/'} class="hidden justify-self-start font-mono text-base font-bold tracking-tight sm:block"
-		>cwdb</a
+	{#if section}
+		<a
+			href={base || '/'}
+			class="hidden justify-self-start font-mono text-base font-bold tracking-tight sm:block">cwdb</a
+		>
+	{/if}
+	<nav
+		class="relative col-start-2 grid auto-cols-fr grid-flow-col rounded-full border bg-muted/50 p-1"
 	>
-	<nav class="col-start-2 flex items-center gap-0.5 rounded-full border bg-muted/50 p-1">
+		{#if index >= 0}
+			<span
+				class="absolute inset-y-1 left-1 rounded-full bg-background shadow-xs transition-transform duration-200 ease-out dark:bg-accent"
+				style="width: calc((100% - 8px) / {tabs.length}); transform: translateX({index * 100}%)"
+			></span>
+		{/if}
 		{#each tabs as t (t.key)}
 			<a
 				href="{base}/{t.key}"
 				aria-current={section === t.key ? 'page' : undefined}
 				class={cn(
-					'flex h-8 items-center gap-2 rounded-full px-3.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
-					section === t.key && 'bg-background font-medium text-foreground shadow-xs dark:bg-accent'
+					'relative flex h-8 items-center justify-center gap-2 rounded-full px-3.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground',
+					section === t.key && 'text-foreground'
 				)}
 			>
 				<t.icon class="hidden size-3.5 sm:block" />{t.label}
