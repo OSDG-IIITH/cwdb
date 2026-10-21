@@ -388,7 +388,7 @@
 			<Sheet.Content
 				side="bottom"
 				showCloseButton={false}
-				class="gap-0 rounded-t-2xl data-[side=bottom]:h-[92dvh]"
+				class="gap-0 rounded-none data-[side=bottom]:h-dvh"
 			>
 				<Sheet.Title class="sr-only">{cur?.title}</Sheet.Title>
 				{#if cur}
