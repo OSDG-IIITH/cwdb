@@ -76,7 +76,7 @@
 	</div>
 {/snippet}
 
-<main class="mx-auto flex w-full max-w-260 flex-1 flex-col gap-6 px-4 pt-10 pb-16 sm:px-6">
+<main class="mx-auto flex w-full max-w-260 flex-1 flex-col gap-6 px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+6rem)] sm:px-6 sm:pb-16">
 	<div class="flex flex-wrap items-center gap-3">
 		<label class="relative flex flex-[1_1_280px] items-center sm:max-w-90">
 			<ListFilter class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
@@ -85,7 +85,7 @@
 				bind:value={filter}
 				placeholder="Filter by name, code or alias"
 				aria-label="Filter courses"
-				class="h-8 bg-muted/60 pr-9 pl-8 shadow-none"
+				class="h-9 bg-muted/60 pr-9 pl-8 shadow-none"
 			/>
 			<Kbd class="pointer-events-none absolute right-2 border bg-background font-mono">/</Kbd>
 		</label>
