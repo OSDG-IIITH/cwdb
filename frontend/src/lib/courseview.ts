@@ -14,6 +14,12 @@ export type TreeRow = {
 };
 
 const examorder = ['quiz', 'mid', 'end', 'lab'];
+const examlabels: Record<string, string> = {
+	quiz: 'Quizzes',
+	mid: 'Mid',
+	end: 'End',
+	lab: 'Lab'
+};
 
 /** hides files inside unit folders and maps each unit's primary file to them */
 function splitunits(files: Resource[]) {
@@ -56,7 +62,8 @@ export function buildgroups(
 	earlier: [string, Resource[]][],
 	nav: string,
 	query: string,
-	offs: Map<string, Offering>
+	offs: Map<string, Offering>,
+	by = 'sem'
 ): Group[] {
 	const [kind, sub] = nav.split(':');
 	const q = query.trim().toLowerCase();
@@ -89,6 +96,24 @@ export function buildgroups(
 		}
 		return [...found.values()];
 	};
+
+	if (by === 'kind' && kind === 'all') {
+		const found = new Map<string, Group & { rank: number[] }>();
+		for (const row of rows([...own, ...earlier.flatMap(([, list]) => list)])) {
+			const k = row.r.kind ?? 'other';
+			const sub = k === 'exams' ? row.r.examtype : undefined;
+			const name = `${k.charAt(0).toUpperCase()}${k.slice(1)}${sub ? ` · ${examlabels[sub] ?? sub}` : ''}`;
+			const g = found.get(name) ?? {
+				name,
+				note: '',
+				rows: [],
+				rank: [kinds.indexOf(k), examorder.indexOf(sub ?? '')]
+			};
+			g.rows.push(row);
+			found.set(name, g);
+		}
+		return [...found.values()].sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1]);
+	}
 
 	const byoffering = new Map<string, Row[]>();
 	for (const row of rows(own)) {

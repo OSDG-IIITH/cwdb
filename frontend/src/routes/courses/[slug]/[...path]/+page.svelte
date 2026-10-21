@@ -15,6 +15,7 @@
 	import { editresources } from '$lib/api';
 	import { openpalette } from '$lib/components/palette.svelte';
 	import { user } from '$lib/auth';
+	import Segmented from '$lib/components/segmented.svelte';
 	import { buildgroups, buildtree, navcounts } from '$lib/courseview';
 	import {
 		allresources,
@@ -88,8 +89,9 @@
 	);
 	let fid = $derived(page.url.searchParams.get('f'));
 	let insource = $derived(nav.startsWith('src:'));
+	let by = $state('sem');
 
-	let groups = $derived(insource ? [] : buildgroups(own, earlier, nav, query, offs));
+	let groups = $derived(insource ? [] : buildgroups(own, earlier, nav, query, offs, by));
 	let tree = $derived(
 		insource
 			? buildtree(
@@ -288,6 +290,19 @@
 					/>
 				</div>
 			</div>
+
+			{#if nav === 'all'}
+				<div class="shrink-0 px-5 pt-3 lg:px-6">
+					<Segmented
+						bind:value={by}
+						label="Group files"
+						options={[
+							{ value: 'sem', label: 'By Semester' },
+							{ value: 'kind', label: 'By Kind' }
+						]}
+					/>
+				</div>
+			{/if}
 
 			<FileList
 				{groups}

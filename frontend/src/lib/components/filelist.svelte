@@ -39,7 +39,7 @@
 	const mark = (r: Resource) => (r.hidden ? 'hidden' : r.review ? 'review' : '');
 </script>
 
-{#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void, extra = 0)}
+{#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void, alts = 0)}
 	<div
 		class={cn(
 			'flex items-center gap-3 rounded-md px-3 hover:bg-accent/50',
@@ -49,12 +49,26 @@
 		)}
 		data-row={r.id}
 	>
-		<Checkbox
-			class="hidden lg:flex"
-			checked={picked.has(r.id)}
-			onCheckedChange={() => ontoggle(r)}
-			aria-label="Select file"
-		/>
+		{#if alts}
+			<button
+				type="button"
+				class="flex size-4 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+				aria-label="Show sources"
+				aria-expanded={unfolded.has(r.id)}
+				onclick={more}
+			>
+				<ChevronRight
+					class={cn('size-4 transition-transform', unfolded.has(r.id) && 'rotate-90')}
+				/>
+			</button>
+		{:else}
+			<Checkbox
+				class="hidden lg:flex"
+				checked={picked.has(r.id)}
+				onCheckedChange={() => ontoggle(r)}
+				aria-label="Select file"
+			/>
+		{/if}
 		<button
 			type="button"
 			class="flex h-full min-w-0 flex-1 items-center gap-3 text-left"
@@ -77,13 +91,13 @@
 				>
 			{/if}
 		</button>
-		{#if more}
+		{#if more && !alts}
 			<button
 				type="button"
 				class="text-xs text-muted-foreground hover:text-foreground"
 				onclick={more}
 			>
-				{unfolded.has(r.id) ? 'hide' : extra ? `+${extra}` : 'files'}
+				{unfolded.has(r.id) ? 'hide' : 'files'}
 			</button>
 		{/if}
 	</div>
@@ -146,7 +160,7 @@
 						row.alts.length
 					)}
 					{#if unfolded.has(row.r.id)}
-						{#each row.alts as alt (alt.id)}
+						{#each row.alts.length ? [row.r, ...row.alts] : [] as alt (alt.id)}
 							{@render file(alt, 1, false, alt.repo)}
 						{/each}
 						{#each row.kids as kid (kid.id)}
