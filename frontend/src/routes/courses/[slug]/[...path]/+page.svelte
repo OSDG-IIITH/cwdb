@@ -233,7 +233,7 @@
 				{sources}
 				{pinned}
 				{busy}
-				onnav={(n) => go({ in: n, f: null })}
+				onnav={(n) => go({ in: n })}
 				onpin={() => togglepin(code)}
 				ondownload={() => zip(own)}
 			/>
@@ -265,7 +265,7 @@
 						<Button
 							variant={nav === k ? 'default' : 'outline'}
 							class="h-8 shrink-0 rounded-full px-3 text-[13px] capitalize"
-							onclick={() => go({ in: k, f: null })}
+							onclick={() => go({ in: k })}
 						>
 							{k}
 							{counts[k] ?? 0}
