@@ -23,15 +23,14 @@
 <script lang="ts">
 	import { goto, pushState } from '$app/navigation';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { base } from '$app/paths';
 	import { Command as CommandPrimitive } from 'bits-ui';
 	import { FileText, Folder, Search, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Command from '$lib/components/ui/command';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import { search, getentry, mycourses, togglepin, kindtag, type Entry } from '$lib/sync';
-	import { coursehref } from '$lib/utils';
+	import { search, getentry, mycourses, togglepin, type Entry } from '$lib/sync';
+	import { entryhref, entrysub, entrytag } from '$lib/entries';
 
 	const detail = false;
 	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
@@ -71,26 +70,9 @@
 		return (e.course && aliases.get(e.course)) || '—';
 	}
 
-	function sub(e: Entry): string {
-		if (e.t === 'c') return `${e.count} files`;
-		if (e.t === 'd') return e.path;
-		return e.path.split('/').slice(0, -1).join('/');
-	}
-
-	function tag(e: Entry): string {
-		if (e.t === 'c') return 'course';
-		if (e.t === 'd') return `${e.count} files`;
-		return kindtag(e.resource!);
-	}
-
-	function href(e: Entry): string {
-		if (e.t === 'c') return coursehref(e.course!);
-		if (e.t === 'd')
-			return e.course
-				? `${coursehref(e.course)}/${encodeURI(e.path)}`
-				: `${base}/sources/${encodeURI(e.path)}`;
-		return `${e.course ? coursehref(e.course) : `${base}/courses/unclassified`}?f=${e.id}`;
-	}
+	const sub = entrysub;
+	const tag = entrytag;
+	const href = entryhref;
 
 	let full = $derived(phone.current && $palette.open);
 

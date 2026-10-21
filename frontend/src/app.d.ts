@@ -11,6 +11,7 @@ declare global {
 		// interface PageData {}
 		interface PageState {
 			search?: boolean;
+			q?: string;
 		}
 		// interface Platform {}
 	}
