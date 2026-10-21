@@ -2,52 +2,28 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
-	import { Search } from '@lucide/svelte';
-	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import { FolderGit, House, Library, Search } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import UserMenu from '$lib/components/user-menu.svelte';
 	import { pending as unpublished, publish, refreshpending } from '$lib/api';
 	import { user } from '$lib/auth';
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
-	import { courses, getcourse, trysync } from '$lib/sync';
+	import { trysync } from '$lib/sync';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '$lib/utils';
 
-	const titles: Record<string, string> = {
-		courses: 'Courses',
-		sources: 'Sources'
-	};
+	const tabs = [
+		{ key: '', label: 'Home', icon: House },
+		{ key: 'courses', label: 'Courses', icon: Library },
+		{ key: 'sources', label: 'Sources', icon: FolderGit }
+	];
 	const jumps: Record<string, string> = { h: '', c: '/courses', s: '/sources' };
 
 	let pending = false;
 	let timer: ReturnType<typeof setTimeout>;
 
-	let home = $derived(page.url.pathname === base || page.url.pathname === `${base}/`);
-
-	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0]);
-
-	let crumbs = $derived.by(() => {
-		const out: { label: string; href: string }[] = [];
-		if (section) out.push({ label: titles[section] ?? section, href: `${base}/${section}` });
-		const slug = page.params.slug;
-		if (section === 'courses' && slug) {
-			out.push({
-				label:
-					slug === 'unclassified' ? 'Unclassified' : (getcourse($courses, slug)?.alias ?? slug),
-				href: `${base}/courses/${encodeURIComponent(slug)}`
-			});
-		}
-		if (section === 'sources' && page.params.owner) {
-			const root = `${base}/sources/${page.params.owner}/${page.params.repo}`;
-			out.push({ label: `${page.params.owner}/${page.params.repo}`, href: root });
-			if (page.params.path)
-				out.push({ label: page.params.path, href: `${root}/${page.params.path}` });
-		}
-		if (page.route.id === '/sources/review')
-			out.push({ label: 'Review', href: `${base}/sources/review` });
-		return out;
-	});
+	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0] ?? '');
 
 	let admin = $derived($user?.role === 'admin');
 
@@ -105,61 +81,41 @@
 <svelte:window {onkeydown} />
 
 <header
-	class={cn(
-		'sticky top-0 z-40 flex h-12 shrink-0 items-center bg-background px-4 text-sm',
-		home ? 'justify-end gap-2' : 'gap-2.5 border-b'
-	)}
+	class="sticky top-0 z-40 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b bg-background/85 px-4 text-sm backdrop-blur"
 >
-	{#snippet links(always = false)}
-		<nav class={cn('items-center gap-0.5 sm:flex', always ? 'flex' : 'hidden')}>
-			{#each Object.entries(titles) as [key, label] (key)}
-				<a
-					href="{base}/{key}"
-					class={cn(
-						'rounded-md px-2.5 py-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
-						section === key && 'bg-accent font-medium text-foreground'
-					)}>{label}</a
-				>
-			{/each}
-		</nav>
-	{/snippet}
-	{#if home}
-		{@render links(true)}
-	{:else}
-		<a href={base || '/'} class="pr-2 font-mono font-semibold">cwdb</a>
-		{@render links()}
-		<Breadcrumb.Root class="min-w-0">
-			<Breadcrumb.List class="flex-nowrap text-sm">
-				{#each crumbs as crumb, i (crumb.href)}
-					<Breadcrumb.Separator class={cn('text-border', i === 0 && 'sm:hidden')}
-						>/</Breadcrumb.Separator
-					>
-					<Breadcrumb.Item class={cn('min-w-0', i === 0 && 'sm:hidden')}>
-						{#if i === crumbs.length - 1}
-							<Breadcrumb.Page class="truncate font-medium">{crumb.label}</Breadcrumb.Page>
-						{:else}
-							<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
-						{/if}
-					</Breadcrumb.Item>
-				{/each}
-			</Breadcrumb.List>
-		</Breadcrumb.Root>
-		<span class="flex-1"></span>
+	<a href={base || '/'} class="hidden justify-self-start font-mono text-base font-bold tracking-tight sm:block"
+		>cwdb</a
+	>
+	<nav class="col-start-2 flex items-center gap-0.5 rounded-full border bg-muted/50 p-1">
+		{#each tabs as t (t.key)}
+			<a
+				href="{base}/{t.key}"
+				aria-current={section === t.key ? 'page' : undefined}
+				class={cn(
+					'flex h-8 items-center gap-2 rounded-full px-3.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
+					section === t.key && 'bg-background font-medium text-foreground shadow-xs dark:bg-accent'
+				)}
+			>
+				<t.icon class="hidden size-3.5 sm:block" />{t.label}
+			</a>
+		{/each}
+	</nav>
+	<div class="flex items-center justify-end gap-2">
 		<Button
 			variant="outline"
-			class="h-8 w-8 justify-start gap-2 bg-muted/60 px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:w-56"
+			class="h-8 w-8 justify-start gap-2 bg-muted/60 px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground lg:w-52"
 			aria-label="Search everything"
 			onclick={() => openpalette()}
 		>
 			<Search class="size-3.5" />
-			<span class="hidden flex-1 text-left text-[13px] sm:inline">Search</span>
-			<Kbd class="hidden border bg-background font-mono sm:inline-flex">Ctrl K</Kbd>
+			<span class="hidden flex-1 text-left text-[13px] lg:inline">Search</span>
+			<Kbd class="hidden border bg-background font-mono lg:inline-flex">Ctrl K</Kbd>
 		</Button>
-	{/if}
-	{#if admin && $unpublished}
-		<Button size="sm" variant="outline" class="h-7 font-normal" onclick={publishnow}>
-			<span class="font-mono">{$unpublished}</span> unpublished · Publish
-		</Button>
-	{/if}
-	<UserMenu />
+		{#if admin && $unpublished}
+			<Button size="sm" variant="outline" class="h-8 font-normal" onclick={publishnow}>
+				<span class="font-mono">{$unpublished}</span><span class="hidden sm:inline">unpublished · Publish</span>
+			</Button>
+		{/if}
+		<UserMenu />
+	</div>
 </header>

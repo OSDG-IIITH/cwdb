@@ -227,7 +227,7 @@
 <svelte:window {onkeydown} />
 
 {#if course}
-	<div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
+	<div class="flex h-[calc(100dvh-3.5rem)] overflow-hidden bg-background text-foreground">
 		{#if !phone.current && sidebar && code}
 			<div class="relative flex shrink-0" style="width: {navwidth}px">
 				<CourseSidebar
