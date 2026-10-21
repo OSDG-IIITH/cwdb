@@ -26,6 +26,7 @@
 	import { user } from '$lib/auth';
 	import { buildtree, sourcelist } from '$lib/courseview';
 	import { allresources, patchresources, syncstatus, trysync } from '$lib/sync';
+	import Resize from '$lib/components/resize.svelte';
 	import { githuburl } from '$lib/utils';
 	import { downloadfile, downloadzip } from '$lib/zip';
 
@@ -75,6 +76,7 @@
 	let tree = $derived(buildtree(files, root, toggled, !!query.trim()));
 	let order = $derived(tree.flatMap((t) => (t.r ? [t.r] : [])));
 
+	let previewwidth = $state(480);
 	let fid = $derived(page.url.searchParams.get('f'));
 	let cur = $derived(fid ? ($allresources.find((r) => r.id === fid) ?? null) : null);
 	let chosen = $derived($allresources.filter((r) => picked.has(r.id)));
@@ -259,7 +261,8 @@
 						<Button size="sm" variant="outline" onclick={classify}>Classify {fresh} new</Button>
 					{/if}
 					{#if queued}
-						<Button size="sm" variant="outline" href="{base}/sources/review">Review {queued}</Button>
+						<Button size="sm" variant="outline" href="{base}/sources/review">Review {queued}</Button
+						>
 					{/if}
 					<Button size="sm" variant="ghost" class="text-destructive" onclick={remove}>Delete</Button
 					>
@@ -318,7 +321,18 @@
 	</section>
 
 	{#if cur && !phone.current}
-		<aside class="flex w-[40%] max-w-[560px] min-w-[440px] shrink flex-col border-l bg-muted/50">
+		<aside
+			class="relative flex w-(--w) shrink-0 flex-col border-l bg-muted/50"
+			style="--w: {previewwidth}px"
+		>
+			<Resize
+				bind:width={previewwidth}
+				min={360}
+				max={800}
+				fallback={480}
+				side="left"
+				key="preview"
+			/>
 			{@render pane(false)}
 		</aside>
 	{/if}
@@ -328,7 +342,7 @@
 			<Sheet.Content
 				side="bottom"
 				showCloseButton={false}
-				class="gap-0 rounded-t-2xl data-[side=bottom]:h-[92dvh]"
+				class="gap-0 rounded-none data-[side=bottom]:h-dvh"
 			>
 				<Sheet.Title class="sr-only">{cur?.title}</Sheet.Title>
 				{@render pane(true)}

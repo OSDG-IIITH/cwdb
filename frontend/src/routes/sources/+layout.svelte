@@ -7,10 +7,12 @@
 	import { sourcelist } from '$lib/courseview';
 	import { allresources } from '$lib/sync';
 	import { ago, cn } from '$lib/utils';
+	import Resize from '$lib/components/resize.svelte';
 	import NewSourceDialog from '$lib/components/sources/new-source-dialog.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
+	let listwidth = $state(320);
 	let admin = $derived($user?.role === 'admin');
 	let review = $derived(page.route.id === '/sources/review');
 	let index = $derived(!page.params.owner && !review);
@@ -34,37 +36,48 @@
 <div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
 	<aside
 		class={cn(
-			'w-full shrink-0 flex-col gap-px overflow-y-auto border-r px-2 py-3 text-[13px] lg:w-80',
+			'relative w-full shrink-0 flex-col border-r lg:w-(--w)',
 			index ? 'flex' : review ? 'hidden' : 'hidden lg:flex'
 		)}
+		style="--w: {listwidth}px"
 	>
-		<div class="flex justify-between px-2.5 pb-2.5 text-xs text-muted-foreground">
-			<span>{rows.length} sources</span>
-			<span>files</span>
-		</div>
-		{#each rows as s (s.id)}
-			{@const last = synced.get(`${s.owner}/${s.repo}`)}
-			<a
-				href="{base}/sources/{s.owner}/{s.repo}{open ? `?f=${open}` : ''}"
-				class={cn(
-					'flex h-11 flex-col justify-center rounded-md px-2.5 hover:bg-accent/50',
-					page.params.owner === s.owner && page.params.repo === s.repo && 'bg-accent'
-				)}
-			>
-				<span class="flex justify-between gap-3">
-					<span class="truncate font-medium">{s.owner}/{s.repo}</span>
-					<span class="font-mono text-xs text-muted-foreground">{s.count.toLocaleString()}</span>
-				</span>
-				<span class="text-[11px] text-muted-foreground">
-					{s.courses} courses{last ? ` · synced ${ago(last)}` : ''}
-				</span>
-			</a>
-		{/each}
-		{#if admin}
-			<div class="pt-3">
-				<NewSourceDialog on:created={loadsources} />
+		<Resize
+			bind:width={listwidth}
+			min={240}
+			max={480}
+			fallback={320}
+			side="right"
+			key="sourcelist"
+		/>
+		<div class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-2 py-3 text-[13px]">
+			<div class="flex justify-between px-2.5 pb-2.5 text-xs text-muted-foreground">
+				<span>{rows.length} sources</span>
+				<span>files</span>
 			</div>
-		{/if}
+			{#each rows as s (s.id)}
+				{@const last = synced.get(`${s.owner}/${s.repo}`)}
+				<a
+					href="{base}/sources/{s.owner}/{s.repo}{open ? `?f=${open}` : ''}"
+					class={cn(
+						'flex h-11 flex-col justify-center rounded-md px-2.5 hover:bg-accent/50',
+						page.params.owner === s.owner && page.params.repo === s.repo && 'bg-accent'
+					)}
+				>
+					<span class="flex justify-between gap-3">
+						<span class="truncate font-medium">{s.owner}/{s.repo}</span>
+						<span class="font-mono text-xs text-muted-foreground">{s.count.toLocaleString()}</span>
+					</span>
+					<span class="text-[11px] text-muted-foreground">
+						{s.courses} courses{last ? ` · synced ${ago(last)}` : ''}
+					</span>
+				</a>
+			{/each}
+			{#if admin}
+				<div class="pt-3">
+					<NewSourceDialog on:created={loadsources} />
+				</div>
+			{/if}
+		</div>
 	</aside>
 
 	<div class={cn('min-w-0 flex-1', index ? 'hidden lg:flex' : 'flex')}>

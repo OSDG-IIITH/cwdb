@@ -51,7 +51,7 @@
 	</button>
 {/snippet}
 
-<aside class="flex w-64 shrink-0 flex-col overflow-y-auto border-r bg-muted/40">
+<aside class="flex w-full flex-col overflow-y-auto border-r bg-muted/40">
 	<div class="flex flex-col gap-1.5 px-4 pt-5 pb-4">
 		<div class="font-mono text-xs text-muted-foreground">{course.alias} · {course.code}</div>
 		<div class="text-[17px] leading-tight font-semibold tracking-tight">{course.name}</div>

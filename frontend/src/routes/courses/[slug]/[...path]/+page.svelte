@@ -15,6 +15,7 @@
 	import { editresources } from '$lib/api';
 	import { openpalette } from '$lib/components/palette.svelte';
 	import { user } from '$lib/auth';
+	import Resize from '$lib/components/resize.svelte';
 	import Segmented from '$lib/components/segmented.svelte';
 	import { buildgroups, buildtree, navcounts } from '$lib/courseview';
 	import {
@@ -90,6 +91,8 @@
 	let fid = $derived(page.url.searchParams.get('f'));
 	let insource = $derived(nav.startsWith('src:'));
 	let by = $state('sem');
+	let previewwidth = $state(480);
+	let navwidth = $state(256);
 
 	let groups = $derived(insource ? [] : buildgroups(own, earlier, nav, query, offs, by));
 	let tree = $derived(
@@ -226,17 +229,27 @@
 {#if course}
 	<div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
 		{#if !phone.current && sidebar && code}
-			<CourseSidebar
-				{course}
-				{nav}
-				{counts}
-				{sources}
-				{pinned}
-				{busy}
-				onnav={(n) => go({ in: n })}
-				onpin={() => togglepin(code)}
-				ondownload={() => zip(own)}
-			/>
+			<div class="relative flex shrink-0" style="width: {navwidth}px">
+				<CourseSidebar
+					{course}
+					{nav}
+					{counts}
+					{sources}
+					{pinned}
+					{busy}
+					onnav={(n) => go({ in: n })}
+					onpin={() => togglepin(code)}
+					ondownload={() => zip(own)}
+				/>
+				<Resize
+					bind:width={navwidth}
+					min={220}
+					max={420}
+					fallback={256}
+					side="right"
+					key="coursenav"
+				/>
+			</div>
 		{/if}
 
 		<section class="relative flex min-w-0 flex-1 flex-col">
@@ -367,7 +380,18 @@
 		</section>
 
 		{#if cur && !phone.current}
-			<aside class="flex w-[40%] max-w-[560px] min-w-[440px] shrink flex-col border-l bg-muted/50">
+			<aside
+				class="relative flex w-(--w) shrink-0 flex-col border-l bg-muted/50"
+				style="--w: {previewwidth}px"
+			>
+				<Resize
+					bind:width={previewwidth}
+					min={360}
+					max={800}
+					fallback={480}
+					side="left"
+					key="preview"
+				/>
 				<Preview
 					r={cur}
 					{pair}
