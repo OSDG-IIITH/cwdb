@@ -10,9 +10,9 @@
 	import { pending as unpublished, publish, refreshpending } from '$lib/api';
 	import { user } from '$lib/auth';
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
-	import { syncstatus, allresources, courses, getcourse, trysync } from '$lib/sync';
+	import { courses, getcourse, trysync } from '$lib/sync';
 	import { toast } from 'svelte-sonner';
-	import { ago, cn } from '$lib/utils';
+	import { cn } from '$lib/utils';
 
 	const titles: Record<string, string> = {
 		courses: 'Courses',
@@ -61,14 +61,6 @@
 		refreshpending();
 		trysync();
 	}
-
-	let status = $derived(
-		$syncstatus.syncing ? 'syncing' : $syncstatus.online ? 'synced' : 'offline'
-	);
-
-	let tip = $derived(
-		`${status}${$syncstatus.synced_at ? ` · ${ago($syncstatus.synced_at)}` : ''} · ${$allresources.length} files`
-	);
 
 	/** global keys: ctrl k and / for search, g h, g c, g s to jump */
 	function onkeydown(e: KeyboardEvent) {
@@ -157,15 +149,5 @@
 			<span class="font-mono">{$unpublished}</span> unpublished · Publish
 		</Button>
 	{/if}
-	<span class="flex items-center gap-1.5 text-xs text-muted-foreground" title={tip} role="status">
-		<span
-			class={cn(
-				'size-1.5 rounded-full',
-				status === 'offline' ? 'border border-muted-foreground' : 'bg-foreground',
-				status === 'syncing' && 'animate-pulse'
-			)}
-		></span>
-		<span class={home ? '' : 'sr-only'}>{status}</span>
-	</span>
 	<UserMenu />
 </header>

@@ -39,7 +39,7 @@
 	const mark = (r: Resource) => (r.hidden ? 'hidden' : r.review ? 'review' : '');
 </script>
 
-{#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void)}
+{#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void, extra = 0)}
 	<div
 		class={cn(
 			'flex items-center gap-3 rounded-md px-3 hover:bg-accent/50',
@@ -83,7 +83,7 @@
 				class="text-xs text-muted-foreground hover:text-foreground"
 				onclick={more}
 			>
-				{unfolded.has(r.id) ? 'hide' : 'files'}
+				{unfolded.has(r.id) ? 'hide' : extra ? `+${extra}` : 'files'}
 			</button>
 		{/if}
 	</div>
@@ -142,9 +142,13 @@
 						0,
 						true,
 						showkind ? kindtag(row.r) : row.r.key ? 'key' : '',
-						row.kids.length ? () => fold(row.r.id) : undefined
+						row.kids.length || row.alts.length ? () => fold(row.r.id) : undefined,
+						row.alts.length
 					)}
 					{#if unfolded.has(row.r.id)}
+						{#each row.alts as alt (alt.id)}
+							{@render file(alt, 1, false, alt.repo)}
+						{/each}
 						{#each row.kids as kid (kid.id)}
 							{@render file(kid, 1, false, '')}
 						{/each}

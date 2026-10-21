@@ -1,6 +1,6 @@
 import { kinds, type Offering, type Resource } from '$lib/sync';
 
-export type Row = { r: Resource; kids: Resource[] };
+export type Row = { r: Resource; kids: Resource[]; alts: Resource[] };
 export type Group = { name: string; note: string; rows: Row[] };
 export type TreeRow = {
 	id: string;
@@ -33,10 +33,16 @@ function splitunits(files: Resource[]) {
 	return { top, kids };
 }
 
+/** same paper from different sources shares this key */
+const paperkey = (r: Resource) => `${r.offering}|${r.kind}|${r.key}|${r.title}`;
+
 /** counts rows per nav key: all, kind and exam type */
 export function navcounts(files: Resource[]): Record<string, number> {
 	const out: Record<string, number> = { all: 0 };
+	const seen = new Set<string>();
 	for (const r of splitunits(files).top) {
+		if (r.kind && seen.has(paperkey(r))) continue;
+		seen.add(paperkey(r));
 		const keys = ['all', r.kind ?? 'other'];
 		if (r.examtype) keys.push(`exams:${r.examtype}`);
 		for (const k of keys) out[k] = (out[k] ?? 0) + 1;
@@ -68,15 +74,20 @@ export function buildgroups(
 	};
 	const rows = (list: Resource[]): Row[] => {
 		const { top, kids } = splitunits(list);
-		return top
+		const found = new Map<string, Row>();
+		for (const r of top
 			.filter(
 				(r) =>
 					(kind === 'all' || (r.kind ?? 'other') === kind) &&
 					(!sub || r.examtype === sub) &&
 					(!q || `${r.title} ${r.file_path}`.toLowerCase().includes(q))
 			)
-			.sort(cmp)
-			.map((r) => ({ r, kids: kids.get(r.id) ?? [] }));
+			.sort(cmp)) {
+			const dup = r.kind ? found.get(paperkey(r)) : undefined;
+			if (dup) dup.alts.push(r);
+			else found.set(r.kind ? paperkey(r) : r.id, { r, kids: kids.get(r.id) ?? [], alts: [] });
+		}
+		return [...found.values()];
 	};
 
 	const byoffering = new Map<string, Row[]>();
