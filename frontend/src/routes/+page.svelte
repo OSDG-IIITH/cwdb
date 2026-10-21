@@ -74,8 +74,8 @@
 					>
 				</div>
 			</div>
-			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{#each mine.length ? mine : top as c (c.code)}<CourseCard {c} />{/each}
+			<div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+				{#each mine.length ? mine : top as c (c.code)}<CourseCard {c} small />{/each}
 			</div>
 		</section>
 	{/if}
