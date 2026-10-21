@@ -3,7 +3,6 @@
 	import { FileText, Folder, Search, X } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import Segmented from '$lib/components/segmented.svelte';
 	import { courses, mycourses, search, type Entry } from '$lib/sync';
 	import { entryhref, entrysub, entrytag } from '$lib/entries';
 	import { cn } from '$lib/utils';
@@ -13,7 +12,6 @@
 	const limits = { c: 12, d: 20, f: 60 };
 	const names = { c: 'Courses', d: 'Folders', f: 'Files' };
 
-	let only = $state('all');
 	let picked = $state<string | null>(null);
 
 	let info = $derived(new Map($courses.map((c) => [c.code, c])));
@@ -27,8 +25,7 @@
 			rows: hits.filter((e) => e.t === t).slice(0, limits[t])
 		}))
 	);
-	let shown = $derived(all.some((g) => g.t === only && g.rows.length) ? only : 'all');
-	let groups = $derived(all.filter((g) => g.rows.length && (shown === 'all' || shown === g.t)));
+	let groups = $derived(all.filter((g) => g.rows.length));
 	let flat = $derived(groups.flatMap((g) => g.rows));
 	let sel = $derived(flat.find((e) => e.id === picked) ?? flat[0] ?? null);
 
@@ -116,16 +113,6 @@
 					<X />Clear
 				</Button>
 			</label>
-			<Segmented
-				bind:value={() => shown, (v) => (only = v)}
-				label="Show"
-				options={[
-					{ value: 'all', label: `All ${hits.length > 99 ? '99+' : hits.length}` },
-					...all
-						.filter((g) => g.rows.length)
-						.map((g) => ({ value: g.t, label: `${names[g.t]} ${g.rows.length}` }))
-				]}
-			/>
 		</div>
 	</div>
 
