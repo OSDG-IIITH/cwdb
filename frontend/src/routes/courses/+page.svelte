@@ -85,7 +85,7 @@
 				bind:value={filter}
 				placeholder="Filter by name, code or alias"
 				aria-label="Filter courses"
-				class="h-8 bg-muted/60 pr-9 pl-8 shadow-none"
+				class="h-9 bg-muted/60 pr-9 pl-8 shadow-none"
 			/>
 			<Kbd class="pointer-events-none absolute right-2 border bg-background font-mono">/</Kbd>
 		</label>
