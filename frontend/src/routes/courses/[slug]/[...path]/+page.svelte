@@ -369,7 +369,7 @@
 			{/if}
 
 			<div
-				class="absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-background to-30% px-4 pt-3 pb-8 lg:hidden"
+				class="absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-background to-30% px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+5.25rem)] sm:pb-8 lg:hidden"
 			>
 				<Input
 					class="h-12 rounded-full px-5 text-[15px]"

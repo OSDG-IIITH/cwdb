@@ -113,7 +113,10 @@
 	</div>
 {/snippet}
 
-<div class="flex-1 overflow-y-auto px-3 pb-24" data-list>
+<div
+	class="flex-1 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+11rem)] sm:pb-24"
+	data-list
+>
 	{#if tree}
 		<div class="flex flex-col gap-0.5 pt-2">
 			{#each tree as t (t.id)}

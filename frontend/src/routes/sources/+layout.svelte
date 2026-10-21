@@ -49,7 +49,9 @@
 			side="right"
 			key="sourcelist"
 		/>
-		<div class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-2 py-3 text-[13px]">
+		<div
+			class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-2 pt-3 pb-[calc(env(safe-area-inset-bottom)+6rem)] text-[13px] sm:pb-3"
+		>
 			<div class="flex justify-between px-2.5 pb-2 text-[11px] font-medium text-muted-foreground/70">
 				<span>{rows.length} sources</span>
 				<span>files</span>

@@ -81,7 +81,7 @@
 	{/if}
 </main>
 
-<footer class="p-6 text-center text-xs text-muted-foreground/70">
+<footer class="p-6 pb-[calc(env(safe-area-inset-bottom)+6rem)] text-center sm:pb-6 text-xs text-muted-foreground/70">
 	made by <a
 		href="https://github.com/nuxshed"
 		class="text-muted-foreground underline"

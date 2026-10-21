@@ -20,7 +20,10 @@
 	];
 	const jumps: Record<string, string> = { h: '', c: '/courses', s: '/sources' };
 
+	const field = 'input, textarea, select, [contenteditable]';
+
 	let pending = false;
+	let typing = $state(false);
 	let timer: ReturnType<typeof setTimeout>;
 
 	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0] ?? '');
@@ -53,7 +56,7 @@
 			e.ctrlKey ||
 			e.metaKey ||
 			e.altKey ||
-			el.closest('input, textarea, select, [contenteditable]')
+			el.closest(field)
 		)
 			return;
 		if (e.key === '/') {
@@ -79,7 +82,38 @@
 	}
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window
+	{onkeydown}
+	onfocusin={(e) => (typing = !!(e.target as HTMLElement).closest?.(field))}
+	onfocusout={() => (typing = false)}
+/>
+
+{#snippet tabsnav(big: boolean)}
+	<span
+		class={cn(
+			'absolute left-[3px] rounded-md border border-transparent bg-background shadow-sm transition-transform duration-200 ease-out dark:border-input dark:bg-input/30',
+			big ? 'inset-y-1 left-1' : 'inset-y-[3px]',
+			index < 0 && 'opacity-0'
+		)}
+		style="width: calc((100% - {big ? 8 : 6}px) / {tabs.length}); transform: translateX({Math.max(
+			index,
+			0
+		) * 100}%)"
+	></span>
+	{#each tabs as t (t.key)}
+		<a
+			href="{base}/{t.key}"
+			aria-current={section === t.key ? 'page' : undefined}
+			class={cn(
+				'relative flex items-center justify-center gap-2 rounded-md px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+				big ? 'h-11 px-4' : 'h-full',
+				section === t.key && 'text-foreground'
+			)}
+		>
+			<t.icon class="size-4" />{t.label}
+		</a>
+	{/each}
+{/snippet}
 
 <header
 	class={cn(
@@ -87,50 +121,47 @@
 		section && 'border-b'
 	)}
 >
-	{#if section}
-		<a
-			href={base || '/'}
-			class="hidden justify-self-start font-mono text-base font-bold tracking-tight sm:block">cwdb</a
-		>
-	{/if}
-	<nav
-		class="relative col-start-2 grid auto-cols-fr grid-flow-col rounded-full border bg-muted/50 p-1"
+	<a
+		href={base || '/'}
+		class={cn(
+			'justify-self-start font-mono text-base font-bold tracking-tight',
+			!section && 'sm:hidden'
+		)}>cwdb</a
 	>
-		{#if index >= 0}
-			<span
-				class="absolute inset-y-1 left-1 rounded-full bg-background shadow-xs transition-transform duration-200 ease-out dark:bg-accent"
-				style="width: calc((100% - 8px) / {tabs.length}); transform: translateX({index * 100}%)"
-			></span>
-		{/if}
-		{#each tabs as t (t.key)}
-			<a
-				href="{base}/{t.key}"
-				aria-current={section === t.key ? 'page' : undefined}
-				class={cn(
-					'relative flex h-8 items-center justify-center gap-2 rounded-full px-3.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground',
-					section === t.key && 'text-foreground'
-				)}
-			>
-				<t.icon class="hidden size-3.5 sm:block" />{t.label}
-			</a>
-		{/each}
+	<nav
+		aria-label="Sections"
+		class="relative col-start-2 hidden h-9 auto-cols-fr grid-flow-col rounded-lg bg-muted p-[3px] sm:grid"
+	>
+		{@render tabsnav(false)}
 	</nav>
-	<div class="flex items-center justify-end gap-2">
+	<div class="col-start-3 flex items-center justify-end gap-2">
 		<Button
 			variant="outline"
-			class="h-8 w-8 justify-start gap-2 bg-muted/60 px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground lg:w-52"
+			class="size-8 justify-start gap-2 rounded-full border-transparent bg-transparent px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:rounded-md sm:border-input sm:bg-muted/60 lg:w-52"
 			aria-label="Search everything"
 			onclick={() => openpalette()}
 		>
-			<Search class="size-3.5" />
+			<Search class="size-4 sm:size-3.5" />
 			<span class="hidden flex-1 text-left text-[13px] lg:inline">Search</span>
 			<Kbd class="hidden border bg-background font-mono lg:inline-flex">Ctrl K</Kbd>
 		</Button>
 		{#if admin && $unpublished}
 			<Button size="sm" variant="outline" class="h-8 font-normal" onclick={publishnow}>
-				<span class="font-mono">{$unpublished}</span><span class="hidden sm:inline">unpublished · Publish</span>
+				<span class="font-mono">{$unpublished}</span><span class="hidden sm:inline"
+					>unpublished · Publish</span
+				>
 			</Button>
 		{/if}
 		<UserMenu />
 	</div>
 </header>
+
+<nav
+	aria-label="Sections"
+	class={cn(
+		'fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 mx-auto grid w-fit auto-cols-fr grid-flow-col rounded-xl border bg-background/90 p-1 shadow-lg backdrop-blur transition-[translate,opacity] duration-200 sm:hidden',
+		typing && 'pointer-events-none translate-y-4 opacity-0'
+	)}
+>
+	{@render tabsnav(true)}
+</nav>

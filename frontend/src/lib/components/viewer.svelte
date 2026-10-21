@@ -168,7 +168,7 @@
 		{/if}
 	</div>
 	<div
-		class="flex h-8 shrink-0 items-center justify-center border-t bg-background text-[11px] text-muted-foreground"
+		class="flex h-8 shrink-0 items-center justify-center border-t bg-background text-[11px] text-muted-foreground max-lg:hidden"
 	>
 		{foot}
 	</div>
