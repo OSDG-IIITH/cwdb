@@ -124,7 +124,7 @@ export function buildgroups(
 		.map(([id, list]) => {
 			const o = offs.get(id);
 			return {
-				name: o?.label ?? 'Undated',
+				name: o ? `${o.season === 'M' ? 'Monsoon' : 'Spring'} ${o.year}` : 'Undated',
 				note: o?.faculty.join(', ') ?? '',
 				rows: list,
 				year: o?.year ?? 0

@@ -42,8 +42,8 @@
 {#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void, alts = 0)}
 	<div
 		class={cn(
-			'flex items-center gap-3 rounded-md px-3 hover:bg-accent/50',
-			tall ? 'h-[52px] border-b lg:h-[38px] lg:border-b-0' : 'h-[34px]',
+			'group flex items-center gap-3 rounded-md px-3 transition-colors hover:bg-accent/60',
+			tall ? 'h-[52px] border-b max-lg:rounded-none lg:h-[38px] lg:border-b-0' : 'h-[34px]',
 			active === r.id && 'bg-accent',
 			admin && r.hidden && 'opacity-50'
 		)}
@@ -63,7 +63,10 @@
 			</button>
 		{:else}
 			<Checkbox
-				class="hidden lg:flex"
+				class={cn(
+					'hidden transition-opacity group-hover:opacity-100 lg:flex',
+					!picked.size && 'lg:opacity-0'
+				)}
 				checked={picked.has(r.id)}
 				onCheckedChange={() => ontoggle(r)}
 				aria-label="Select file"
@@ -84,10 +87,17 @@
 					>{mark(r)}</span
 				>
 			{/if}
-			<span class="font-mono text-[11px] text-foreground/70">{tag}</span>
-			{#if tall}
-				<span class="hidden w-24 truncate text-right text-xs text-muted-foreground/70 lg:block"
-					>{r.repo}</span
+			{#if tag}
+				<span
+					class={cn(
+						'shrink-0 text-[11px] text-muted-foreground',
+						tall && 'rounded-md bg-muted px-1.5 py-0.5'
+					)}>{tag}</span
+				>
+			{/if}
+			{#if alts}
+				<span class="hidden w-16 shrink-0 text-right text-xs text-muted-foreground/70 lg:block"
+					>{alts + 1} sources</span
 				>
 			{/if}
 		</button>
@@ -109,7 +119,7 @@
 			{#each tree as t (t.id)}
 				{#if t.dir}
 					<div
-						class="flex h-[34px] items-center gap-2 rounded-md px-3 text-[13px] hover:bg-accent/50"
+						class="flex h-[34px] items-center gap-2 rounded-md px-3 text-[13px] transition-colors hover:bg-accent/60"
 						style="padding-left: {t.depth * 18 + 12}px"
 					>
 						<button
@@ -129,13 +139,13 @@
 						{#if courselinks && t.course}
 							<a
 								href={coursehref(t.course)}
-								class="font-mono text-xs underline decoration-border underline-offset-2"
+								class="rounded-md border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
 								>{aliases.get(t.course) ?? t.course}</a
 							>
 						{:else if courselinks && t.course === null}
 							<span class="text-xs text-muted-foreground/70">unclassified</span>
 						{/if}
-						<span class="font-mono text-[11px] text-muted-foreground/70">{t.count}</span>
+						<span class="w-8 text-right text-[11px] text-muted-foreground/70">{t.count}</span>
 					</div>
 				{:else if t.r}
 					{@render file(t.r, t.depth + 1, false, kindtag(t.r))}
@@ -144,11 +154,11 @@
 		</div>
 	{:else}
 		{#each groups as g (g.name)}
-			<div class="pt-3.5">
-				<div class="flex items-baseline gap-2 px-3 pb-1">
-					<span class="text-xs font-semibold">{g.name}</span>
+			<div class="pt-2">
+				<div class="sticky top-0 z-10 flex items-baseline gap-2 bg-background px-3 pt-2 pb-1.5">
+					<span class="text-xs font-medium">{g.name}</span>
+					<span class="text-[11px] text-muted-foreground/70">{g.rows.length}</span>
 					{#if g.note}<span class="truncate text-xs text-muted-foreground">{g.note}</span>{/if}
-					<span class="font-mono text-[11px] text-muted-foreground/70">{g.rows.length}</span>
 				</div>
 				{#each g.rows as row (row.r.id)}
 					{@render file(
