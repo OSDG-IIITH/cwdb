@@ -25,8 +25,9 @@
 
 	let home = $derived(page.url.pathname === base || page.url.pathname === `${base}/`);
 
+	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0]);
+
 	let crumbs = $derived.by(() => {
-		const section = page.url.pathname.slice(base.length).split('/').filter(Boolean)[0];
 		const out: { label: string; href: string }[] = [];
 		if (section) out.push({ label: titles[section] ?? section, href: `${base}/${section}` });
 		const slug = page.params.slug;
@@ -106,12 +107,24 @@
 <header
 	class={cn(
 		'sticky top-0 z-40 flex h-12 shrink-0 items-center bg-background px-4 text-sm',
-		home ? 'justify-end gap-5' : 'gap-2.5 border-b'
+		home ? 'justify-end gap-2' : 'gap-2.5 border-b'
 	)}
 >
+	{#snippet links()}
+		<nav class="hidden items-center gap-0.5 sm:flex">
+			{#each Object.entries(titles) as [key, label] (key)}
+				<a
+					href="{base}/{key}"
+					class={cn(
+						'rounded-md px-2.5 py-1 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
+						section === key && 'text-foreground'
+					)}>{label}</a
+				>
+			{/each}
+		</nav>
+	{/snippet}
 	{#if home}
-		<a href="{base}/courses" class="text-muted-foreground hover:text-foreground">Courses</a>
-		<a href="{base}/sources" class="text-muted-foreground hover:text-foreground">Sources</a>
+		{@render links()}
 	{:else}
 		<Breadcrumb.Root class="min-w-0">
 			<Breadcrumb.List class="flex-nowrap text-sm">
@@ -133,9 +146,10 @@
 			</Breadcrumb.List>
 		</Breadcrumb.Root>
 		<span class="flex-1"></span>
+		{@render links()}
 		<Button
 			variant="outline"
-			class="h-8 w-8 justify-start gap-2 bg-muted/40 px-2 font-normal text-muted-foreground sm:w-60"
+			class="h-8 w-8 justify-start gap-2 bg-muted/60 px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:w-56"
 			aria-label="Search everything"
 			onclick={() => openpalette()}
 		>
