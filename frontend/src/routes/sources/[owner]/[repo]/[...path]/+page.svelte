@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Filter, Loader2 } from '@lucide/svelte';
+	import { Filter, Github, Loader2 } from '@lucide/svelte';
 	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -231,24 +231,20 @@
 
 {#if src}
 	<section class="relative flex min-w-0 flex-1 flex-col">
-		<div class="flex shrink-0 flex-wrap items-start gap-3 border-b px-5 py-4 lg:px-6">
-			<div class="flex min-w-64 flex-1 flex-col gap-1.5">
-				<a
-					href="https://github.com/{owner}/{repo}"
-					target="_blank"
-					rel="noreferrer"
-					class="font-mono text-xs text-muted-foreground hover:text-foreground"
-					>{src.branch} · github.com/{owner}/{repo}</a
-				>
-				<h1 class="truncate text-xl font-semibold tracking-tight">{owner}/{repo}</h1>
+		<div class="flex shrink-0 flex-wrap items-center gap-3 border-b px-5 py-3.5 lg:px-6">
+			<div class="flex min-w-64 flex-1 flex-col gap-0.5">
+				<h1 class="truncate text-base font-semibold tracking-tight">
+					<span class="font-normal text-muted-foreground">{owner} /</span>
+					{repo}
+				</h1>
 				<div class="text-xs text-muted-foreground">
-					<span class="font-mono">{src.count.toLocaleString()}</span> files · {pct(src.mapped)}%
-					with a course · {pct(src.kinded)}% with a kind{root ? ` · in ${root}` : ''}
+					{src.count.toLocaleString()} files · {pct(src.mapped)}% with a course · {pct(src.kinded)}%
+					with a kind · {src.branch}{root ? ` · in ${root}` : ''}
 				</div>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
 				{#if admin}
-					<span class="rounded border px-1.5 font-mono text-[10px] text-muted-foreground"
+					<span class="rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
 						>admin</span
 					>
 					<Button size="sm" variant="outline" disabled={!!busy} onclick={sync}>
@@ -267,10 +263,19 @@
 					<Button size="sm" variant="ghost" class="text-destructive" onclick={remove}>Delete</Button
 					>
 				{/if}
+				<Button
+					size="sm"
+					variant="outline"
+					href="https://github.com/{owner}/{repo}"
+					target="_blank"
+					rel="noreferrer"
+				>
+					<Github />GitHub
+				</Button>
 				<div class="relative">
-					<Filter class="absolute top-2.5 left-2 size-3.5 text-muted-foreground" />
+					<Filter class="absolute top-2 left-2.5 size-3.5 text-muted-foreground" />
 					<Input
-						class="h-[30px] w-40 pl-7"
+						class="h-8 w-44 bg-muted/60 pl-8 shadow-none"
 						placeholder="Filter"
 						aria-label="Filter this source"
 						data-slash
@@ -295,7 +300,7 @@
 
 		{#if picked.size}
 			<div
-				class="absolute bottom-4 left-4 flex h-11 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background lg:left-6"
+				class="absolute bottom-4 left-1/2 flex h-11 -translate-x-1/2 items-center gap-3 rounded-xl bg-foreground pr-2 pl-4 text-[13px] whitespace-nowrap text-background shadow-lg"
 			>
 				<span><span class="font-mono">{picked.size}</span> selected</span>
 				<Button size="sm" variant="secondary" disabled={!!busy} onclick={zip}>Download zip</Button>

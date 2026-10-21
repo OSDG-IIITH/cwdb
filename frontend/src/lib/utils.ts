@@ -26,7 +26,9 @@ export function ago(d: Date | string): string {
 	if (diff < 60000) return 'just now';
 	if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
 	if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-	return new Date(d).toLocaleDateString();
+	if (diff < 2592000000) return `${Math.floor(diff / 86400000)}d ago`;
+	if (diff < 31536000000) return `${Math.floor(diff / 2592000000)}mo ago`;
+	return `${Math.floor(diff / 31536000000)}y ago`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

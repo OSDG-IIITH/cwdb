@@ -36,7 +36,7 @@
 <div class="flex h-[calc(100dvh-3rem)] overflow-hidden bg-background text-foreground">
 	<aside
 		class={cn(
-			'relative w-full shrink-0 flex-col border-r lg:w-(--w)',
+			'relative w-full shrink-0 flex-col border-r bg-sidebar lg:w-(--w)',
 			index ? 'flex' : review ? 'hidden' : 'hidden lg:flex'
 		)}
 		style="--w: {listwidth}px"
@@ -50,7 +50,7 @@
 			key="sourcelist"
 		/>
 		<div class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-2 py-3 text-[13px]">
-			<div class="flex justify-between px-2.5 pb-2.5 text-xs text-muted-foreground">
+			<div class="flex justify-between px-2.5 pb-2 text-[11px] font-medium text-muted-foreground/70">
 				<span>{rows.length} sources</span>
 				<span>files</span>
 			</div>
@@ -59,16 +59,16 @@
 				<a
 					href="{base}/sources/{s.owner}/{s.repo}{open ? `?f=${open}` : ''}"
 					class={cn(
-						'flex h-11 flex-col justify-center rounded-md px-2.5 hover:bg-accent/50',
+						'flex h-12 flex-col justify-center gap-0.5 rounded-md px-2.5 transition-colors hover:bg-accent/60',
 						page.params.owner === s.owner && page.params.repo === s.repo && 'bg-accent'
 					)}
 				>
 					<span class="flex justify-between gap-3">
-						<span class="truncate font-medium">{s.owner}/{s.repo}</span>
-						<span class="font-mono text-xs text-muted-foreground">{s.count.toLocaleString()}</span>
+						<span class="truncate font-medium">{s.repo}</span>
+						<span class="text-xs text-muted-foreground">{s.count.toLocaleString()}</span>
 					</span>
-					<span class="text-[11px] text-muted-foreground">
-						{s.courses} courses{last ? ` · synced ${ago(last)}` : ''}
+					<span class="truncate text-[11px] text-muted-foreground">
+						{s.owner} · {s.courses} courses{last ? ` · ${ago(last)}` : ''}
 					</span>
 				</a>
 			{/each}
