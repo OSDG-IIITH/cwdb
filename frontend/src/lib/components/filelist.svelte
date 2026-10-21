@@ -114,7 +114,7 @@
 {/snippet}
 
 <div
-	class="flex-1 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+11rem)] sm:pb-24"
+	class="flex-1 overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+6rem)] sm:pb-24"
 	data-list
 >
 	{#if tree}

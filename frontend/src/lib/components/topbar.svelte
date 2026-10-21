@@ -91,7 +91,7 @@
 {#snippet tabsnav(big: boolean)}
 	<span
 		class={cn(
-			'absolute left-[3px] rounded-md border border-transparent bg-background shadow-sm transition-transform duration-200 ease-out dark:border-input dark:bg-input/30',
+			'absolute left-[3px] rounded-full border border-transparent bg-background shadow-sm transition-transform duration-200 ease-out dark:border-input dark:bg-input/30',
 			big ? 'inset-y-1 left-1' : 'inset-y-[3px]',
 			index < 0 && 'opacity-0'
 		)}
@@ -105,7 +105,7 @@
 			href="{base}/{t.key}"
 			aria-current={section === t.key ? 'page' : undefined}
 			class={cn(
-				'relative flex items-center justify-center gap-2 rounded-md px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+				'relative flex items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
 				big ? 'h-11 px-4' : 'h-full',
 				section === t.key && 'text-foreground'
 			)}
@@ -130,7 +130,7 @@
 	>
 	<nav
 		aria-label="Sections"
-		class="relative col-start-2 hidden h-9 auto-cols-fr grid-flow-col rounded-lg bg-muted p-[3px] sm:grid"
+		class="relative col-start-2 hidden h-9 auto-cols-fr grid-flow-col rounded-full bg-muted p-[3px] sm:grid"
 	>
 		{@render tabsnav(false)}
 	</nav>
@@ -159,7 +159,7 @@
 <nav
 	aria-label="Sections"
 	class={cn(
-		'fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 mx-auto grid w-fit auto-cols-fr grid-flow-col rounded-xl border bg-background/90 p-1 shadow-lg backdrop-blur transition-[translate,opacity] duration-200 sm:hidden',
+		'fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 mx-auto grid w-fit auto-cols-fr grid-flow-col rounded-full border bg-background/90 p-1 shadow-lg backdrop-blur transition-[translate,opacity] duration-200 sm:hidden',
 		typing && 'pointer-events-none translate-y-4 opacity-0'
 	)}
 >

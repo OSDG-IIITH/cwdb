@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Filter, Pin } from '@lucide/svelte';
+	import { Filter, Search, Pin } from '@lucide/svelte';
 	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -273,6 +273,17 @@
 						</Button>
 					{/if}
 				</div>
+				<div class="px-5 pb-3">
+					<div class="relative">
+						<Search class="absolute top-3 left-3.5 size-4 text-muted-foreground" />
+						<Input
+							class="h-10 rounded-full bg-muted/60 pl-10 text-[15px] shadow-none"
+							placeholder="Search in {course.alias || 'course'}"
+							aria-label="Search in this course"
+							bind:value={query}
+						/>
+					</div>
+				</div>
 				<div class="flex gap-2 overflow-x-auto border-b px-5 pb-3.5 [scrollbar-width:none]">
 					{#each ['all', ...kinds.filter((k) => counts[k])] as k (k)}
 						<Button
@@ -367,17 +378,6 @@
 					>
 				</div>
 			{/if}
-
-			<div
-				class="absolute inset-x-0 bottom-0 bg-linear-to-b from-transparent to-background to-30% px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+5.25rem)] sm:pb-8 lg:hidden"
-			>
-				<Input
-					class="h-12 rounded-full px-5 text-[15px]"
-					placeholder="Search in {course.alias || 'course'}"
-					aria-label="Search in this course"
-					bind:value={query}
-				/>
-			</div>
 		</section>
 
 		{#if cur && !phone.current}
