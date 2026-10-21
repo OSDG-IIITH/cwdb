@@ -1,5 +1,20 @@
 <script lang="ts">
-	import { Download, FolderClosed, Loader2, Pin } from '@lucide/svelte';
+	import {
+		BookMarked,
+		BookOpen,
+		ClipboardList,
+		Download,
+		FileText,
+		Files,
+		FlaskConical,
+		FolderGit2,
+		Loader2,
+		NotebookPen,
+		Pin,
+		Presentation,
+		Shapes
+	} from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { kinds, type CourseInfo } from '$lib/sync';
 	import { cn } from '$lib/utils';
@@ -32,54 +47,76 @@
 		['end', 'End'],
 		['lab', 'Lab']
 	];
+	const icons: Record<string, Component> = {
+		all: Files,
+		exams: FileText,
+		assignments: ClipboardList,
+		labs: FlaskConical,
+		slides: Presentation,
+		notes: NotebookPen,
+		references: BookOpen,
+		projects: FolderGit2,
+		other: Shapes
+	};
 	const title = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 </script>
 
-{#snippet item(key: string, label: string, count: number, indent = false, folder = false)}
+{#snippet item(key: string, label: string, count: number, indent = false, hint = '')}
+	{@const Icon = key.startsWith('src:') ? BookMarked : icons[key]}
 	<button
 		type="button"
+		title={hint || undefined}
 		onclick={() => onnav(key)}
 		class={cn(
-			'flex h-[30px] items-center gap-2 rounded-md pr-2 text-left text-[13px] text-foreground/80 hover:bg-accent',
-			indent ? 'pl-6' : 'pl-2',
+			'flex h-7 items-center gap-2 rounded-md pr-2 text-left text-[13px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+			indent ? 'pl-8' : 'pl-2',
 			nav === key && 'bg-accent font-medium text-foreground'
 		)}
 	>
-		{#if folder}<FolderClosed class="size-3.5 shrink-0 opacity-60" />{/if}
+		{#if Icon}<Icon class="size-3.5 shrink-0" />{/if}
 		<span class="flex-1 truncate">{label}</span>
-		<span class="font-mono text-[11px] text-muted-foreground/70">{count}</span>
+		<span class="text-[11px] text-muted-foreground/70">{count}</span>
 	</button>
 {/snippet}
 
-<aside class="flex w-full flex-col overflow-y-auto border-r bg-muted/40">
-	<div class="flex flex-col gap-1.5 px-4 pt-5 pb-4">
-		<div class="font-mono text-xs text-muted-foreground">{course.alias} · {course.code}</div>
-		<div class="text-[17px] leading-tight font-semibold tracking-tight">{course.name}</div>
-		<div class="text-xs text-muted-foreground">
-			{[course.semester && title(course.semester), `${course.count} files`]
-				.filter(Boolean)
-				.join(' · ')}
-		</div>
-		<div class="mt-2 flex gap-1.5">
-			<Button variant="outline" size="sm" class="flex-1 bg-background" onclick={onpin}>
-				<Pin class={pinned ? 'fill-foreground' : ''} />
-				{pinned ? 'In my courses' : 'Add to my courses'}
+<aside class="flex w-full flex-col overflow-y-auto border-r bg-sidebar">
+	<div class="flex flex-col gap-1 px-4 pt-4 pb-4">
+		<div class="flex items-center gap-1">
+			<span class="flex-1 truncate font-mono text-xs text-muted-foreground"
+				>{course.alias} · {course.code}</span
+			>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				class="size-7 text-muted-foreground hover:text-foreground"
+				aria-label={pinned ? 'Remove from my courses' : 'Add to my courses'}
+				title={pinned ? 'Remove from my courses' : 'Add to my courses'}
+				onclick={onpin}
+			>
+				<Pin class={pinned ? 'fill-foreground text-foreground' : ''} />
 			</Button>
 			<Button
-				variant="outline"
+				variant="ghost"
 				size="icon-sm"
-				class="bg-background"
+				class="size-7 text-muted-foreground hover:text-foreground"
 				aria-label="Download course as zip"
+				title="Download course as zip"
 				disabled={busy}
 				onclick={ondownload}
 			>
 				{#if busy}<Loader2 class="animate-spin" />{:else}<Download />{/if}
 			</Button>
 		</div>
+		<div class="text-base leading-snug font-semibold tracking-tight">{course.name}</div>
+		<div class="text-xs text-muted-foreground">
+			{[course.semester && title(course.semester), `${course.count} files`]
+				.filter(Boolean)
+				.join(' · ')}
+		</div>
 	</div>
 
 	<nav aria-label="Kinds" class="flex flex-col gap-px px-2">
-		<div class="px-2 pt-2 pb-1 text-[11px] text-muted-foreground/70">Kinds</div>
+		<div class="px-2 pt-2 pb-1 text-[11px] font-medium text-muted-foreground/70">Kinds</div>
 		{@render item('all', 'All files', counts.all ?? 0)}
 		{#each kinds.filter((k) => counts[k]) as k (k)}
 			{@render item(k, title(k), counts[k])}
@@ -93,9 +130,9 @@
 
 	{#if sources.length}
 		<nav aria-label="Sources" class="flex flex-col gap-px px-2 pb-4">
-			<div class="px-2 pt-3 pb-1 text-[11px] text-muted-foreground/70">Sources</div>
+			<div class="px-2 pt-4 pb-1 text-[11px] font-medium text-muted-foreground/70">Sources</div>
 			{#each sources as s (s.source_id)}
-				{@render item(`src:${s.source_id}`, `${s.owner}/${s.repo}`, s.count, false, true)}
+				{@render item(`src:${s.source_id}`, s.repo, s.count, false, `${s.owner}/${s.repo}`)}
 			{/each}
 		</nav>
 	{/if}
