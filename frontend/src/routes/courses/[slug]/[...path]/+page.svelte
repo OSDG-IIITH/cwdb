@@ -82,13 +82,20 @@
 		return code ? coursefolders(code) : [];
 	});
 
-	let nav = $derived(
-		page.url.searchParams.get('in') ??
-			(sources.length && own.filter((r) => !r.kind).length > own.length / 2
-				? `src:${sources[0].source_id}`
-				: 'all')
-	);
 	let fid = $derived(page.url.searchParams.get('f'));
+	let nav = $derived.by(() => {
+		const opened = fid ? own.find((r) => r.id === fid) : null;
+		return (
+			page.url.searchParams.get('in') ??
+			(opened
+				? (opened.kind ?? 'other')
+				: counts.exams
+					? 'exams'
+					: sources.length && own.filter((r) => !r.kind).length > own.length / 2
+						? `src:${sources[0].source_id}`
+						: 'all')
+		);
+	});
 	let insource = $derived(nav.startsWith('src:'));
 	let by = $state('sem');
 	let previewwidth = $state(480);
@@ -138,6 +145,7 @@
 	/** updates query params in place */
 	function go(params: Record<string, string | null>) {
 		const url = new URL(page.url);
+		if (!url.searchParams.has('in')) url.searchParams.set('in', nav);
 		for (const [k, v] of Object.entries(params)) {
 			if (v === null) url.searchParams.delete(k);
 			else url.searchParams.set(k, v);
