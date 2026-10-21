@@ -18,17 +18,17 @@
 	{value}
 	onValueChange={(v) => v && (value = v)}
 	aria-label={label}
-	class="relative grid h-9 auto-cols-fr grid-flow-col rounded-full bg-muted p-[3px] text-muted-foreground"
+	class="relative grid h-8 auto-cols-fr grid-flow-col rounded-lg bg-muted p-0.5"
 >
 	<span
-		class="absolute inset-y-[3px] left-[3px] rounded-full border border-transparent bg-background shadow-sm transition-transform duration-200 ease-out dark:border-input dark:bg-input/30"
-		style="width: calc((100% - 6px) / {options.length}); transform: translateX({index * 100}%)"
+		class="absolute inset-y-0.5 left-0.5 rounded-md bg-background shadow-sm transition-transform duration-200 ease-out dark:border dark:border-input dark:bg-input/30"
+		style="width: calc((100% - 4px) / {options.length}); transform: translateX({index * 100}%)"
 	></span>
 	{#each options as o (o.value)}
 		<ToggleGroup.Item
 			value={o.value}
 			aria-label={o.label}
-			class="relative h-full rounded-full bg-transparent px-3 text-sm font-medium text-muted-foreground transition-colors group-data-[spacing=0]/toggle-group:rounded-full hover:bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-foreground"
+			class="relative h-7 rounded-md bg-transparent px-3 text-[13px] font-normal text-muted-foreground transition-colors group-data-[spacing=0]/toggle-group:rounded-md hover:bg-transparent data-[state=on]:bg-transparent data-[state=on]:text-foreground"
 		>
 			{#if o.icon}<o.icon class="size-3.5" />{:else}{o.label}{/if}
 		</ToggleGroup.Item>
