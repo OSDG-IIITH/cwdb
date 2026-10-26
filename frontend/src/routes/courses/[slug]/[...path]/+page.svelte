@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Filter, Search, Pin } from '@lucide/svelte';
+	import { Filter, Search } from '@lucide/svelte';
 	import { MediaQuery, SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -9,6 +9,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import CourseSidebar from '$lib/components/coursesidebar.svelte';
+	import MineIcon from '$lib/components/mineicon.svelte';
 	import EditPanel from '$lib/components/editpanel.svelte';
 	import FileList from '$lib/components/filelist.svelte';
 	import Preview from '$lib/components/preview.svelte';
@@ -23,15 +24,14 @@
 		courses,
 		coursefolders,
 		getcourse,
-		mycourses,
 		offeringsfor,
 		patchresources,
 		predecessors,
-		togglepin,
 		kinds,
 		type CourseInfo,
 		type Resource
 	} from '$lib/sync';
+	import { mine, togglemine } from '$lib/profile';
 	import { githuburl } from '$lib/utils';
 	import { downloadfile, downloadzip } from '$lib/zip';
 
@@ -59,7 +59,7 @@
 			: getcourse($courses, page.params.slug)
 	);
 	let code = $derived(course?.code ?? '');
-	let pinned = $derived(!!code && $mycourses.includes(code));
+	let pinned = $derived(!!code && $mine.includes(code));
 
 	const shown = (r: Resource) => admin || !r.hidden;
 
@@ -222,7 +222,7 @@
 			'[': () => (sidebar = false),
 			']': () => (sidebar = true),
 			o: () => cur && window.open(githuburl(cur), '_blank'),
-			p: () => code && togglepin(code),
+			p: () => code && togglemine(code),
 			e: () => admin && cur && (editing = 'one')
 		};
 		if (e.key in keys) {
@@ -246,7 +246,7 @@
 					{pinned}
 					{busy}
 					onnav={(n) => go({ in: n })}
-					onpin={() => togglepin(code)}
+					onpin={() => togglemine(code)}
 					ondownload={() => zip(own)}
 				/>
 				<Resize
@@ -274,10 +274,10 @@
 							variant="ghost"
 							size="icon"
 							class="size-11"
-							aria-label="Pin course"
-							onclick={() => togglepin(code)}
+							aria-label={pinned ? 'Remove from my courses' : 'Add to my courses'}
+							onclick={() => togglemine(code)}
 						>
-							<Pin class={pinned ? 'fill-foreground' : ''} />
+							<MineIcon added={pinned} filled="fill-foreground" />
 						</Button>
 					{/if}
 				</div>

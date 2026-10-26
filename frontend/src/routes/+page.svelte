@@ -8,12 +8,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { openpalette } from '$lib/components/palette.svelte';
-	import { courses, mycourses, syncstatus } from '$lib/sync';
+	import { courses, syncstatus } from '$lib/sync';
+	import { mine as minecodes } from '$lib/profile';
 	import CourseCard from '$lib/components/coursecard.svelte';
 
 	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
 
-	let mine = $derived($courses.filter((c) => $mycourses.includes(c.code)));
+	let mine = $derived($courses.filter((c) => $minecodes.includes(c.code)));
 	let top = $derived([...$courses].sort((a, b) => b.count - a.count).slice(0, 6));
 	let empty = $derived($syncstatus.empty && !$syncstatus.syncing);
 

@@ -29,7 +29,8 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Command from '$lib/components/ui/command';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import { search, getentry, mycourses, togglepin, type Entry } from '$lib/sync';
+	import { search, getentry, type Entry } from '$lib/sync';
+	import { mine, togglemine } from '$lib/profile';
 	import { entryhref, entrysub, entrytag } from '$lib/entries';
 
 	const detail = false;
@@ -48,12 +49,12 @@
 
 	let groups = $derived.by(() => {
 		const tier = (e: Entry) =>
-			e.course === here && here ? 0 : e.course && $mycourses.includes(e.course) ? 1 : 2;
+			e.course === here && here ? 0 : e.course && $mine.includes(e.course) ? 1 : 2;
 		const hits = query.trim()
 			? search(query, scope).sort((a, b) => tier(a) - tier(b))
 			: scope
 				? []
-				: ($mycourses.map((c) => getentry(`c:${c}`)).filter(Boolean) as Entry[]);
+				: ($mine.map((c) => getentry(`c:${c}`)).filter(Boolean) as Entry[]);
 		return [
 			{ name: 'Courses', rows: scope ? [] : hits.filter((e) => e.t === 'c').slice(0, 5) },
 			{ name: 'Folders', rows: hits.filter((e) => e.t === 'd').slice(0, 5) },
@@ -108,7 +109,7 @@
 	}
 
 	function secondary(e: Entry) {
-		if (e.t === 'c') return togglepin(e.course!);
+		if (e.t === 'c') return togglemine(e.course!);
 		window.open(e.github, '_blank', 'noopener');
 		closepalette();
 	}
@@ -348,9 +349,7 @@
 								{#if sel.t === 'c'}
 									{@render hint('Open course', '↵')}
 									{@render hint(
-										$mycourses.includes(sel.course!)
-											? 'Remove from my courses'
-											: 'Add to my courses',
+										$mine.includes(sel.course!) ? 'Remove from my courses' : 'Add to my courses',
 										'Ctrl ↵',
 										true
 									)}

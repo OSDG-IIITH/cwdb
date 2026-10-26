@@ -3,7 +3,8 @@
 	import { FileText, Folder, Search, X } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import { courses, mycourses, search, type Entry } from '$lib/sync';
+	import { courses, search, type Entry } from '$lib/sync';
+	import { mine } from '$lib/profile';
 	import { entryhref, entrysub, entrytag } from '$lib/entries';
 	import { cn } from '$lib/utils';
 
@@ -16,7 +17,7 @@
 
 	let info = $derived(new Map($courses.map((c) => [c.code, c])));
 	let hits = $derived.by(() => {
-		const tier = (e: Entry) => (e.course && $mycourses.includes(e.course) ? 0 : 1);
+		const tier = (e: Entry) => (e.course && $mine.includes(e.course) ? 0 : 1);
 		return $courses.length ? search(query, null).sort((a, b) => tier(a) - tier(b)) : [];
 	});
 	let all = $derived(
