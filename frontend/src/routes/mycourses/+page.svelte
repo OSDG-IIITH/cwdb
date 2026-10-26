@@ -229,11 +229,14 @@
 				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
 					<h2 class="text-[13px] font-medium">Up next: {next.label}</h2>
 					<span class="text-xs text-muted-foreground">
-						{next.from > now ? `starts ${shortdate(next.from)}, ` : ''}papers shown until {shortdate(
-							next.until
-						)}{next.term.season !== term.season || next.term.year !== term.year
-							? ` · ${termname(next.term)}`
-							: ''}{next.guessed ? ' · dates estimated from last year' : ''}
+						{[
+							next.from > now && `starts ${shortdate(next.from)}`,
+							(next.term.season !== term.season || next.term.year !== term.year) &&
+								termname(next.term),
+							next.guessed && 'dates estimated from last year'
+						]
+							.filter(Boolean)
+							.join(' · ')}
 					</span>
 				</div>
 			{:else}
