@@ -8,16 +8,17 @@
 	import { fetchUser } from '$lib/auth';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { init } from '$lib/sync';
+	import { initprofile } from '$lib/profile';
+	import { applyvariant } from '$lib/theme';
 	import { pwaInfo } from 'virtual:pwa-info';
 
 	let { children } = $props();
 
 	onMount(() => {
+		initprofile();
 		fetchUser();
 		init();
-		const v = localStorage.getItem('theme-variant') || 'default';
-		if (v === 'mint') document.documentElement.classList.add('mint');
-		if (v === 'amethyst') document.documentElement.classList.add('amethyst');
+		applyvariant(localStorage.getItem('theme-variant') || 'default');
 
 		if ('serviceWorker' in navigator && !import.meta.env.DEV) {
 			import('virtual:pwa-register').then(({ registerSW }) => {

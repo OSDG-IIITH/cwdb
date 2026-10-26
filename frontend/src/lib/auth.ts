@@ -10,6 +10,26 @@ export interface User {
 export const user = writable<User | null>(null);
 export const loading = writable(true);
 
+/** device copies of the account, used while the backend cannot be reached */
+export const saved = { user: 'cwdb:user', profile: 'cwdb:profile' };
+
+function lastuser(): User | null {
+	try {
+		return JSON.parse(localStorage.getItem(saved.user) ?? 'null');
+	} catch {
+		return null;
+	}
+}
+
+/** forgets the account on this device */
+function forget() {
+	try {
+		localStorage.removeItem(saved.user);
+		localStorage.removeItem(saved.profile);
+	} catch {}
+}
+
+/** fetches the user; offline or with the backend down, keeps the last one seen here */
 export async function fetchUser() {
 	loading.set(true);
 	try {
@@ -19,11 +39,15 @@ export async function fetchUser() {
 		if (res.ok) {
 			const data = await res.json();
 			user.set(data);
-		} else {
+			localStorage.setItem(saved.user, JSON.stringify(data));
+		} else if (res.status === 401) {
 			user.set(null);
+			forget();
+		} else {
+			user.set(lastuser());
 		}
 	} catch {
-		user.set(null);
+		user.set(lastuser());
 	} finally {
 		loading.set(false);
 	}
@@ -39,7 +63,16 @@ export function login() {
 }
 
 export function logout() {
+	forget();
 	user.set(null);
 	loading.set(true);
 	window.location.href = `${apibase}/api/auth/logout`;
 }
+
+/** display name from the part of an email before the @ */
+export const nameof = (email: string) =>
+	email
+		.split('@')[0]
+		.split(/[._-]/)
+		.map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+		.join(' ');
