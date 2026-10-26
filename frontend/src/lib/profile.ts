@@ -92,9 +92,11 @@ function patch(fn: (p: Profile) => Profile) {
 	profile.update((p) => (p ? fn(p) : p));
 }
 
-/** shows the error and reloads, undoing the optimistic change */
+/** shows the error and undoes the optimistic change, back to the copy the backend last confirmed */
 async function failed(message: string) {
 	toast.error(navigator.onLine ? message : 'You are offline, try again once connected');
+	const last = lastprofile();
+	if (last) profile.set(last);
 	await loadprofile();
 }
 
