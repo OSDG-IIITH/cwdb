@@ -4,6 +4,7 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 import { base } from '$app/paths';
 import { githuburl } from '$lib/utils';
+import type { Almanac } from '$lib/terms';
 
 export type Resource = {
 	id: string;
@@ -100,6 +101,7 @@ type Catalog = {
 	offerings?: Record<string, IndexOffering>;
 	faculty?: Record<string, string[]>;
 	succession?: [string, string][];
+	almanac?: Almanac;
 };
 type Index = Catalog & { version: number; resources: IndexResource[] };
 
@@ -166,6 +168,7 @@ export const syncstatus = writable<SyncStatus>({
 
 export const allresources = writable<Resource[]>([]);
 export const courses = writable<CourseInfo[]>([]);
+export const almanac = writable<Almanac>({});
 export const mycourses = writable<string[]>(browser ? loadpins() : []);
 
 mycourses.subscribe((pins) => {
@@ -418,6 +421,7 @@ function apply(items: Resource[], catalog: Catalog, serialized?: string): MiniSe
 		ms.addAll(entries);
 	}
 	courses.set([...coursemap.values()].sort((a, b) => a.name.localeCompare(b.name)));
+	almanac.set(catalog.almanac ?? {});
 	allresources.set(items);
 	return ms;
 }

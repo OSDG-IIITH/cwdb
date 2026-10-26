@@ -74,6 +74,15 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
     };
 
+    let almanac = sqlx::query_scalar::<_, serde_json::Value>("SELECT value FROM settings WHERE key = 'almanac'")
+        .fetch_optional(&state.db)
+        .await;
+
+    let almanac = match almanac {
+        Ok(a) => a.unwrap_or_else(|| json!({})),
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    };
+
     let version = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
@@ -171,6 +180,7 @@ pub async fn publish(State(state): State<AppState>, claims: Claims) -> impl Into
         "offerings": offerings,
         "faculty": faculty,
         "succession": succession,
+        "almanac": almanac,
     });
 
     let path = std::path::Path::new(&state.config.publish_path).join("index.json");
