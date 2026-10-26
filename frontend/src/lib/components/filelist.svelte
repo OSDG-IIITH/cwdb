@@ -4,6 +4,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { courses, kindtag, type Resource } from '$lib/sync';
 	import type { Group, TreeRow } from '$lib/courseview';
+	import { progress } from '$lib/profile';
 	import { cn, coursehref } from '$lib/utils';
 
 	let {
@@ -40,6 +41,7 @@
 </script>
 
 {#snippet file(r: Resource, depth: number, tall: boolean, tag: string, more?: () => void, alts = 0)}
+	{@const done = $progress.get(r.id)}
 	<div
 		class={cn(
 			'group flex items-center gap-3 rounded-md px-3 transition-colors hover:bg-accent/60',
@@ -79,7 +81,13 @@
 			onclick={() => onopen(r)}
 		>
 			{#if !tall}<File class="size-3.5 shrink-0 text-muted-foreground/70" />{/if}
-			<span class={cn('min-w-0 flex-1 truncate', tall ? 'text-[15px] lg:text-sm' : 'text-[13px]')}>
+			<span
+				class={cn(
+					'min-w-0 flex-1 truncate',
+					tall ? 'text-[15px] lg:text-sm' : 'text-[13px]',
+					done && 'text-muted-foreground line-through'
+				)}
+			>
 				{tall ? r.title : r.name}
 			</span>
 			{#if admin && mark(r)}
