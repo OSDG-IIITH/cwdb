@@ -7,6 +7,7 @@
 		ChevronRight,
 		LogIn,
 		Plus,
+		RotateCw,
 		X
 	} from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -20,7 +21,9 @@
 		addcourses,
 		archived,
 		archivecourses,
+		loadprofile,
 		profile,
+		profilefailed,
 		progress,
 		removecourse,
 		setdone,
@@ -292,6 +295,11 @@
 				</section>
 			{/if}
 		</CourseMenu>
+	{:else if $profilefailed}
+		<div class="flex flex-col items-center gap-3 py-20 text-center">
+			<p class="text-sm text-muted-foreground">Could not load your courses.</p>
+			<Button variant="outline" onclick={loadprofile}><RotateCw />Retry</Button>
+		</div>
 	{/if}
 </main>
 

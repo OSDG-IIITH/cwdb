@@ -29,9 +29,11 @@ function forget() {
 	} catch {}
 }
 
-/** fetches the user; offline or with the backend down, keeps the last one seen here */
+/** shows the account last seen on this device at once, then checks it; only a 401 logs out */
 export async function fetchUser() {
-	loading.set(true);
+	const last = lastuser();
+	user.set(last);
+	loading.set(!last);
 	try {
 		const res = await fetch(`${apibase}/api/auth/me`, {
 			credentials: 'include'
@@ -43,11 +45,9 @@ export async function fetchUser() {
 		} else if (res.status === 401) {
 			user.set(null);
 			forget();
-		} else {
-			user.set(lastuser());
 		}
 	} catch {
-		user.set(lastuser());
+		// offline: keep the account from this device
 	} finally {
 		loading.set(false);
 	}

@@ -23,7 +23,10 @@ export type Profile = Settings & {
 
 export const profile = writable<Profile | null>(null);
 
-/** done state per seen resource id */
+/** set when the profile could not be loaded and there is no copy on this device */
+export const profilefailed = writable(false);
+
+/** done state per marked resource id */
 export const progress = derived(
 	profile,
 	(p) => new Map(p?.progress.map((x) => [x.id, x.done]) ?? [])
@@ -96,9 +99,12 @@ async function failed(message: string) {
 }
 
 export async function loadprofile() {
+	profilefailed.set(false);
 	const res = await call('', 'GET');
-	if (res === undefined) return profile.set(lastprofile());
-	if (!res) return profile.set(null);
+	if (!res) {
+		if (!get(profile)) profile.set(lastprofile());
+		return profilefailed.set(!get(profile));
+	}
 	const p: Profile = await res.json();
 	profile.set(p);
 	remember();
@@ -138,9 +144,15 @@ export async function pushprefs(keepalive = false) {
 	}
 }
 
-/** loads the profile with the user, and pushes prefs whenever the tab is left */
+/** shows the device copy of the profile at once and refreshes it with each new user, and pushes prefs whenever the tab is left */
 export function initprofile() {
-	user.subscribe((u) => (u ? loadprofile() : profile.set(null)));
+	let current: string | undefined;
+	user.subscribe((u) => {
+		if (u?.id === current) return;
+		current = u?.id;
+		profile.set(u ? lastprofile() : null);
+		if (u) loadprofile();
+	});
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'hidden') pushprefs(true);
 	});

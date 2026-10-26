@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { LogIn } from '@lucide/svelte';
+	import { LogIn, RotateCw } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import ThemePicker from '$lib/components/themepicker.svelte';
 	import { user, loading, login, nameof } from '$lib/auth';
-	import { profile, setautoterm, setsettings } from '$lib/profile';
+	import { loadprofile, profile, profilefailed, setautoterm, setsettings } from '$lib/profile';
 	import { almanac } from '$lib/sync';
 	import { phase, shortdate, ug1until } from '$lib/terms';
 
@@ -93,6 +93,11 @@
 				<h2 class="text-xs font-medium text-muted-foreground">Appearance</h2>
 				<ThemePicker large />
 			</section>
+		{:else if $profilefailed}
+			<div class="flex flex-col items-center gap-3 py-20 text-center">
+				<p class="text-sm text-muted-foreground">Could not load your settings.</p>
+				<Button variant="outline" onclick={loadprofile}><RotateCw />Retry</Button>
+			</div>
 		{/if}
 	{/if}
 </main>
