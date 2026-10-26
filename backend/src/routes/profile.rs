@@ -7,12 +7,22 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::Row;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::AppState;
 use crate::routes::auth::{Claims, upsertuser};
 
 const FIELDS: &str = "autoterm, examfocus, ug1, ug1since, prefs";
+
+/// most synced prefs, and the longest key or value, an account may store
+const MAXPREFS: usize = 16;
+const MAXLEN: usize = 64;
+
+/// local storage keys the frontend syncs: theme, mode, course view and panel widths
+fn synced(key: &str) -> bool {
+    matches!(key, "theme-variant" | "mode-watcher-mode" | "courseview") || key.starts_with("cwdb:width:")
+}
 
 fn fail(e: sqlx::Error) -> Response {
     let code = match e {
@@ -103,11 +113,18 @@ pub struct Settings {
     pub autoterm: Option<bool>,
     pub examfocus: Option<bool>,
     pub ug1: Option<bool>,
-    pub prefs: Option<serde_json::Value>,
+    pub prefs: Option<HashMap<String, String>>,
 }
 
 /// PATCH /api/profile — changes any of the toggles, or replaces the synced prefs
 pub async fn edit(State(state): State<AppState>, claims: Claims, Json(s): Json<Settings>) -> Response {
+    if s.prefs.as_ref().is_some_and(|p| {
+        p.len() > MAXPREFS || p.iter().any(|(k, v)| !synced(k) || k.len() > MAXLEN || v.len() > MAXLEN)
+    }) {
+        return (StatusCode::BAD_REQUEST, Json(json!({ "error": "prefs must be known keys with short values" })))
+            .into_response();
+    }
+
     let id = match owner(&state, &claims).await {
         Ok(id) => id,
         Err(e) => return e,
@@ -126,7 +143,7 @@ pub async fn edit(State(state): State<AppState>, claims: Claims, Json(s): Json<S
     .bind(s.autoterm)
     .bind(s.examfocus)
     .bind(s.ug1)
-    .bind(s.prefs)
+    .bind(s.prefs.map(|p| json!(p)))
     .fetch_one(&state.db)
     .await;
 
