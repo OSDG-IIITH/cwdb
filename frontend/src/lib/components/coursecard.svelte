@@ -67,7 +67,7 @@
 			title={added ? 'Remove from my courses' : 'Add to my courses'}
 			onclick={() => togglemine(c.code)}
 		>
-			<MineIcon {added} remove />
+			<MineIcon {added} />
 		</Button>
 	</div>
 {:else}
