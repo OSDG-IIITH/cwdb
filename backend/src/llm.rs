@@ -66,6 +66,27 @@ fn stem(path: &str) -> String {
         .collect()
 }
 
+/// whether a paper can be the one a key answers: the key's numbers all appear in the paper and course prefixes agree
+fn plausible(key: &str, paper: &str) -> bool {
+    let name = |p: &str| {
+        let n = p.rsplit('/').next().unwrap_or(p).to_lowercase();
+        n.rsplit_once('.').map_or(n.clone(), |n| n.0.to_string())
+    };
+    let nums = |p: &str| -> HashSet<String> {
+        name(p).split(|c: char| !c.is_ascii_digit()).filter(|d| !d.is_empty()).map(|d| d.trim_start_matches('0').to_string()).collect()
+    };
+    let generic = ["quiz", "tutorial", "tut", "midsem", "endsem", "mid", "end", "assignment", "hw", "homework", "sol", "soln", "solution",
+        "solutions", "key", "answer", "ans", "anskey", "set", "paper", "lab", "exam"];
+    let prefix = |p: &str| {
+        let n = name(p);
+        let head: String = n.chars().take_while(|c| c.is_ascii_lowercase()).collect();
+        let rest = n[head.len()..].trim_start_matches(|c: char| c.is_ascii_digit());
+        (!head.is_empty() && rest.starts_with([' ', '_']) && !generic.contains(&head.as_str())).then_some(head)
+    };
+    let prefixes = (prefix(key), prefix(paper));
+    nums(key).is_subset(&nums(paper)) && !matches!(prefixes, (Some(a), Some(b)) if a != b)
+}
+
 /// shared leading characters of two stems
 fn overlap(a: &str, b: &str) -> usize {
     a.chars().zip(b.chars()).take_while(|(x, y)| x == y).count()
@@ -84,11 +105,15 @@ fn opt<T: ToString>(v: Option<T>, text: bool) -> String {
     }
 }
 
-/// writes rows with gaps (or every unlocked row with `full`) as batches of json under `dir/in`
-async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let gaps = if full { "" } else { GAPS };
+/// writes rows with gaps (every unlocked row with `full`, unlinked keys with `keys`) as batches of json under `dir/in`
+async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool, keys: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let gaps = match (full, keys) {
+        (_, true) => "AND r.key AND r.keyfor IS NULL".to_string(),
+        (true, _) => "AND r.classifiedby IS DISTINCT FROM 'llm'".to_string(),
+        _ => format!("AND r.classifiedby IS DISTINCT FROM 'llm' {GAPS}"),
+    };
     let rows = sqlx::query(&format!(
-        "{ROWS} WHERE NOT r.hidden AND r.classifiedby IS DISTINCT FROM 'manual' AND r.classifiedby IS DISTINCT FROM 'llm' {gaps} \
+        "{ROWS} WHERE NOT r.hidden AND r.classifiedby IS DISTINCT FROM 'manual' {gaps} \
          AND (cardinality($1::text[]) = 0 OR s.repo = ANY($1) OR s.owner || '/' || s.repo = ANY($1)) ORDER BY s.repo, r.file_path"
     ))
     .bind(repos)
@@ -100,16 +125,19 @@ async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool) -> Result
     let courses: Vec<_> = courses.into_iter().map(|c| serde_json::json!([c.0, c.1, c.2, c.3])).collect();
 
     let sources: Vec<i32> = rows.iter().map(|r| r.get("source_id")).collect();
-    let mut folders: HashMap<(i32, String), Vec<String>> = HashMap::new();
-    for (source, path) in sqlx::query_as::<_, (i32, String)>(
-        "SELECT source_id, file_path FROM resources WHERE source_id = ANY($1) AND NOT key",
+    let mut folders: HashMap<(i32, String), Vec<(String, Option<String>)>> = HashMap::new();
+    for (source, path, course) in sqlx::query_as::<_, (i32, String, Option<String>)>(
+        "SELECT source_id, file_path, course FROM resources WHERE source_id = ANY($1) AND NOT key AND NOT hidden",
     )
     .bind(&sources)
     .fetch_all(db)
     .await?
     {
-        let dir = path.rsplit_once('/').map_or("", |d| d.0).to_string();
-        folders.entry((source, dir)).or_default().push(path);
+        if keys && !crate::classify::ext(&path).is_some_and(|e| DOCS.contains(&e.as_str())) {
+            continue;
+        }
+        let dir = if keys { String::new() } else { path.rsplit_once('/').map_or("", |d| d.0).to_string() };
+        folders.entry((source, dir)).or_default().push((path, course));
     }
 
     let items: Vec<Item> = rows
@@ -117,17 +145,18 @@ async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool) -> Result
         .map(|r| {
             let path: String = r.get("file_path");
             let wantspeers = !full && r.get::<bool, _>("key") && r.get::<Option<i32>, _>("keyfor").is_none();
-            let dir = path.rsplit_once('/').map_or("", |d| d.0).to_string();
+            let dir = if keys { String::new() } else { path.rsplit_once('/').map_or("", |d| d.0).to_string() };
             let peers = folders.get(&(r.get("source_id"), dir)).filter(|_| wantspeers);
+            let course: Option<String> = r.get("course");
             Item {
                 id: r.get("id"),
                 source: r.get("repo"),
                 peers: peers
                     .map(|p| {
                         let mut p = p.clone();
-                        p.sort_by_key(|q| std::cmp::Reverse(overlap(&stem(q), &stem(&path))));
-                        p.truncate(30);
-                        p
+                        p.sort_by_key(|(q, c)| std::cmp::Reverse((course.is_some() && *c == course, if keys { overlap(q, &path) } else { 0 }, overlap(&stem(q), &stem(&path)))));
+                        p.truncate(if keys { 15 } else { 30 });
+                        p.into_iter().map(|(q, _)| q).collect()
                     })
                     .unwrap_or_default(),
                 path,
@@ -146,10 +175,10 @@ async fn export(db: &PgPool, dir: &Path, repos: &[String], full: bool) -> Result
         .collect();
 
     std::fs::create_dir_all(dir.join("in"))?;
-    let mode = if full { "full" } else { "fill" };
+    let mode = if keys { "keys" } else if full { "full" } else { "fill" };
     for (i, chunk) in items.chunks(BATCH).enumerate() {
         let file = std::fs::File::create(dir.join("in").join(format!("{}.json", i + 1)))?;
-        serde_json::to_writer(file, &serde_json::json!({ "mode": mode, "courses": courses, "rows": chunk }))?;
+        serde_json::to_writer(file, &serde_json::json!({ "mode": mode, "courses": if keys { &[][..] } else { &courses[..] }, "rows": chunk }))?;
     }
     println!("{} rows in {} batches, {mode} mode", items.len(), items.chunks(BATCH).len());
     Ok(())
@@ -218,6 +247,10 @@ async fn render(db: &PgPool, outs: Vec<Out>, full: bool) -> Result<(String, usiz
         let n = if full { o.n } else { cur.get::<Option<i32>, _>("n").or(o.n) };
         let key = if full { o.key } else { cur.get::<bool, _>("key") };
         let found = match &o.keyfor {
+            Some(p) if key && (o.confidence < 0.7 || !plausible(&cur.get::<String, _>("file_path"), p)) => {
+                errors.push(bad("keyfor does not match the key"));
+                None
+            }
             Some(p) if key => match paths.get(&(source, p.clone())) {
                 Some(&t) if t != o.id => Some(t),
                 _ => {
@@ -334,14 +367,15 @@ async fn import(db: &PgPool, dir: &Path, sql: Option<&str>, full: bool) -> Resul
     Ok(())
 }
 
-/// runs `classifyexport [--full] [repo...]` or `classifyimport [--full] [file.sql]` against DATABASE_URL, files live in ./classify
+/// runs `classifyexport [--full | --keys] [repo...]` or `classifyimport [--full] [file.sql]` against DATABASE_URL, files live in ./classify
 pub async fn run(cmd: &str, args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let db = PgPool::connect(&std::env::var("DATABASE_URL")?).await?;
     let dir = Path::new("classify");
     let full = args.iter().any(|a| a == "--full");
-    let rest: Vec<String> = args.iter().filter(|a| *a != "--full").cloned().collect();
+    let keys = args.iter().any(|a| a == "--keys");
+    let rest: Vec<String> = args.iter().filter(|a| *a != "--full" && *a != "--keys").cloned().collect();
     match cmd {
-        "classifyexport" => export(&db, dir, &rest, full).await,
+        "classifyexport" => export(&db, dir, &rest, full, keys).await,
         _ => import(&db, dir, rest.first().map(String::as_str), full).await,
     }
 }
@@ -355,5 +389,17 @@ mod tests {
         assert_eq!(stem("a/DS_quiz1_2024_M_key.pdf"), stem("a/DS_quiz1_2024_M.pdf"));
         assert_eq!(stem("x/Quiz1 Sol 2K25.pdf"), "quiz12k25");
         assert!(overlap(&stem("PRS_quiz2_2024_M.pdf"), &stem("PRS_quiz2_2024_M_key.pdf")) > overlap(&stem("MA6.101 Endsems.pdf"), &stem("PRS_quiz2_2024_M_key.pdf")));
+    }
+
+    #[test]
+    fn plausibles() {
+        assert!(plausible("a/ALG_quiz2_2022_M_key.pdf", "a/ALG_quiz2_2022_M.pdf"));
+        assert!(plausible("a/AnsKey.pdf", "a/Quiz-1.pdf"));
+        assert!(plausible("a/Quiz-2 Answer Key.pdf", "a/MA2.101 Quiz 2.pdf"));
+        assert!(plausible("a/Quiz 2 Key.pdf", "a/DS Quiz 2.pdf"));
+        assert!(!plausible("a/PRS_quiz1_2024_M_key.pdf", "a/PRS_quiz1_2022_M.pdf"));
+        assert!(!plausible("a/OSN_quiz2_2022_M_key.pdf", "a/ALG_quiz2_2022_M.pdf"));
+        assert!(!plausible("a/CS3.301 Quiz 1 Answer Key.pdf", "a/CS1.301 Quiz 1.pdf"));
+        assert!(!plausible("a/pns_quiz1_solutions.pdf", "a/dass_quiz1.pdf"));
     }
 }
