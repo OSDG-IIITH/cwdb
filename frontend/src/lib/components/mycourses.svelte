@@ -144,10 +144,10 @@
 		<a href={coursehref(c.code)} class="group flex items-center gap-3 px-4 pt-3 pb-2.5">
 			<span class="flex min-w-0 flex-1 flex-col gap-0.5">
 				<span class="truncate font-mono text-xs text-muted-foreground">{c.alias}</span>
-				<span class="truncate text-sm font-medium">{c.name}</span>
+				<span class="truncate text-[15px] font-medium">{c.name}</span>
 			</span>
 			{#if rows.length}
-				<span class="text-xs text-muted-foreground">{done}/{rows.length} done</span>
+				<span class="text-[13px] text-muted-foreground">{done}/{rows.length} done</span>
 			{/if}
 			<ArrowUpRight
 				class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
@@ -159,7 +159,7 @@
 				{#each rows as row (row.r.id)}
 					{@const done = !!$progress.get(row.r.id)}
 					<div
-						class="group flex h-9 items-center gap-3 rounded-md pl-2.5 text-sm transition-colors hover:bg-accent/60"
+						class="group flex h-10 items-center gap-3 rounded-md pl-2.5 text-[15px] transition-colors hover:bg-accent/60"
 					>
 						<Checkbox
 							checked={done}
@@ -185,7 +185,7 @@
 				{/each}
 			</div>
 		{:else}
-			<p class="border-t px-4 py-3 text-[13px] text-muted-foreground">
+			<p class="border-t px-4 py-3 text-sm text-muted-foreground">
 				No {next?.label} papers found
 			</p>
 		{/if}
@@ -196,10 +196,10 @@
 	{#if p}
 		<div class="flex flex-wrap items-center gap-3">
 			<div class="flex min-w-0 flex-col gap-0.5">
-				<h2 class="text-[13px] font-medium">My courses</h2>
-				<span class="text-xs text-muted-foreground">
-					{[p.autoterm && termname(term), `${active.length} courses`].filter(Boolean).join(' · ')}
-				</span>
+				<h2 class="text-lg font-semibold tracking-tight">My courses</h2>
+				{#if p.autoterm}
+					<span class="text-[13px] text-muted-foreground">{termname(term)}</span>
+				{/if}
 			</div>
 			<span class="flex-1"></span>
 			{#if saved.length}
@@ -216,8 +216,8 @@
 		{#if p.examfocus && active.length && !managing}
 			{#if next}
 				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-					<h2 class="text-[13px] font-medium">Up next: {next.label}</h2>
-					<span class="text-xs text-muted-foreground">
+					<h2 class="text-[15px] font-medium">Up next: {next.label}</h2>
+					<span class="text-[13px] text-muted-foreground">
 						{[
 							next.from > now && `starts ${shortdate(next.from)}`,
 							(next.term.season !== term.season || next.term.year !== term.year) &&
@@ -229,7 +229,7 @@
 					</span>
 				</div>
 			{:else}
-				<p class="text-xs text-muted-foreground">No exam dates have been published yet.</p>
+				<p class="text-[13px] text-muted-foreground">No exam dates have been published yet.</p>
 			{/if}
 		{/if}
 
@@ -268,7 +268,7 @@
 				<section class="flex flex-col gap-1 pt-6">
 					<button
 						type="button"
-						class="flex h-8 items-center gap-2 self-start rounded-md px-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+						class="flex h-8 items-center gap-2 self-start rounded-md px-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 						aria-expanded={shelf}
 						onclick={() => (shelf = !shelf)}
 					>
@@ -279,7 +279,9 @@
 					{#if shelf}
 						{#each shelves as s (s.name)}
 							{#if p.autoterm}
-								<div class="px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">{s.name}</div>
+								<div class="px-3 pt-3 pb-1 text-[13px] font-medium text-muted-foreground">
+									{s.name}
+								</div>
 							{/if}
 							{#each s.list as x (x.c.code)}{@render manage(x, true)}{/each}
 						{/each}

@@ -13,6 +13,7 @@
 	import CourseCard from '$lib/components/coursecard.svelte';
 	import MyCourses from '$lib/components/mycourses.svelte';
 	import { user } from '$lib/auth';
+	import { cn } from '$lib/utils';
 
 	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
 
@@ -35,10 +36,20 @@
 {#if query && !phone.current}
 	<HomeSearch {query} onquery={setquery} />
 {:else}
-	<main class="mx-auto flex w-full max-w-240 flex-1 flex-col gap-16 px-6 pt-[14vh] pb-16">
+	<main
+		class={cn(
+			'mx-auto flex w-full max-w-240 flex-1 flex-col gap-16 px-6 pt-[14vh] pb-16',
+			$user && 'gap-12 pt-[6vh]'
+		)}
+	>
 		<div class="mx-auto flex w-full max-w-180 flex-col items-center gap-8">
 			<div class="flex flex-col items-center gap-3">
-				<div class="font-mono text-7xl leading-none font-bold tracking-[-0.06em] sm:text-[104px]">
+				<div
+					class={cn(
+						'font-mono text-7xl leading-none font-bold tracking-[-0.06em] sm:text-[104px]',
+						$user && 'text-6xl sm:text-[80px]'
+					)}
+				>
 					cwdb
 				</div>
 				<p class="text-sm text-muted-foreground">Papers, slides and notes for every IIIT course</p>
@@ -52,7 +63,10 @@
 					{#if phone.current}
 						<button
 							type="button"
-							class="flex h-13 w-full items-center gap-2.5 rounded-xl border border-input bg-background pr-3 pl-4 text-left text-base text-muted-foreground transition-colors hover:border-muted-foreground/50"
+							class={cn(
+								'flex h-13 w-full items-center gap-2.5 rounded-xl border border-input bg-background pr-3 pl-4 text-left text-base text-muted-foreground transition-colors hover:border-muted-foreground/50',
+								$user && 'h-11'
+							)}
 							onclick={() => openpalette()}
 						>
 							<Search class="size-4.5" />
@@ -69,25 +83,30 @@
 								aria-label="Search"
 								autocomplete="off"
 								spellcheck="false"
-								class="h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-muted-foreground/50"
+								class={cn(
+									'h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-muted-foreground/50',
+									$user && 'h-11'
+								)}
 							/>
 							<Kbd class="pointer-events-none absolute right-3 border bg-background font-mono"
 								>/</Kbd
 							>
 						</label>
 					{/if}
-					<div
-						class="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs text-muted-foreground"
-					>
-						<span class="pr-1">Try</span>
-						{#each tries as q (q)}
-							<button
-								type="button"
-								class="rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors hover:border-foreground/20 hover:text-foreground"
-								onclick={() => (phone.current ? openpalette(q) : setquery(q))}>{q}</button
-							>
-						{/each}
-					</div>
+					{#if !$user}
+						<div
+							class="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs text-muted-foreground"
+						>
+							<span class="pr-1">Try</span>
+							{#each tries as q (q)}
+								<button
+									type="button"
+									class="rounded-full border px-2.5 py-1 font-mono text-[11px] transition-colors hover:border-foreground/20 hover:text-foreground"
+									onclick={() => (phone.current ? openpalette(q) : setquery(q))}>{q}</button
+								>
+							{/each}
+						</div>
+					{/if}
 					{#if !$syncstatus.online && !$syncstatus.syncing}
 						<p class="text-center text-xs text-muted-foreground">offline · using the saved index</p>
 					{/if}
