@@ -2,22 +2,23 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
-	import { FolderGit, GraduationCap, House, Library, LogIn, LogOut, Search } from '@lucide/svelte';
+	import { FolderGit, House, Library, LogIn, Search } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import UserMenu from '$lib/components/user-menu.svelte';
 	import { pending as unpublished, publish, refreshpending } from '$lib/api';
-	import { user, loading, login, logout } from '$lib/auth';
+	import { user, loading, login } from '$lib/auth';
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
 	import { trysync } from '$lib/sync';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '$lib/utils';
 
-	const home = { key: '', label: 'Home', icon: House };
-	const all = { key: 'courses', label: 'Courses', icon: Library };
-	const my = { key: 'mycourses', label: 'My courses', icon: GraduationCap };
-	const sources = { key: 'sources', label: 'Sources', icon: FolderGit };
-	const jumps: Record<string, string> = { h: '', c: '/courses', m: '/mycourses', s: '/sources' };
+	const tabs = [
+		{ key: '', label: 'Home', icon: House },
+		{ key: 'courses', label: 'Courses', icon: Library },
+		{ key: 'sources', label: 'Sources', icon: FolderGit }
+	];
+	const jumps: Record<string, string> = { h: '', c: '/courses', s: '/sources' };
 
 	const field = 'input, textarea, select, [contenteditable]';
 
@@ -25,7 +26,6 @@
 	let typing = $state(false);
 	let timer: ReturnType<typeof setTimeout>;
 
-	let tabs = $derived($user ? [home, my, all, sources] : [home, all, sources]);
 	let section = $derived(page.url.pathname.slice(base.length).split('/').filter(Boolean)[0] ?? '');
 	let index = $derived(tabs.findIndex((t) => t.key === section));
 
@@ -43,7 +43,7 @@
 		trysync();
 	}
 
-	/** global keys: ctrl k and / for search, g h, g c, g m, g s to jump */
+	/** global keys: ctrl k and / for search, g h, g c, g s to jump */
 	function onkeydown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
 			e.preventDefault();
@@ -68,7 +68,7 @@
 		}
 		if (pending) {
 			pending = false;
-			if (e.key in jumps && (e.key !== 'm' || $user)) {
+			if (e.key in jumps) {
 				e.preventDefault();
 				goto(`${base}${jumps[e.key]}` || '/');
 			}
@@ -105,14 +105,12 @@
 			href="{base}/{t.key}"
 			aria-current={section === t.key ? 'page' : undefined}
 			class={cn(
-				'relative flex items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground',
-				big ? (tabs.length > 3 ? 'h-12 flex-col gap-0.5 px-3 text-[11px]' : 'h-11 px-4') : 'h-full',
+				'relative flex items-center justify-center gap-2 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground',
+				big ? 'h-11 px-4' : 'h-full',
 				section === t.key && 'text-foreground'
 			)}
 		>
-			<t.icon class={cn('size-4', !big && tabs.length > 3 && 'lg:max-xl:hidden')} /><span
-				class={cn(!big && tabs.length > 3 && 'max-lg:sr-only')}>{t.label}</span
-			>
+			<t.icon class="size-4" />{t.label}
 		</a>
 	{/each}
 {/snippet}
@@ -139,10 +137,7 @@
 	<div class="col-start-3 flex items-center justify-end gap-2">
 		<Button
 			variant="outline"
-			class={cn(
-				'size-8 justify-start gap-2 rounded-full border-transparent bg-transparent px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:rounded-md sm:border-input sm:bg-muted/60 lg:w-52',
-				$user && 'lg:w-40 xl:w-52'
-			)}
+			class="size-8 justify-start gap-2 rounded-full border-transparent bg-transparent px-2 font-normal text-muted-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground sm:rounded-md sm:border-input sm:bg-muted/60 lg:w-52"
 			aria-label="Search everything"
 			onclick={() => openpalette()}
 		>
@@ -157,16 +152,16 @@
 				>
 			</Button>
 		{/if}
-		{#if !$loading}
+		{#if !$loading && !$user}
 			<Button
 				variant="ghost"
 				class="h-8 min-w-8 gap-1.5 rounded-full px-2 font-normal text-muted-foreground hover:text-foreground xl:px-2.5"
-				aria-label={$user ? 'Log out' : 'Log in'}
-				title={$user ? 'Log out' : 'Log in'}
-				onclick={$user ? logout : login}
+				aria-label="Log in"
+				title="Log in"
+				onclick={login}
 			>
-				{#if $user}<LogOut class="size-4" />{:else}<LogIn class="size-4" />{/if}
-				<span class="hidden text-[13px] xl:inline">{$user ? 'Log out' : 'Log in'}</span>
+				<LogIn class="size-4" />
+				<span class="hidden text-[13px] xl:inline">Log in</span>
 			</Button>
 		{/if}
 		<UserMenu />

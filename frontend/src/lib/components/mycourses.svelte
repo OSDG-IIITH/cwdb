@@ -5,7 +5,6 @@
 		ArchiveRestore,
 		ArrowUpRight,
 		ChevronRight,
-		LogIn,
 		Plus,
 		RotateCw,
 		X
@@ -15,7 +14,6 @@
 	import AddCourse from '$lib/components/addcourse.svelte';
 	import CourseCard from '$lib/components/coursecard.svelte';
 	import CourseMenu from '$lib/components/coursemenu.svelte';
-	import { user, loading, login } from '$lib/auth';
 	import { buildgroups, type Row } from '$lib/courseview';
 	import {
 		addcourses,
@@ -194,20 +192,11 @@
 	</section>
 {/snippet}
 
-<main
-	class="mx-auto flex w-full max-w-260 flex-1 flex-col gap-6 px-4 pt-10 pb-[calc(env(safe-area-inset-bottom)+6rem)] sm:px-6 sm:pb-16"
->
-	{#if !$user}
-		{#if !$loading}
-			<div class="flex flex-col items-center gap-3 py-20 text-center">
-				<p class="text-sm text-muted-foreground">Log in to keep your courses across devices.</p>
-				<Button variant="outline" onclick={login}><LogIn />Log in</Button>
-			</div>
-		{/if}
-	{:else if p}
+<section class="flex flex-col gap-6">
+	{#if p}
 		<div class="flex flex-wrap items-center gap-3">
 			<div class="flex min-w-0 flex-col gap-0.5">
-				<h1 class="text-[15px] font-semibold">My courses</h1>
+				<h2 class="text-[13px] font-medium">My courses</h2>
 				<span class="text-xs text-muted-foreground">
 					{[p.autoterm && termname(term), `${active.length} courses`].filter(Boolean).join(' · ')}
 				</span>
@@ -304,6 +293,6 @@
 			<Button variant="outline" onclick={loadprofile}><RotateCw />Retry</Button>
 		</div>
 	{/if}
-</main>
+</section>
 
 <AddCourse bind:open={adding} />

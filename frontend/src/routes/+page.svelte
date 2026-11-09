@@ -11,6 +11,8 @@
 	import { courses, syncstatus } from '$lib/sync';
 	import { mine as minecodes } from '$lib/profile';
 	import CourseCard from '$lib/components/coursecard.svelte';
+	import MyCourses from '$lib/components/mycourses.svelte';
+	import { user } from '$lib/auth';
 
 	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
 
@@ -93,7 +95,9 @@
 			{/if}
 		</div>
 
-		{#if !empty}
+		{#if $user}
+			<MyCourses />
+		{:else if !empty}
 			<section class="flex flex-col gap-3">
 				<div class="flex items-center justify-between">
 					<h2 class="text-[13px] font-medium">{mine.length ? 'My courses' : 'Largest courses'}</h2>
