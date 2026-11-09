@@ -100,8 +100,17 @@
 			</div>
 		{/if}
 
-		<div class="border-t pt-6">
-			<Button variant="outline" onclick={logout}><LogOut />Log out</Button>
-		</div>
+		<section class="flex flex-col">
+			<h2 class="pb-1 text-xs font-medium text-muted-foreground">Account</h2>
+			<div class="flex items-center justify-between gap-6 border-y py-4">
+				<div class="flex min-w-0 flex-col gap-1">
+					<span class="text-sm font-medium">Log out</span>
+					<span class="text-[13px] leading-relaxed text-muted-foreground"
+						>Signs you out on this device. Your courses and settings stay with your account.</span
+					>
+				</div>
+				<Button variant="destructive" onclick={logout}><LogOut />Log out</Button>
+			</div>
+		</section>
 	{/if}
 </main>
