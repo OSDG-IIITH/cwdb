@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { LogIn, RotateCw } from '@lucide/svelte';
+	import { LogIn, LogOut, RotateCw } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import ThemePicker from '$lib/components/themepicker.svelte';
-	import { user, loading, login, nameof } from '$lib/auth';
+	import { user, loading, login, logout, nameof } from '$lib/auth';
 	import { loadprofile, profile, profilefailed, setautoterm, setsettings } from '$lib/profile';
 	import { almanac } from '$lib/sync';
 	import { phase, shortdate, ug1until } from '$lib/terms';
@@ -99,5 +99,9 @@
 				<Button variant="outline" onclick={loadprofile}><RotateCw />Retry</Button>
 			</div>
 		{/if}
+
+		<div class="border-t pt-6">
+			<Button variant="outline" onclick={logout}><LogOut />Log out</Button>
+		</div>
 	{/if}
 </main>
