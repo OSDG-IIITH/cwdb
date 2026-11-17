@@ -10,8 +10,30 @@ export interface User {
 export const user = writable<User | null>(null);
 export const loading = writable(true);
 
+/** device copies of the account, used while the backend cannot be reached */
+export const saved = { user: 'cwdb:user', profile: 'cwdb:profile' };
+
+function lastuser(): User | null {
+	try {
+		return JSON.parse(localStorage.getItem(saved.user) ?? 'null');
+	} catch {
+		return null;
+	}
+}
+
+/** forgets the account on this device */
+function forget() {
+	try {
+		localStorage.removeItem(saved.user);
+		localStorage.removeItem(saved.profile);
+	} catch {}
+}
+
+/** shows the account last seen on this device at once, then checks it; only a 401 logs out */
 export async function fetchUser() {
-	loading.set(true);
+	const last = lastuser();
+	user.set(last);
+	loading.set(!last);
 	try {
 		const res = await fetch(`${apibase}/api/auth/me`, {
 			credentials: 'include'
@@ -19,11 +41,13 @@ export async function fetchUser() {
 		if (res.ok) {
 			const data = await res.json();
 			user.set(data);
-		} else {
+			localStorage.setItem(saved.user, JSON.stringify(data));
+		} else if (res.status === 401) {
 			user.set(null);
+			forget();
 		}
 	} catch {
-		user.set(null);
+		// offline: keep the account from this device
 	} finally {
 		loading.set(false);
 	}
@@ -39,7 +63,16 @@ export function login() {
 }
 
 export function logout() {
+	forget();
 	user.set(null);
 	loading.set(true);
 	window.location.href = `${apibase}/api/auth/logout`;
 }
+
+/** display name from the part of an email before the @ */
+export const nameof = (email: string) =>
+	email
+		.split('@')[0]
+		.split(/[._-]/)
+		.map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+		.join(' ');

@@ -11,12 +11,25 @@ pub struct Claims {
 
 pub enum AuthError {
     Unauthorized(String),
+    /// the user store failed, not the credentials
+    Internal(String),
+}
+
+impl AuthError {
+    pub fn message(&self) -> &str {
+        match self {
+            AuthError::Unauthorized(msg) | AuthError::Internal(msg) => msg,
+        }
+    }
 }
 
 impl IntoResponse for AuthError {
     fn into_response(self) -> axum::response::Response {
-        let AuthError::Unauthorized(msg) = self;
-        (StatusCode::UNAUTHORIZED, Json(serde_json::json!({ "error": msg }))).into_response()
+        let code = match self {
+            AuthError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+            AuthError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (code, Json(serde_json::json!({ "error": self.message() }))).into_response()
     }
 }
 
@@ -111,7 +124,7 @@ pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, A
     )
     .fetch_optional(&state.db)
     .await
-    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+    .map_err(|e| AuthError::Internal(e.to_string()))?;
 
     if let Some(user) = existing {
         if user.email != claims.email || user.role != role {
@@ -124,7 +137,7 @@ pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, A
             )
             .fetch_one(&state.db)
             .await
-            .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
 
             return Ok(user);
         }
@@ -141,7 +154,7 @@ pub async fn upsertuser(state: &AppState, claims: &Claims) -> Result<CwdbUser, A
     )
     .fetch_one(&state.db)
     .await
-    .map_err(|e| AuthError::Unauthorized(e.to_string()))?;
+    .map_err(|e| AuthError::Internal(e.to_string()))?;
 
     Ok(user)
 }

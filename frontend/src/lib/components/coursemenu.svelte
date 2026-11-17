@@ -2,25 +2,33 @@
 	import type { Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
 	import {
+		Archive,
+		ArchiveRestore,
 		Copy,
 		ExternalLink,
 		Link,
+		Minus,
 		Pin,
 		PinOff,
+		Plus,
 		Search,
 		SquareArrowOutUpRight
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import { openpalette } from '$lib/components/palette.svelte';
-	import { courses, mycourses, togglepin, getcourse } from '$lib/sync';
+	import { user } from '$lib/auth';
+	import { courses, getcourse } from '$lib/sync';
+	import { archivecourses, mine, profile, togglemine } from '$lib/profile';
 	import { coursehref } from '$lib/utils';
 
 	let { children }: { children: Snippet } = $props();
 
 	let code = $state<string | null>(null);
 	let course = $derived(code ? getcourse($courses, code) : null);
-	let pinned = $derived(!!code && $mycourses.includes(code));
+	let pinned = $derived(!!code && $mine.includes(code));
+	let saved = $derived($profile?.courses.find((c) => c.course === code));
+	let manual = $derived(!!saved && !$profile?.autoterm);
 
 	/** picks the course under the cursor, or falls back to the native menu */
 	function oncontextmenu(e: MouseEvent) {
@@ -55,9 +63,18 @@
 				<Search />Search in course
 			</ContextMenu.Item>
 			<ContextMenu.Separator />
-			<ContextMenu.Item onSelect={() => togglepin(course.code)}>
-				{#if pinned}<PinOff />Remove from my courses{:else}<Pin />Add to my courses{/if}
+			<ContextMenu.Item onSelect={() => togglemine(course.code)}>
+				{#if pinned}
+					{#if $user}<Minus />{:else}<PinOff />{/if}Remove from my courses
+				{:else}
+					{#if $user}<Plus />{:else}<Pin />{/if}Add to my courses
+				{/if}
 			</ContextMenu.Item>
+			{#if manual && saved}
+				<ContextMenu.Item onSelect={() => archivecourses([saved.course], !saved.archived)}>
+					{#if saved.archived}<ArchiveRestore />Unarchive{:else}<Archive />Archive{/if}
+				</ContextMenu.Item>
+			{/if}
 			<ContextMenu.Separator />
 			<ContextMenu.Item onSelect={() => copy(location.origin + coursehref(course.code), 'Link')}>
 				<Link />Copy link

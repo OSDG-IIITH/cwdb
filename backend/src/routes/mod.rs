@@ -3,6 +3,7 @@ pub mod auth;
 pub mod cas;
 pub mod health;
 pub mod offerings;
+pub mod profile;
 pub mod publish;
 pub mod resources;
 pub mod review;

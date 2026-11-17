@@ -3,7 +3,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import Segmented from '$lib/components/segmented.svelte';
 	import Viewer from '$lib/components/viewer.svelte';
-	import { githuburl } from '$lib/utils';
+	import { user } from '$lib/auth';
+	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { progress, setdone } from '$lib/profile';
+	import { cn, githuburl } from '$lib/utils';
 	import { downloadfile } from '$lib/zip';
 	import type { Resource } from '$lib/sync';
 
@@ -41,12 +44,16 @@
 	let paper = $derived(r.key ? (pair ?? r) : r);
 	let keyed = $derived(r.key ? r : pair);
 	let side = $derived(r.key ? 'key' : 'paper');
+	let done = $derived(!!$progress.get(r.id));
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col">
 	<div class="flex shrink-0 items-center gap-2 border-b bg-background py-2 pr-2 pl-4">
 		<div class="flex min-w-0 flex-1 flex-col gap-px">
-			<span class="truncate text-sm font-semibold">{r.title}</span>
+			<span
+				class={cn('truncate text-sm font-semibold', done && 'text-muted-foreground line-through')}
+				>{r.title}</span
+			>
 			<span class="truncate text-[11px] text-muted-foreground">
 				<button type="button" class="hover:text-foreground hover:underline" onclick={ongosrc}
 					>{r.owner}/{r.repo}</button
@@ -63,6 +70,14 @@
 					{ value: 'key', label: 'Key' }
 				]}
 			/>
+		{/if}
+		{#if $user}
+			<label
+				class="flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-[13px] text-muted-foreground transition-colors select-none hover:bg-muted hover:text-foreground"
+			>
+				<Checkbox checked={done} onCheckedChange={(v) => setdone(r.id, v)} />
+				Done
+			</label>
 		{/if}
 		{#if admin}
 			<Button variant="ghost" size="icon" aria-label="Edit metadata" onclick={onedit}>

@@ -14,7 +14,7 @@ compile_error!("one of `ocas` or `cas` must be enabled");
 
 use axum::{
     Router,
-    routing::{delete, get, patch, post},
+    routing::{delete, get, patch, post, put},
 };
 use sqlx::PgPool;
 use tower_http::cors::CorsLayer;
@@ -82,6 +82,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             delete(routes::resources::delete_resource).patch(routes::resources::edit),
         )
         .route("/api/offerings", post(routes::offerings::create))
+        .route("/api/profile", get(routes::profile::get).patch(routes::profile::edit))
+        .route(
+            "/api/profile/courses",
+            post(routes::profile::add).patch(routes::profile::archive),
+        )
+        .route("/api/profile/courses/{code}", delete(routes::profile::remove))
+        .route("/api/profile/progress/{id}", put(routes::profile::mark))
         .route("/api/reclassify", post(routes::resources::reclassify))
         .route("/api/review", get(routes::review::review))
         .route("/api/publish", post(routes::publish::publish))
@@ -116,6 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     axum::http::Method::GET,
                     axum::http::Method::POST,
                     axum::http::Method::PATCH,
+                    axum::http::Method::PUT,
                     axum::http::Method::DELETE,
                 ])
                 .allow_headers([axum::http::header::CONTENT_TYPE]),

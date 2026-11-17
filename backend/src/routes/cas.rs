@@ -168,7 +168,7 @@ pub async fn callback(
     let (sub, email) = match validate_ticket(&ticket, &state.config).await {
         Ok(v) => v,
         Err(e) => {
-            let AuthError::Unauthorized(msg) = e;
+            let msg = e.message().to_string();
             return Redirect::to(&format!(
                 "{}?error={}",
                 state.config.frontend_url,
@@ -180,7 +180,7 @@ pub async fn callback(
 
     let claims = Claims { sub, email };
     if let Err(e) = super::auth::upsertuser(&state, &claims).await {
-        let AuthError::Unauthorized(msg) = e;
+        let msg = e.message().to_string();
         return Redirect::to(&format!(
             "{}?error={}",
             state.config.frontend_url,

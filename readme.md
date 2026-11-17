@@ -112,3 +112,8 @@ If you use `direnv`:
 ```bash
 direnv allow
 ```
+
+
+## Maintenance
+
+Each semester, update the `almanac` row in the `settings` table with the exam dates from the new institute almanac, then publish.

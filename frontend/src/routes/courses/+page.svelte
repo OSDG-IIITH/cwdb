@@ -7,7 +7,11 @@
 	import Segmented from '$lib/components/segmented.svelte';
 	import CourseMenu from '$lib/components/coursemenu.svelte';
 	import CourseCard from '$lib/components/coursecard.svelte';
-	import { courses, mycourses, allresources, type CourseInfo } from '$lib/sync';
+	import { courses, allresources, type CourseInfo } from '$lib/sync';
+	import { mine as minecodes, togglemine } from '$lib/profile';
+	import { user } from '$lib/auth';
+	import { Button } from '$lib/components/ui/button';
+	import MineIcon from '$lib/components/mineicon.svelte';
 	import { coursehref } from '$lib/utils';
 
 	const letters = [
@@ -20,9 +24,12 @@
 		['projects', 'P']
 	];
 	const terms: Record<string, string> = { monsoon: 'Monsoon', spring: 'Spring', both: 'Both' };
-	const grid =
+	const cols =
 		'grid grid-cols-[64px_minmax(0,1fr)_48px] items-center gap-4 px-3 sm:grid-cols-[80px_minmax(0,1fr)_90px_112px_48px]';
+	const addcols =
+		'grid grid-cols-[64px_minmax(0,1fr)_48px_28px] items-center gap-4 px-3 sm:grid-cols-[80px_minmax(0,1fr)_90px_112px_48px_28px]';
 
+	let grid = $derived($user ? addcols : cols);
 	let filter = $state('');
 	let term = $state('all');
 	let view = $state((browser && localStorage.getItem('courseview')) || 'list');
@@ -35,13 +42,13 @@
 		const q = filter.trim().toLowerCase();
 		return $courses.filter(
 			(c) =>
-				(c.count > 0 || $mycourses.includes(c.code)) &&
+				(c.count > 0 || $minecodes.includes(c.code)) &&
 				(term === 'all' || c.semester === term || c.semester === 'both') &&
 				(!q || [c.name, c.code, ...c.shortnames].some((s) => s.toLowerCase().includes(q)))
 		);
 	});
-	let mine = $derived(shown.filter((c) => $mycourses.includes(c.code)));
-	let rest = $derived(shown.filter((c) => !$mycourses.includes(c.code)));
+	let mine = $derived(shown.filter((c) => $minecodes.includes(c.code)));
+	let rest = $derived(shown.filter((c) => !$minecodes.includes(c.code)));
 	let unclassified = $derived($allresources.filter((r) => !r.course_id).length);
 	let showunclassified = $derived(
 		term === 'all' && 'unclassified'.includes(filter.trim().toLowerCase())
@@ -56,23 +63,39 @@
 {/snippet}
 
 {#snippet row(c: CourseInfo)}
-	<a
-		href={coursehref(c.code)}
-		data-code={c.code}
-		class="{grid} h-11 rounded-md text-sm transition-colors hover:bg-accent/60"
-	>
-		<span class="truncate font-mono text-xs text-muted-foreground">{c.alias}</span>
-		<span class="truncate font-medium">{c.name}</span>
-		<span class="hidden text-[13px] text-muted-foreground sm:block">{terms[c.semester] ?? '—'}</span
+	<div class="relative">
+		<a
+			href={coursehref(c.code)}
+			data-code={c.code}
+			class="{grid} h-11 rounded-md text-sm transition-colors hover:bg-accent/60"
 		>
-		<span class="hidden font-mono text-xs tracking-[0.25em] sm:block">{@render has(c)}</span>
-		<span class="text-right text-xs text-muted-foreground">{c.count}</span>
-	</a>
+			<span class="truncate font-mono text-xs text-muted-foreground">{c.alias}</span>
+			<span class="truncate font-medium">{c.name}</span>
+			<span class="hidden text-[13px] text-muted-foreground sm:block"
+				>{terms[c.semester] ?? '—'}</span
+			>
+			<span class="hidden font-mono text-xs tracking-[0.25em] sm:block">{@render has(c)}</span>
+			<span class="text-right text-xs text-muted-foreground">{c.count}</span>
+		</a>
+		{#if $user}
+			{@const added = $minecodes.includes(c.code)}
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+				aria-label={added ? `Remove ${c.alias} from my courses` : `Add ${c.alias} to my courses`}
+				title={added ? 'Remove from my courses' : 'Add to my courses'}
+				onclick={() => togglemine(c.code)}
+			>
+				<MineIcon {added} />
+			</Button>
+		{/if}
+	</div>
 {/snippet}
 
 {#snippet cards(list: CourseInfo[])}
 	<div class="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-3">
-		{#each list as c (c.code)}<CourseCard {c} />{/each}
+		{#each list as c (c.code)}<CourseCard {c} add={!!$user} />{/each}
 	</div>
 {/snippet}
 
@@ -137,6 +160,7 @@
 					<span>Alias</span><span>Course</span><span class="hidden sm:block">Term</span>
 					<span class="hidden sm:block">Has</span>
 					<span class="text-right">Files</span>
+					{#if $user}<span></span>{/if}
 				</div>
 				{#if mine.length}
 					<div class="px-3 pt-4 pb-1.5 text-xs font-medium text-muted-foreground">My courses</div>

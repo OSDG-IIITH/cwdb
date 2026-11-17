@@ -10,12 +10,12 @@
 		FolderGit2,
 		Loader2,
 		NotebookPen,
-		Pin,
 		Presentation,
 		Shapes
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import MineIcon from '$lib/components/mineicon.svelte';
 	import { kinds, type CourseInfo } from '$lib/sync';
 	import { cn } from '$lib/utils';
 
@@ -93,7 +93,7 @@
 				title={pinned ? 'Remove from my courses' : 'Add to my courses'}
 				onclick={onpin}
 			>
-				<Pin class={pinned ? 'fill-foreground text-foreground' : ''} />
+				<MineIcon added={pinned} filled="fill-foreground text-foreground" />
 			</Button>
 			<Button
 				variant="ghost"

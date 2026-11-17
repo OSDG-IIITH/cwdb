@@ -2,12 +2,12 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
-	import { FolderGit, House, Library, Search } from '@lucide/svelte';
+	import { FolderGit, House, Library, LogIn, Search } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import UserMenu from '$lib/components/user-menu.svelte';
 	import { pending as unpublished, publish, refreshpending } from '$lib/api';
-	import { user } from '$lib/auth';
+	import { user, loading, login } from '$lib/auth';
 	import { palette, openpalette, closepalette } from '$lib/components/palette.svelte';
 	import { trysync } from '$lib/sync';
 	import { toast } from 'svelte-sonner';
@@ -150,6 +150,18 @@
 				<span class="font-mono">{$unpublished}</span><span class="hidden sm:inline"
 					>unpublished · Publish</span
 				>
+			</Button>
+		{/if}
+		{#if !$loading && !$user}
+			<Button
+				variant="ghost"
+				class="h-8 min-w-8 gap-1.5 rounded-full px-2 font-normal text-muted-foreground hover:text-foreground xl:px-2.5"
+				aria-label="Log in"
+				title="Log in"
+				onclick={login}
+			>
+				<LogIn class="size-4" />
+				<span class="hidden text-[13px] xl:inline">Log in</span>
 			</Button>
 		{/if}
 		<UserMenu />

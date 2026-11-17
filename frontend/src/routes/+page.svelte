@@ -8,12 +8,15 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { openpalette } from '$lib/components/palette.svelte';
-	import { courses, mycourses, syncstatus } from '$lib/sync';
+	import { courses, syncstatus } from '$lib/sync';
+	import { mine as minecodes } from '$lib/profile';
 	import CourseCard from '$lib/components/coursecard.svelte';
+	import MyCourses from '$lib/components/mycourses.svelte';
+	import { user } from '$lib/auth';
 
 	const tries = ['dsa mid', 'osn endsem', 'la 2023'];
 
-	let mine = $derived($courses.filter((c) => $mycourses.includes(c.code)));
+	let mine = $derived($courses.filter((c) => $minecodes.includes(c.code)));
 	let top = $derived([...$courses].sort((a, b) => b.count - a.count).slice(0, 6));
 	let empty = $derived($syncstatus.empty && !$syncstatus.syncing);
 
@@ -29,50 +32,46 @@
 	}
 </script>
 
-{#if query && !phone.current}
-	<HomeSearch {query} onquery={setquery} />
-{:else}
-	<main class="mx-auto flex w-full max-w-240 flex-1 flex-col gap-16 px-6 pt-[14vh] pb-16">
-		<div class="mx-auto flex w-full max-w-180 flex-col items-center gap-8">
-			<div class="flex flex-col items-center gap-3">
-				<div class="font-mono text-7xl leading-none font-bold tracking-[-0.06em] sm:text-[104px]">
-					cwdb
-				</div>
-				<p class="text-sm text-muted-foreground">Papers, slides and notes for every IIIT course</p>
+{#snippet hero()}
+	<div class="mx-auto flex w-full max-w-180 flex-col items-center gap-8">
+		<div class="flex flex-col items-center gap-3">
+			<div class="font-mono text-7xl leading-none font-bold tracking-[-0.06em] sm:text-[104px]">
+				cwdb
 			</div>
-			{#if empty}
-				<p class="max-w-sm text-center text-sm text-muted-foreground">
-					No data loaded yet. Connect to VPN and reload to sync the index.
-				</p>
-			{:else}
-				<div class="flex w-full flex-col gap-2.5">
-					{#if phone.current}
-						<button
-							type="button"
-							class="flex h-13 w-full items-center gap-2.5 rounded-xl border border-input bg-background pr-3 pl-4 text-left text-base text-muted-foreground transition-colors hover:border-muted-foreground/50"
-							onclick={() => openpalette()}
-						>
-							<Search class="size-4.5" />
-							<span class="flex-1 truncate">Search courses, papers, slides</span>
-						</button>
-					{:else}
-						<label class="relative flex items-center">
-							<Search class="pointer-events-none absolute left-4 size-4.5 text-muted-foreground" />
-							<input
-								data-slash
-								value=""
-								oninput={(e) => setquery(e.currentTarget.value)}
-								placeholder="Search courses, papers, slides"
-								aria-label="Search"
-								autocomplete="off"
-								spellcheck="false"
-								class="h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-muted-foreground/50"
-							/>
-							<Kbd class="pointer-events-none absolute right-3 border bg-background font-mono"
-								>/</Kbd
-							>
-						</label>
-					{/if}
+			<p class="text-sm text-muted-foreground">Papers, slides and notes for every IIIT course</p>
+		</div>
+		{#if empty}
+			<p class="max-w-sm text-center text-sm text-muted-foreground">
+				No data loaded yet. Connect to VPN and reload to sync the index.
+			</p>
+		{:else}
+			<div class="flex w-full flex-col gap-2.5">
+				{#if phone.current}
+					<button
+						type="button"
+						class="flex h-13 w-full items-center gap-2.5 rounded-xl border border-input bg-background pr-3 pl-4 text-left text-base text-muted-foreground transition-colors hover:border-muted-foreground/50"
+						onclick={() => openpalette()}
+					>
+						<Search class="size-4.5" />
+						<span class="flex-1 truncate">Search courses, papers, slides</span>
+					</button>
+				{:else}
+					<label class="relative flex items-center">
+						<Search class="pointer-events-none absolute left-4 size-4.5 text-muted-foreground" />
+						<input
+							data-slash
+							value=""
+							oninput={(e) => setquery(e.currentTarget.value)}
+							placeholder="Search courses, papers, slides"
+							aria-label="Search"
+							autocomplete="off"
+							spellcheck="false"
+							class="h-13 w-full rounded-xl border border-input bg-background pr-16 pl-11 text-base transition-colors outline-none placeholder:text-muted-foreground hover:border-muted-foreground/50 focus-visible:border-muted-foreground/50"
+						/>
+						<Kbd class="pointer-events-none absolute right-3 border bg-background font-mono">/</Kbd>
+					</label>
+				{/if}
+				{#if !$user}
 					<div
 						class="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs text-muted-foreground"
 					>
@@ -85,12 +84,41 @@
 							>
 						{/each}
 					</div>
-					{#if !$syncstatus.online && !$syncstatus.syncing}
-						<p class="text-center text-xs text-muted-foreground">offline · using the saved index</p>
-					{/if}
-				</div>
-			{/if}
+				{/if}
+				{#if !$syncstatus.online && !$syncstatus.syncing}
+					<p class="text-center text-xs text-muted-foreground">offline · using the saved index</p>
+				{/if}
+			</div>
+		{/if}
+	</div>
+{/snippet}
+
+{#snippet footer()}
+	<footer
+		class="p-6 pb-[calc(env(safe-area-inset-bottom)+6rem)] text-center text-xs text-muted-foreground/70 sm:pb-6"
+	>
+		made by <a
+			href="https://github.com/nuxshed"
+			class="text-muted-foreground underline"
+			target="_blank"
+			rel="noopener">OSDG</a
+		>
+	</footer>
+{/snippet}
+
+{#if query && !phone.current}
+	<HomeSearch {query} onquery={setquery} />
+{:else if $user}
+	<main class="flex h-[calc(100dvh-3.75rem)] flex-col">
+		<div class="mx-auto w-full max-w-240 shrink-0 px-6 pt-[14vh] pb-12">{@render hero()}</div>
+		<div class="min-h-0 flex-1 overflow-y-auto">
+			<div class="mx-auto w-full max-w-240 px-6 pt-4"><MyCourses /></div>
+			{@render footer()}
 		</div>
+	</main>
+{:else}
+	<main class="mx-auto flex w-full max-w-240 flex-1 flex-col gap-16 px-6 pt-[14vh] pb-16">
+		{@render hero()}
 
 		{#if !empty}
 			<section class="flex flex-col gap-3">
@@ -117,14 +145,5 @@
 		{/if}
 	</main>
 
-	<footer
-		class="p-6 pb-[calc(env(safe-area-inset-bottom)+6rem)] text-center text-xs text-muted-foreground/70 sm:pb-6"
-	>
-		made by <a
-			href="https://github.com/nuxshed"
-			class="text-muted-foreground underline"
-			target="_blank"
-			rel="noopener">OSDG</a
-		>
-	</footer>
+	{@render footer()}
 {/if}
